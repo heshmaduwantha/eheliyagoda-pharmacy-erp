@@ -69,3 +69,224 @@ model AuditLog {
   @@index([actorUserId])
   @@index([entityType, entityId])
 }
+
+// ---------------------------------------------------------------------------
+// Catalog (Milestone 3)
+// ---------------------------------------------------------------------------
+
+enum ProductType {
+  MEDICINE
+  GENERAL_ITEM
+}
+
+enum PrescriptionRule {
+  NONE
+  PROMPT_SKIPPABLE
+  HARD_REQUIRED_CONTROLLED
+}
+
+model Product {
+  id                  String           @id @default(uuid()) @db.Uuid
+  name                String           @db.VarChar(200)
+  genericName         String?          @db.VarChar(200)
+  strength            String?          @db.VarChar(80)
+  form                String?          @db.VarChar(80)
+  productType         ProductType
+  category            String?          @db.VarChar(120)
+  baseUnitName        String           @db.VarChar(60)
+  prescriptionRule    PrescriptionRule @default(NONE)
+  isControlled        Boolean          @default(false)
+  isSpecialDrug       Boolean          @default(false)
+  reorderLevel        Decimal          @default(0) @db.Decimal(14, 3)
+  reorderQty          Decimal          @default(0) @db.Decimal(14, 3)
+  defaultSellingPrice Decimal?         @db.Decimal(12, 2)
+  isActive            Boolean          @default(true)
+  units               ProductUnit[]
+  barcodes            ProductBarcode[]
+  batches             Batch[]
+  grnLines            GrnLine[]
+  stockMovements      StockMovement[]
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  @@index([productType, isActive])
+  @@index([name])
+}
+
+model ProductUnit {
+  id                String           @id @default(uuid()) @db.Uuid
+  productId         String           @db.Uuid
+  product           Product          @relation(fields: [productId], references: [id], onDelete: Cascade)
+  unitName          String           @db.VarChar(60)
+  factorToBase      Decimal          @db.Decimal(14, 3)
+  isPurchaseDefault Boolean          @default(false)
+  isSaleDefault     Boolean          @default(false)
+  barcodes          ProductBarcode[]
+  grnLines          GrnLine[]
+  createdAt         DateTime         @default(now())
+
+  @@unique([productId, unitName])
+  @@index([productId])
+}
+
+model ProductBarcode {
+  id          String       @id @default(uuid()) @db.Uuid
+  productId   String       @db.Uuid
+  product     Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  unitId      String?      @db.Uuid
+  unit        ProductUnit? @relation(fields: [unitId], references: [id], onDelete: SetNull)
+  barcode     String       @unique @db.VarChar(120)
+  barcodeType String       @default("MANUFACTURER") @db.VarChar(40)
+  isPrimary   Boolean      @default(false)
+  createdAt   DateTime     @default(now())
+
+  @@index([productId])
+}
+
+// ---------------------------------------------------------------------------
+// Procurement (Milestone 4)
+// ---------------------------------------------------------------------------
+
+enum GrnStatus {
+  DRAFT
+  CONFIRMED
+  CANCELLED
+}
+
+enum SupplierInvoiceStatus {
+  OPEN
+  PARTIALLY_PAID
+  PAID
+  CANCELLED
+}
+
+model Supplier {
+  id              String            @id @default(uuid()) @db.Uuid
+  name            String            @db.VarChar(200)
+  contactPerson   String?           @db.VarChar(160)
+  phone           String?           @db.VarChar(40)
+  email           String?           @db.VarChar(160)
+  address         String?           @db.VarChar(400)
+  creditTermDays  Int               @default(0)
+  isActive        Boolean           @default(true)
+  grns            Grn[]
+  invoices        SupplierInvoice[]
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([isActive])
+  @@index([name])
+}
+
+model Grn {
+  id               String           @id @default(uuid()) @db.Uuid
+  grnNo            String           @unique @db.VarChar(60)
+  supplierId       String           @db.Uuid
+  supplier         Supplier         @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  supplierInvoiceNo String?         @db.VarChar(80)
+  invoiceTotal     Decimal          @default(0) @db.Decimal(12, 2)
+  status           GrnStatus        @default(DRAFT)
+  notes            String?          @db.VarChar(500)
+  receivedById     String?          @db.Uuid
+  receivedAt       DateTime?
+  lines            GrnLine[]
+  invoice          SupplierInvoice?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@index([supplierId, createdAt])
+  @@index([status])
+}
+
+model GrnLine {
+  id            String      @id @default(uuid()) @db.Uuid
+  grnId         String      @db.Uuid
+  grn           Grn         @relation(fields: [grnId], references: [id], onDelete: Cascade)
+  productId     String      @db.Uuid
+  product       Product     @relation(fields: [productId], references: [id], onDelete: Restrict)
+  unitId        String      @db.Uuid
+  unit          ProductUnit @relation(fields: [unitId], references: [id], onDelete: Restrict)
+  qtyInUnit     Decimal     @db.Decimal(14, 3)
+  qtyBase       Decimal     @db.Decimal(14, 3)
+  batchNo       String?     @db.VarChar(80)
+  expiryDate    DateTime?   @db.Date
+  mrp           Decimal?    @db.Decimal(12, 2)
+  costPrice     Decimal     @db.Decimal(12, 2)
+  sellingPrice  Decimal     @db.Decimal(12, 2)
+  batch         Batch?
+  createdAt     DateTime    @default(now())
+
+  @@index([grnId])
+}
+
+model SupplierInvoice {
+  id          String                @id @default(uuid()) @db.Uuid
+  supplierId  String                @db.Uuid
+  supplier    Supplier              @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  grnId       String?               @unique @db.Uuid
+  grn         Grn?                  @relation(fields: [grnId], references: [id], onDelete: SetNull)
+  invoiceNo   String?               @db.VarChar(80)
+  totalAmount Decimal               @db.Decimal(12, 2)
+  paidAmount  Decimal               @default(0) @db.Decimal(12, 2)
+  status      SupplierInvoiceStatus @default(OPEN)
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+
+  @@index([supplierId, status])
+}
+
+// ---------------------------------------------------------------------------
+// Inventory (batch + ledger created by GRN confirm; full FEFO in Milestone 5)
+// ---------------------------------------------------------------------------
+
+enum BatchStatus {
+  ACTIVE
+  QUARANTINED
+  DEPLETED
+}
+
+enum StockMovementType {
+  GRN_IN
+  SALE_OUT
+  RETURN_IN
+  WRITE_OFF
+  ADJUSTMENT
+}
+
+model Batch {
+  id             String          @id @default(uuid()) @db.Uuid
+  productId      String          @db.Uuid
+  product        Product         @relation(fields: [productId], references: [id], onDelete: Restrict)
+  grnLineId      String?         @unique @db.Uuid
+  grnLine        GrnLine?        @relation(fields: [grnLineId], references: [id], onDelete: SetNull)
+  batchNo        String?         @db.VarChar(80)
+  expiryDate     DateTime?       @db.Date
+  mrp            Decimal?        @db.Decimal(12, 2)
+  costPrice      Decimal         @db.Decimal(12, 2)
+  sellingPrice   Decimal         @db.Decimal(12, 2)
+  qtyOnHandBase  Decimal         @default(0) @db.Decimal(14, 3)
+  status         BatchStatus     @default(ACTIVE)
+  stockMovements StockMovement[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@index([productId, status, expiryDate])
+}
+
+model StockMovement {
+  id           String            @id @default(uuid()) @db.Uuid
+  productId    String            @db.Uuid
+  product      Product           @relation(fields: [productId], references: [id], onDelete: Restrict)
+  batchId      String            @db.Uuid
+  batch        Batch             @relation(fields: [batchId], references: [id], onDelete: Restrict)
+  movementType StockMovementType
+  qtyBase      Decimal           @db.Decimal(14, 3)
+  refType      String            @db.VarChar(40)
+  refId        String            @db.VarChar(60)
+  note         String?           @db.VarChar(400)
+  createdById  String?           @db.Uuid
+  createdAt    DateTime          @default(now())
+
+  @@index([productId, createdAt])
+  @@index([batchId])
+}
