@@ -1,4 +1,10 @@
-import { PagePlaceholder } from "@/components/ui/page-placeholder";
+import type { Metadata } from "next";
+import { PosWorkspace } from "@/components/pos/PosWorkspace";
 import { requirePermission } from "@/modules/auth/permissions";
 
-export default async function PosPage() { await requirePermission("pos.access"); return <PagePlaceholder title="Point of Sale" description="POS workflows are intentionally not implemented in this phase." />; }
+export const metadata: Metadata = { title: "Point of Sale" };
+
+export default async function PosPage() {
+  await requirePermission("pos.access");
+  return <PosWorkspace />;
+}
