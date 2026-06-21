@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, Boxes, ClipboardList, LayoutDashboard, PackageSearch, ReceiptText, Settings, ShoppingCart, Truck, UsersRound, type LucideIcon } from "lucide-react";
+import { BarChart3, Boxes, ClipboardList, LayoutDashboard, PackagePlus, PackageSearch, ReceiptText, Settings, ShoppingCart, Truck, UsersRound, type LucideIcon } from "lucide-react";
 
 type NavItem = { label: string; href: string; permission: string; icon: LucideIcon; admin?: boolean };
 
@@ -10,6 +10,7 @@ const items: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", permission: "dashboard.view", icon: LayoutDashboard },
   { label: "Point of Sale", href: "/pos", permission: "pos.access", icon: ShoppingCart },
   { label: "Stock", href: "/stock", permission: "stock.access", icon: Boxes },
+  { label: "Goods Received", href: "/stock/grn", permission: "grn.manage", icon: PackagePlus },
   { label: "Products", href: "/products", permission: "product.manage", icon: PackageSearch },
   { label: "Suppliers", href: "/suppliers", permission: "supplier.manage", icon: Truck },
   { label: "Expenses", href: "/expenses", permission: "expense.manage", icon: ReceiptText },

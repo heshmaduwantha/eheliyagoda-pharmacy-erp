@@ -13,7 +13,14 @@ export type WriteAuditLogInput = {
   userAgent?: string;
 };
 
-/** Callers must exclude passwords, secrets, tokens, and other sensitive values. */
-export async function writeAuditLog(input: WriteAuditLogInput) {
-  return prisma.auditLog.create({ data: input });
+/** Prisma client or interactive transaction client; both expose `auditLog.create`. */
+export type AuditClient = Pick<typeof prisma, "auditLog">;
+
+/**
+ * Writes an audit row. Pass the active transaction client so the audit row is
+ * committed in the same transaction as the mutation it records.
+ * Callers must exclude passwords, secrets, tokens, and other sensitive values.
+ */
+export async function writeAuditLog(input: WriteAuditLogInput, client: AuditClient = prisma) {
+  return client.auditLog.create({ data: input });
 }
