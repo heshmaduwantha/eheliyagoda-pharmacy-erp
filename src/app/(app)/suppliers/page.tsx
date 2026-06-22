@@ -32,7 +32,7 @@ export default async function SuppliersPage() {
             <tbody>
               {suppliers.length === 0 && (
                 <tr>
-                  <td className="py-8 text-center text-slate-400" colSpan={5}>No suppliers yet.</td>
+                  <td className="py-8 text-center text-slate-400" colSpan={5}>No suppliers found.</td>
                 </tr>
               )}
               {suppliers.map((supplier) => (

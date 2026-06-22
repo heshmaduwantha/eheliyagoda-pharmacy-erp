@@ -1,35 +1,79 @@
+export type UUID = string;
+export type ISODate = string;
+export type ISODateTime = string;
+export type DecimalString = string;
+export type QuantityString = DecimalString;
+export type MoneyString = DecimalString;
+
+export type ProductType = "MEDICINE" | "GENERAL_ITEM";
+export type PrescriptionRule = "NONE" | "PROMPT_SKIPPABLE" | "HARD_REQUIRED_CONTROLLED";
+export type BatchStatus = "ACTIVE" | "QUARANTINED" | "DEPLETED";
+export type StockMovementType = "GRN_IN" | "SALE_OUT" | "RETURN_IN" | "WRITE_OFF" | "ADJUSTMENT";
+export type SaleStatus = "HELD" | "COMPLETED" | "VOIDED";
+export type PaymentMethod = "CASH" | "CARD";
+
 export type PosUnitOption = {
-  code: string;
-  label: string;
-  unitPrice: number;
+  id: UUID;
+  productId: UUID;
+  unitName: string;
+  factorToBase: QuantityString;
+  isPurchaseDefault: boolean;
+  isSaleDefault: boolean;
+  barcode: string | null;
+  sellingPrice: MoneyString | null;
 };
 
 export type PosProductSearchResult = {
-  id: string;
+  id: UUID;
   name: string;
-  genericName?: string;
-  sku: string;
-  barcode: string;
-  requiresPrescription: boolean;
+  genericName: string | null;
+  strength: string | null;
+  form: string | null;
+  productType: ProductType;
+  category: string | null;
+  baseUnitName: string;
+  prescriptionRule: PrescriptionRule;
+  isControlled: boolean;
+  isSpecialDrug: boolean;
+  isActive: boolean;
+  primaryBarcode: string | null;
   units: PosUnitOption[];
-  mockAvailableQty: number;
+  defaultSaleUnitId: UUID | null;
+  availableQtyBase: QuantityString;
+  hasActiveStock: boolean;
+  nextExpiryDate: ISODate | null;
+};
+
+export type PosBatchCandidate = {
+  id: UUID;
+  batchNumber: string | null;
+  expiryDate: ISODate | null;
+  status: BatchStatus;
+  availableQtyBase: QuantityString;
+  mrp: MoneyString | null;
+  costPrice: MoneyString;
+  sellingPrice: MoneyString;
+  fefoRank: number;
 };
 
 export type PosBatchPreview = {
-  batchNumber: string;
-  expiryDate: string;
-  availableQty: number;
-  mrp: number;
-  status: "SELLABLE" | "LOW_STOCK" | "NEAR_EXPIRY";
+  productId: UUID;
+  requestedQtyBase: QuantityString;
+  totalAvailableQtyBase: QuantityString;
+  canFulfil: boolean;
+  candidates: PosBatchCandidate[];
+  generatedAt: ISODateTime;
 };
 
+// Cart values are local UI state only. Future sale commands use decimal-string contract inputs.
 export type PosCartLine = {
   id: string;
-  productId: string;
+  productId: UUID;
   productName: string;
-  sku: string;
+  prescriptionRule: PrescriptionRule;
+  primaryBarcode: string | null;
   quantity: number;
-  unitCode: string;
+  unitId: UUID;
   unitLabel: string;
   unitPrice: number;
   lineTotal: number;
@@ -38,18 +82,24 @@ export type PosCartLine = {
 };
 
 export type PosPaymentInput = {
-  cashAmount: number;
-  cardAmount: number;
-  cardReference: string;
+  method: PaymentMethod;
+  amount: MoneyString;
+  cardReference?: string;
 };
 
 export type PosReceiptPreview = {
   receiptNumber: string;
-  createdAt: string;
+  createdAt: ISODateTime;
   lines: PosCartLine[];
   subtotal: number;
   discount: number;
   tax: number;
   total: number;
-  payment: PosPaymentInput;
+  payments: PosPaymentInput[];
+};
+
+export type PosBarcodeLookupResult = {
+  barcode: string;
+  product: PosProductSearchResult;
+  matchedUnit: PosUnitOption | null;
 };

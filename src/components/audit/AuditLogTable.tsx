@@ -1,0 +1,9 @@
+import type { AuditLogReadRow } from "@/modules/audit/audit-query.service";
+
+function displayDate(value: string) {
+  return new Intl.DateTimeFormat("en-LK", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
+}
+
+export function AuditLogTable({ rows }: { rows: AuditLogReadRow[] }) {
+  return <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_8px_30px_rgba(15,51,58,.05)]"><div className="overflow-x-auto"><table className="w-full min-w-[1120px] border-collapse text-left text-sm"><thead className="bg-slate-50 text-xs uppercase tracking-wider text-slate-500"><tr>{["Date", "Actor", "Action", "Entity", "Entity ID", "IP address", "User agent"].map((heading) => <th className="border-b border-slate-200 px-5 py-4 font-bold" key={heading}>{heading}</th>)}</tr></thead><tbody className="divide-y divide-slate-100">{rows.map((log) => <tr className="align-top hover:bg-teal-50/30" key={log.id}><td className="whitespace-nowrap px-5 py-4 text-slate-500">{displayDate(log.createdAt)}</td><td className="px-5 py-4"><strong className="block text-slate-800">{log.actorName ?? "System"}</strong>{log.actorUsername ? <span className="text-xs text-slate-400">{log.actorUsername}</span> : null}</td><td className="px-5 py-4 font-semibold text-teal-700">{log.action}</td><td className="px-5 py-4 text-slate-600">{log.entityType}</td><td className="max-w-52 truncate px-5 py-4 font-mono text-xs text-slate-500" title={log.entityId ?? undefined}>{log.entityId ?? "—"}</td><td className="px-5 py-4 text-slate-500">{log.ipAddress ?? "—"}</td><td className="max-w-72 truncate px-5 py-4 text-xs text-slate-500" title={log.userAgent ?? undefined}>{log.userAgent ?? "—"}</td></tr>)}{rows.length === 0 ? <tr><td className="px-5 py-16 text-center text-slate-400" colSpan={7}>No audit logs yet</td></tr> : null}</tbody></table></div></section>;
+}

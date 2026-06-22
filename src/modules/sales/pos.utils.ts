@@ -1,5 +1,4 @@
 import type { PosCartLine, PosPaymentInput, PosProductSearchResult, PosReceiptPreview, PosUnitOption } from "./pos.types";
-import { getMockBatchPreview } from "./pos.service";
 
 export const roundMoney = (value: number) => Math.round((value + Number.EPSILON) * 100) / 100;
 
@@ -12,19 +11,21 @@ export function calculateLineTotal(quantity: number, unitPrice: number) {
 }
 
 export function createCartLine(product: PosProductSearchResult): PosCartLine {
-  const unit = product.units[0];
+  const unit = product.units.find((item) => item.id === product.defaultSaleUnitId) ?? product.units[0];
+  if (!unit) throw new Error("This product has no sale unit configured.");
+  const unitPrice = Number(unit.sellingPrice ?? 0);
   return {
-    id: `${product.id}-${unit.code}`,
+    id: `${product.id}-${unit.id}`,
     productId: product.id,
     productName: product.name,
-    sku: product.sku,
+    prescriptionRule: product.prescriptionRule,
+    primaryBarcode: product.primaryBarcode,
     quantity: 1,
-    unitCode: unit.code,
-    unitLabel: unit.label,
-    unitPrice: unit.unitPrice,
-    lineTotal: unit.unitPrice,
+    unitId: unit.id,
+    unitLabel: unit.unitName,
+    unitPrice,
+    lineTotal: unitPrice,
     availableUnits: product.units,
-    batchPreview: getMockBatchPreview(product.id),
   };
 }
 
@@ -34,7 +35,8 @@ export function updateCartLineQuantity(line: PosCartLine, quantity: number): Pos
 }
 
 export function updateCartLineUnit(line: PosCartLine, unit: PosUnitOption): PosCartLine {
-  return { ...line, unitCode: unit.code, unitLabel: unit.label, unitPrice: unit.unitPrice, lineTotal: calculateLineTotal(line.quantity, unit.unitPrice) };
+  const unitPrice = Number(unit.sellingPrice ?? 0);
+  return { ...line, id: `${line.productId}-${unit.id}`, unitId: unit.id, unitLabel: unit.unitName, unitPrice, lineTotal: calculateLineTotal(line.quantity, unitPrice), batchPreview: undefined };
 }
 
 export function calculatePosTotals(lines: PosCartLine[], discount = 0, tax = 0) {
@@ -45,21 +47,23 @@ export function calculatePosTotals(lines: PosCartLine[], discount = 0, tax = 0) 
   return { subtotal, discount: safeDiscount, tax: safeTax, total };
 }
 
-export function calculateRemaining(total: number, payment: PosPaymentInput) {
-  return roundMoney(total - payment.cashAmount - payment.cardAmount);
+export function calculateRemaining(total: number, payments: PosPaymentInput[]) {
+  const paid = payments.reduce((sum, payment) => sum + Number(payment.amount), 0);
+  return roundMoney(total - paid);
 }
 
-export function isPaymentExact(total: number, payment: PosPaymentInput) {
-  return Math.round(total * 100) === Math.round((payment.cashAmount + payment.cardAmount) * 100);
+export function isPaymentExact(total: number, payments: PosPaymentInput[]) {
+  const paid = payments.reduce((sum, payment) => sum + Number(payment.amount), 0);
+  return Math.round(total * 100) === Math.round(paid * 100);
 }
 
-export function createReceiptPreview(lines: PosCartLine[], payment: PosPaymentInput): PosReceiptPreview {
+export function createReceiptPreview(lines: PosCartLine[], payments: PosPaymentInput[]): PosReceiptPreview {
   const totals = calculatePosTotals(lines);
   return {
     receiptNumber: `PREVIEW-${Date.now().toString().slice(-6)}`,
     createdAt: new Date().toISOString(),
     lines,
     ...totals,
-    payment,
+    payments,
   };
 }

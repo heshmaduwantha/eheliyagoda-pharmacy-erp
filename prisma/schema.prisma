@@ -20,6 +20,7 @@ model User {
   pharmacistCertificateFileUrl  String?    @db.VarChar(2048)
   pharmacistCertificateVerified Boolean    @default(false)
   auditLogs                     AuditLog[] @relation("AuditActor")
+  capturedPrescriptions         Prescription[] @relation("PrescriptionCapturedBy")
   createdAt                     DateTime   @default(now())
   updatedAt                     DateTime   @updatedAt
 
@@ -106,6 +107,7 @@ model Product {
   batches             Batch[]
   grnLines            GrnLine[]
   stockMovements      StockMovement[]
+  prescriptionSaleLines PrescriptionSaleLine[]
   createdAt           DateTime         @default(now())
   updatedAt           DateTime         @updatedAt
 
@@ -267,6 +269,7 @@ model Batch {
   qtyOnHandBase  Decimal         @default(0) @db.Decimal(14, 3)
   status         BatchStatus     @default(ACTIVE)
   stockMovements StockMovement[]
+  prescriptionSaleLines PrescriptionSaleLine[]
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
 
@@ -288,5 +291,62 @@ model StockMovement {
   createdAt    DateTime          @default(now())
 
   @@index([productId, createdAt])
+  @@index([batchId])
+}
+
+// ---------------------------------------------------------------------------
+// Prescription and controlled-drug capture (Milestone 7)
+// Sale and SaleLine tables are deliberately not introduced in this milestone.
+// Their future UUIDs are retained here so prescription data can be created in
+// the same future sale-completion transaction.
+// ---------------------------------------------------------------------------
+
+model Patient {
+  id               String         @id @default(uuid()) @db.Uuid
+  name             String         @db.VarChar(200)
+  phone            String?        @db.VarChar(40)
+  nic              String?        @db.VarChar(80)
+  patientReference String?        @db.VarChar(120)
+  age              Int?
+  prescriptions    Prescription[]
+  createdAt        DateTime       @default(now())
+
+  @@index([phone])
+  @@index([nic])
+  @@index([patientReference])
+}
+
+model Prescription {
+  id           String                 @id @default(uuid()) @db.Uuid
+  saleId       String                 @unique @db.Uuid
+  patientId    String?                @db.Uuid
+  patient      Patient?               @relation(fields: [patientId], references: [id], onDelete: SetNull)
+  prescriberName String?              @db.VarChar(200)
+  prescriberRef  String?              @db.VarChar(120)
+  imageKey     String?                @db.VarChar(2048)
+  skipReason   String?                @db.VarChar(500)
+  capturedById String?                @db.Uuid
+  capturedBy   User?                  @relation("PrescriptionCapturedBy", fields: [capturedById], references: [id], onDelete: SetNull)
+  capturedAt   DateTime               @default(now())
+  saleLines    PrescriptionSaleLine[]
+
+  @@index([patientId])
+  @@index([capturedById])
+}
+
+model PrescriptionSaleLine {
+  id             String       @id @default(uuid()) @db.Uuid
+  prescriptionId String       @db.Uuid
+  prescription   Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
+  saleLineId     String       @db.Uuid
+  productId      String       @db.Uuid
+  product        Product      @relation(fields: [productId], references: [id], onDelete: Restrict)
+  batchId        String       @db.Uuid
+  batch          Batch        @relation(fields: [batchId], references: [id], onDelete: Restrict)
+  qtyBase        Decimal      @db.Decimal(14, 3)
+  createdAt      DateTime     @default(now())
+
+  @@unique([prescriptionId, saleLineId])
+  @@index([productId])
   @@index([batchId])
 }

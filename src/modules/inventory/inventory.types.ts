@@ -1,43 +1,58 @@
-export type InventoryBatchStatus = "ACTIVE" | "QUARANTINED" | "DEPLETED";
+export type UUID = string;
+export type ISODate = string;
+export type ISODateTime = string;
+export type DecimalString = string;
+export type QuantityString = DecimalString;
+export type MoneyString = DecimalString;
 
+export type ProductType = "MEDICINE" | "GENERAL_ITEM";
+export type PrescriptionRule = "NONE" | "PROMPT_SKIPPABLE" | "HARD_REQUIRED_CONTROLLED";
+export type BatchStatus = "ACTIVE" | "QUARANTINED" | "DEPLETED";
 export type StockMovementType = "GRN_IN" | "SALE_OUT" | "RETURN_IN" | "WRITE_OFF" | "ADJUSTMENT";
+export type SaleStatus = "HELD" | "COMPLETED" | "VOIDED";
+export type PaymentMethod = "CASH" | "CARD";
+
+export type InventoryBatchStatus = BatchStatus;
 
 export type InventoryBatchRecord = {
-  id: string;
-  productId: string;
+  id: UUID;
+  productId: UUID;
   productName: string;
-  sku: string;
-  batchNumber: string;
-  expiryDate: string;
-  mrp: number;
-  costPrice: number;
-  sellingPrice: number;
-  qtyOnHandBase: number;
+  primaryBarcode: string | null;
+  batchNumber: string | null;
+  expiryDate: ISODate | null;
+  mrp: MoneyString | null;
+  costPrice: MoneyString;
+  sellingPrice: MoneyString;
+  qtyOnHandBase: QuantityString;
   baseUnit: string;
-  status: InventoryBatchStatus;
+  status: BatchStatus;
 };
 
 export type StockMovementRecord = {
-  id: string;
-  occurredAt: string;
+  id: UUID;
+  occurredAt: ISODateTime;
   productName: string;
-  batchNumber: string;
+  batchNumber: string | null;
   movementType: StockMovementType;
-  qtyBase: number;
+  qtyBase: QuantityString;
   baseUnit: string;
   reference: string;
-  createdBy: string;
+  createdBy: string | null;
 };
 
+export type ExpiryAlertState = "EXPIRED" | "NEAR_EXPIRY" | "QUARANTINED";
+
 export type ExpiryAlertRecord = {
-  id: string;
+  id: UUID;
   productName: string;
-  batchNumber: string;
-  expiryDate: string;
-  daysLeft: number;
-  qty: number;
+  batchNumber: string | null;
+  expiryDate: ISODate | null;
+  daysLeft: number | null;
+  qty: QuantityString;
   baseUnit: string;
-  status: InventoryBatchStatus;
+  status: BatchStatus;
+  alertState: ExpiryAlertState;
 };
 
 export type StockSummary = {
