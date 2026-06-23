@@ -1,0 +1,82 @@
+name: Staging checks
+
+on:
+  push:
+    branches:
+      - deploy/netlify-staging
+  pull_request:
+    branches:
+      - deploy/netlify-staging
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: medisquare
+          POSTGRES_PASSWORD: medisquare
+          POSTGRES_DB: medisquare_staging
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U medisquare -d medisquare_staging"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://medisquare:medisquare@localhost:5432/medisquare_staging?schema=public
+      REDIS_URL: redis://localhost:6379
+      AUTH_SECRET: staging-only-secret-staging-only-secret-123456
+      APP_URL: https://staging.example.invalid
+      SEED_OWNER_USERNAME: owner
+      SEED_OWNER_PASSWORD: owner-password
+      SEED_PHARMACIST_USERNAME: pharmacist
+      SEED_PHARMACIST_PASSWORD: pharmacist-password
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: corepack pnpm install --frozen-lockfile
+
+      - name: Deploy Prisma schema to staging database
+        run: corepack pnpm prisma:migrate:deploy
+
+      - name: Generate Prisma client
+        run: corepack pnpm prisma:generate
+
+      - name: TypeScript check
+        run: node node_modules/typescript/bin/tsc --noEmit
+
+      - name: Lint
+        run: corepack pnpm lint
+
+      - name: Test
+        run: corepack pnpm test
+
+      - name: Build
+        run: corepack pnpm build

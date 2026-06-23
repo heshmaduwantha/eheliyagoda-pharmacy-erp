@@ -11,8 +11,10 @@
     "test": "tsx --test src/modules/finance/*.test.ts src/modules/prescriptions/*.test.ts src/modules/reports/*.test.ts src/modules/sales/*.test.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
+    "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
-    "prisma:seed": "tsx --env-file=.env prisma/seed.ts"
+    "prisma:seed": "tsx --env-file=.env prisma/seed.ts",
+    "seed": "tsx --env-file=.env prisma/seed.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
