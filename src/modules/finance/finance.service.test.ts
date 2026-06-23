@@ -4,7 +4,7 @@ import test, { afterEach } from "node:test";
 import { PaymentMethod, SupplierInvoiceStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { ForbiddenError } from "@/modules/auth/permissions";
-import { createExpense, deleteExpense, getExpenseSummary, listExpenses } from "./expense.service";
+import { createExpense, deleteExpense, getExpenseSummary, listExpenses, updateExpense } from "./expense.service";
 import { FinanceError } from "./expense.types";
 import { getSupplierPayablesSummary, getSupplierPaymentsReport } from "@/modules/reports/payables-report.service";
 import { recordSupplierPayment } from "./supplier-payment.service";
@@ -98,6 +98,11 @@ async function cleanupExpense(expenseId: string) {
   await prisma.expense.deleteMany({ where: { id: expenseId } });
 }
 
+async function cleanupSupplierPayment(paymentId: string) {
+  await prisma.auditLog.deleteMany({ where: { entityType: "SUPPLIER_PAYMENT", entityId: paymentId } });
+  await prisma.supplierPayment.deleteMany({ where: { id: paymentId } });
+}
+
 test("create expense persists row and writes audit", async () => {
   const actor = await getFinanceActor("expense.create");
   const expense = await createExpense(
@@ -117,6 +122,36 @@ test("create expense persists row and writes audit", async () => {
   assert.equal(stored?.amount.toFixed(2), "1250.50");
   const audit = await prisma.auditLog.findFirst({
     where: { entityType: "EXPENSE", entityId: expense.id, action: "expense.created" },
+  });
+  assert.ok(audit);
+  await cleanupExpense(expense.id);
+});
+
+test("update expense persists change and writes audit", async () => {
+  const actor = await getFinanceActor("expense.update");
+  const expense = await createExpense(
+    {
+      date: "2026-06-23",
+      category: "RENT",
+      amount: "1000.00",
+      paymentMethod: PaymentMethod.CASH,
+      description: "Monthly rent",
+    },
+    await getFinanceActor("expense.create"),
+  );
+
+  const updated = await updateExpense(
+    expense.id,
+    {
+      amount: "1250.25",
+      description: "Monthly rent updated",
+    },
+    actor,
+  );
+
+  assert.equal(updated.amount.toFixed(2), "1250.25");
+  const audit = await prisma.auditLog.findFirst({
+    where: { entityType: "EXPENSE", entityId: expense.id, action: "expense.updated" },
   });
   assert.ok(audit);
   await cleanupExpense(expense.id);
@@ -163,6 +198,10 @@ test("deleted expense is excluded from reports", async () => {
   const summary = await getExpenseSummary({ from: "2026-06-01", to: "2026-06-30" });
   assert.equal(summary.availability, "empty");
   assert.equal(summary.rows.length, 0);
+  const audit = await prisma.auditLog.findFirst({
+    where: { entityType: "EXPENSE", entityId: expense.id, action: "expense.deleted" },
+  });
+  assert.ok(audit);
 });
 
 test("permission guard blocks unauthorized expense create", async () => {
@@ -205,6 +244,14 @@ test("supplier payment creates payment row and updates invoice status", async ()
   assert.ok(storedInvoice);
   assert.equal(storedInvoice?.paidAmount.toFixed(2), "400.00");
   assert.equal(storedInvoice?.status, SupplierInvoiceStatus.PARTIALLY_PAID);
+  const recordedAudit = await prisma.auditLog.findFirst({
+    where: { entityType: "SUPPLIER_PAYMENT", entityId: payment.id, action: "supplier_payment.recorded" },
+  });
+  const statusAudit = await prisma.auditLog.findFirst({
+    where: { entityType: "SUPPLIER_INVOICE", entityId: invoice.id, action: "supplier_invoice.status_updated" },
+  });
+  assert.ok(recordedAudit);
+  assert.ok(statusAudit);
 });
 
 test("full supplier payment sets invoice status paid", async () => {
@@ -224,6 +271,29 @@ test("full supplier payment sets invoice status paid", async () => {
   const storedInvoice = await prisma.supplierInvoice.findUnique({ where: { id: invoice.id } });
   assert.ok(storedInvoice);
   assert.equal(storedInvoice?.paidAmount.toFixed(2), "250.00");
+  assert.equal(storedInvoice?.status, SupplierInvoiceStatus.PAID);
+});
+
+test("already paid invoice rejects extra payment", async () => {
+  const actor = await getFinanceActor("supplier_payment.create");
+  const { invoice } = await createSupplierInvoiceFixture("150.00", "150.00");
+
+  await assert.rejects(
+    () =>
+      recordSupplierPayment(
+        {
+          supplierInvoiceId: invoice.id,
+          amount: "1.00",
+          paymentMethod: PaymentMethod.CASH,
+        },
+        actor,
+      ),
+    (error: unknown) => error instanceof FinanceError && error.code === "CONFLICT",
+  );
+
+  const storedInvoice = await prisma.supplierInvoice.findUnique({ where: { id: invoice.id } });
+  assert.ok(storedInvoice);
+  assert.equal(storedInvoice?.paidAmount.toFixed(2), "150.00");
   assert.equal(storedInvoice?.status, SupplierInvoiceStatus.PAID);
 });
 
@@ -255,7 +325,7 @@ test("supplier payment does not create expense", async () => {
   const { invoice } = await createSupplierInvoiceFixture("100.00", "0.00");
   const beforeExpenses = await prisma.expense.count();
 
-  await recordSupplierPayment(
+  const payment = await recordSupplierPayment(
     {
       supplierInvoiceId: invoice.id,
       amount: "25.00",
@@ -266,6 +336,31 @@ test("supplier payment does not create expense", async () => {
 
   const afterExpenses = await prisma.expense.count();
   assert.equal(afterExpenses, beforeExpenses);
+  await cleanupSupplierPayment(payment.id);
+});
+
+test("unauthorized supplier payment create is blocked", async () => {
+  const actor: FinanceActor = {
+    id: "00000000-0000-0000-0000-000000000000",
+    name: "No Access",
+    username: "no.access",
+    roleCode: "NO_ACCESS",
+    permissions: [],
+  };
+  const { invoice } = await createSupplierInvoiceFixture("100.00", "0.00");
+
+  await assert.rejects(
+    () =>
+      recordSupplierPayment(
+        {
+          supplierInvoiceId: invoice.id,
+          amount: "10.00",
+          paymentMethod: PaymentMethod.CASH,
+        },
+        actor as never,
+      ),
+    (error: unknown) => error instanceof ForbiddenError,
+  );
 });
 
 test("supplier payables and supplier payment reports use real records", async () => {

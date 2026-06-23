@@ -78,6 +78,7 @@ Sale completion, stock mutation, GRN flow, FEFO allocation, සහ payment gatew
 - Supplier payment is recorded against a supplier invoice
 - Supplier invoice paid amount and status update in the same transaction
 - Overpayment is rejected
+- Amount fields are validated as money strings before Decimal parsing
 - Deleted expenses are excluded from reports
 - Supplier payments are not treated as expenses
 - Audit logs are written for create/update/delete/payment events
@@ -151,6 +152,17 @@ Final result:
 - No stock mutation was added in this milestone.
 - No payment gateway integration was added.
 - Reports remain read-only.
+- Supplier payment double-submit protection uses a row lock on the invoice record.
+
+## Manual / conceptual concurrency check
+
+If you want to validate the invoice lock behavior manually:
+
+1. Create one supplier invoice with an outstanding balance.
+2. Fire two supplier payment submissions at the same time for amounts that together exceed the outstanding balance.
+3. Confirm one request succeeds and the other fails.
+4. Confirm the final `SupplierInvoice.paidAmount` never exceeds the invoice total.
+5. Confirm no duplicate payment row appears for the rejected request.
 
 ## Recommended next milestone
 
@@ -159,4 +171,3 @@ After this, the clean next work is:
 1. Sale void / refund + write-off / adjustment
 2. Day-end / Z-report + receipt printing hardening
 3. Production hardening / UAT cleanup
-

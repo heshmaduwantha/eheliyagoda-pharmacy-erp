@@ -13,7 +13,11 @@ const expenseSchema = z.object({
   date: z.string().trim().min(1, "Expense date is required"),
   category: z.nativeEnum(ExpenseCategory),
   description: z.string().trim().max(255).optional(),
-  amount: z.coerce.number().positive("Expense amount must be greater than zero."),
+  amount: z
+    .string()
+    .trim()
+    .min(1, "Expense amount is required")
+    .regex(/^\d+(\.\d{1,2})?$/, "Expense amount must be a valid money value."),
   paymentMethod: z.nativeEnum(PaymentMethod),
   reference: z.string().trim().max(120).optional(),
   notes: z.string().trim().max(500).optional(),
@@ -25,7 +29,11 @@ const expenseUpdateSchema = expenseSchema.partial().extend({
 
 const supplierPaymentSchema = z.object({
   supplierInvoiceId: z.string().uuid("Select a supplier invoice"),
-  amount: z.coerce.number().positive("Payment amount must be greater than zero."),
+  amount: z
+    .string()
+    .trim()
+    .min(1, "Payment amount is required")
+    .regex(/^\d+(\.\d{1,2})?$/, "Payment amount must be a valid money value."),
   paymentMethod: z.nativeEnum(PaymentMethod),
   reference: z.string().trim().max(120).optional(),
   notes: z.string().trim().max(500).optional(),
@@ -61,7 +69,6 @@ export async function createExpenseAction(_prev: FormState, formData: FormData):
   try {
     await createExpense({
       ...parsed.data,
-      amount: String(parsed.data.amount),
     }, actor);
     revalidatePath("/expenses");
     revalidatePath("/reports");
@@ -94,7 +101,7 @@ export async function updateExpenseAction(_prev: FormState, formData: FormData):
       date: parsed.data.date,
       category: parsed.data.category,
       description: parsed.data.description,
-      amount: parsed.data.amount == null ? undefined : String(parsed.data.amount),
+      amount: parsed.data.amount,
       paymentMethod: parsed.data.paymentMethod,
       reference: parsed.data.reference,
       notes: parsed.data.notes,
@@ -145,7 +152,7 @@ export async function recordSupplierPaymentAction(_prev: FormState, formData: Fo
   try {
     await recordSupplierPayment({
       supplierInvoiceId: parsed.data.supplierInvoiceId,
-      amount: String(parsed.data.amount),
+      amount: parsed.data.amount,
       paymentMethod: parsed.data.paymentMethod,
       reference: parsed.data.reference,
       notes: parsed.data.notes,
