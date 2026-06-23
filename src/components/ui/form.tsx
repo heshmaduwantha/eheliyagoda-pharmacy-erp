@@ -30,12 +30,12 @@ export function Field({
   );
 }
 
-export function SubmitButton({ children }: { children: React.ReactNode }) {
+export function SubmitButton({ children, disabled = false }: { children: React.ReactNode; disabled?: boolean }) {
   const { pending } = useFormStatus();
   return (
     <button
       className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-teal-600 to-emerald-500 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-teal-900/15 transition hover:brightness-105 disabled:opacity-60"
-      disabled={pending}
+      disabled={pending || disabled}
       type="submit"
     >
       {pending && <Loader2 className="size-4 animate-spin" />}

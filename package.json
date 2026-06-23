@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "test": "tsx --test src/modules/prescriptions/*.test.ts src/modules/reports/*.test.ts src/modules/sales/*.test.ts",
+    "test": "tsx --test src/modules/finance/*.test.ts src/modules/prescriptions/*.test.ts src/modules/reports/*.test.ts src/modules/sales/*.test.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",

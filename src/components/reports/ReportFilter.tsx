@@ -10,6 +10,7 @@ const reportOptions: { value: ReportType; label: string }[] = [
   { value: "near-expiry", label: "Near expiry" },
   { value: "expired-quarantined", label: "Expired / quarantined" },
   { value: "supplier-payables", label: "Supplier payables" },
+  { value: "supplier-payments", label: "Supplier payments" },
   { value: "expenses", label: "Expenses" },
   { value: "controlled-drugs", label: "Controlled drug register" },
 ];

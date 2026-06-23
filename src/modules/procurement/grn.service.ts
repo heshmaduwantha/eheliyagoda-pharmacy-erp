@@ -26,6 +26,12 @@ function datePart(date = new Date()) {
   return `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, "0")}${String(date.getDate()).padStart(2, "0")}`;
 }
 
+function addDays(date: Date, days: number) {
+  const value = new Date(date);
+  value.setDate(value.getDate() + days);
+  return value;
+}
+
 /**
  * Builds the next number for a daily-sequenced reference, e.g. INV-20260621-0001.
  * The sequence resets each day and is derived from the latest existing number
@@ -205,6 +211,7 @@ export async function confirmGrn(grnId: string, actorUserId: string) {
           invoiceNo: grn.supplierInvoiceNo,
           totalAmount: grn.invoiceTotal,
           status: SupplierInvoiceStatus.OPEN,
+          dueDate: addDays(grn.receivedAt ?? new Date(), grn.supplier.creditTermDays),
         },
       });
     }

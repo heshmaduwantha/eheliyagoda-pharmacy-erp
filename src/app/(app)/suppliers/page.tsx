@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { PageHeader } from "@/components/ui/form";
 import { requirePermission } from "@/modules/auth/permissions";
 import { listSuppliers } from "@/modules/procurement/supplier.service";
@@ -9,7 +11,15 @@ export default async function SuppliersPage() {
 
   return (
     <div className="grid gap-7">
-      <PageHeader description="Suppliers are the source of Direct GRN stock-in. Payables are tracked separately from expenses." title="Suppliers" />
+      <PageHeader
+        action={(
+          <Link className="inline-flex items-center gap-2 rounded-xl border border-teal-200 bg-teal-50 px-4 py-2.5 text-sm font-bold text-teal-700 hover:bg-teal-100" href="/suppliers/payments">
+            Supplier payments <ArrowRight className="size-4" />
+          </Link>
+        )}
+        description="Suppliers are the source of Direct GRN stock-in. Payables are tracked separately from expenses."
+        title="Suppliers"
+      />
 
       <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
         <h2 className="mb-4 text-lg font-bold text-slate-800">New supplier</h2>

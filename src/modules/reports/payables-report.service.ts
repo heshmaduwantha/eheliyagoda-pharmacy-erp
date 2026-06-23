@@ -1,50 +1,70 @@
 import { Prisma, SupplierInvoiceStatus } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
-import type { ReportResult, SupplierPayableRow } from "./report.types";
-import { serverOnly } from "@/lib/server-only";
+import { getExpenseSummary } from "@/modules/finance/expense.service";
+import { listSupplierInvoiceBalances, listSupplierPayments } from "@/modules/finance/supplier-payment.service";
+import type { ReportDateRange, ReportResult, SupplierPayableRow, SupplierPaymentRow } from "./report.types";
+import { toDateWindow } from "./report.service";
 
-serverOnly();
-
-export async function getSupplierPayablesSummary(): Promise<ReportResult<{ outstandingTotal: string; invoiceCount: number }, SupplierPayableRow>> {
-  const invoices = await prisma.supplierInvoice.findMany({
-    where: { status: { not: SupplierInvoiceStatus.CANCELLED } },
-    select: {
-      id: true, invoiceNo: true, totalAmount: true, paidAmount: true, status: true,
-      supplier: { select: { name: true } },
-    },
-    orderBy: { createdAt: "desc" },
-    take: 1000,
-  });
-  const rows = invoices.map((invoice) => ({
-    invoiceId: invoice.id,
-    supplierName: invoice.supplier.name,
-    invoiceNumber: invoice.invoiceNo,
-    invoiceTotal: invoice.totalAmount.toFixed(2),
-    paidAmount: invoice.paidAmount.toFixed(2),
-    outstandingAmount: Prisma.Decimal.max(invoice.totalAmount.sub(invoice.paidAmount), 0).toFixed(2),
-    status: invoice.status,
-    dueDate: null,
-  }));
-  const outstandingTotal = rows.reduce(
-    (sum, row) => sum.add(row.outstandingAmount),
-    new Prisma.Decimal(0),
-  );
+function dateRangeToFinanceFilters(range: ReportDateRange) {
+  const { start, endExclusive } = toDateWindow(range);
   return {
-    availability: rows.length ? "ready" : "empty",
-    summary: { outstandingTotal: outstandingTotal.toFixed(2), invoiceCount: rows.length },
-    rows,
-    message: rows.length ? undefined : "No supplier payables found.",
-    warnings: ["Due dates are unavailable because SupplierInvoice has no due-date field."],
+    from: start.toISOString().slice(0, 10),
+    to: new Date(endExclusive.getTime() - 1).toISOString().slice(0, 10),
   };
 }
 
-// SupplierInvoice/Supplier payments are procurement liabilities and are never queried as expenses here.
-export async function getExpensesSummary(): Promise<ReportResult<null, never>> {
+export async function getSupplierPayablesSummary(): Promise<ReportResult<{ outstandingTotal: string; invoiceCount: number; overdueCount: number }, SupplierPayableRow>> {
+  const invoices = await listSupplierInvoiceBalances(1000);
+  const rows = invoices.map((invoice) => ({
+    invoiceId: invoice.supplierInvoiceId,
+    supplierName: invoice.supplierName,
+    invoiceNumber: invoice.invoiceNumber,
+    invoiceTotal: invoice.totalAmount,
+    paidAmount: invoice.paidAmount,
+    outstandingAmount: invoice.outstandingAmount,
+    status: invoice.status,
+    dueDate: invoice.dueDate,
+    latestPaymentAt: invoice.latestPaymentAt,
+  }));
+  const outstandingTotal = rows.reduce((sum, row) => sum.add(row.outstandingAmount), new Prisma.Decimal(0));
+  const overdueCount = invoices.filter((invoice) => {
+    if (!invoice.dueDate) return false;
+    if (invoice.status === SupplierInvoiceStatus.PAID || invoice.status === SupplierInvoiceStatus.CANCELLED) return false;
+    return new Date(`${invoice.dueDate}T23:59:59`).getTime() < Date.now() && new Prisma.Decimal(invoice.outstandingAmount).gt(0);
+  }).length;
+
   return {
-    availability: "unavailable",
-    summary: null,
-    rows: [],
-    message: "Expense reporting is unavailable because an Expense model has not been implemented.",
-    warnings: ["Supplier payables are excluded from expenses."],
+    availability: rows.length ? "ready" : "empty",
+    summary: { outstandingTotal: outstandingTotal.toFixed(2), invoiceCount: rows.length, overdueCount },
+    rows,
+    message: rows.length ? undefined : "No supplier payables found.",
+    warnings: invoices.some((invoice) => !invoice.dueDate) ? ["Some supplier invoices do not yet have due dates."] : undefined,
+  };
+}
+
+export async function getExpensesSummary(range: ReportDateRange) {
+  return getExpenseSummary(dateRangeToFinanceFilters(range));
+}
+
+export async function getSupplierPaymentsReport(range: ReportDateRange): Promise<ReportResult<{ totalAmount: string; paymentCount: number }, SupplierPaymentRow>> {
+  const payments = await listSupplierPayments(dateRangeToFinanceFilters(range));
+  const rows = payments.map((payment) => ({
+    paymentId: payment.id,
+    paymentNumber: payment.paymentNumber,
+    supplierName: payment.supplierName,
+    invoiceNumber: payment.invoiceNumber,
+    amount: payment.amount,
+    paymentMethod: payment.paymentMethod,
+    reference: payment.reference,
+    paidAt: payment.paidAt,
+    createdBy: payment.createdBy,
+    outstandingAfter: payment.outstandingAfter,
+  }));
+
+  const totalAmount = rows.reduce((sum, row) => sum.add(row.amount), new Prisma.Decimal(0));
+  return {
+    availability: rows.length ? "ready" : "empty",
+    summary: { totalAmount: totalAmount.toFixed(2), paymentCount: rows.length },
+    rows,
+    message: rows.length ? undefined : "No supplier payments found.",
   };
 }

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, Boxes, ClipboardList, LayoutDashboard, PackagePlus, PackageSearch, ReceiptText, Settings, ShoppingCart, Truck, UsersRound, type LucideIcon } from "lucide-react";
+import { BarChart3, Banknote, Boxes, ClipboardList, LayoutDashboard, PackagePlus, PackageSearch, ReceiptText, Settings, ShoppingCart, Truck, UsersRound, type LucideIcon } from "lucide-react";
 
 type NavItem = { label: string; href: string; permission: string; icon: LucideIcon; admin?: boolean };
 
@@ -13,7 +13,8 @@ const items: NavItem[] = [
   { label: "Goods Received", href: "/stock/grn", permission: "grn.manage", icon: PackagePlus },
   { label: "Products", href: "/products", permission: "product.manage", icon: PackageSearch },
   { label: "Suppliers", href: "/suppliers", permission: "supplier.manage", icon: Truck },
-  { label: "Expenses", href: "/expenses", permission: "expense.manage", icon: ReceiptText },
+  { label: "Expenses", href: "/expenses", permission: "expense.view", icon: ReceiptText },
+  { label: "Supplier Payments", href: "/suppliers/payments", permission: "supplier_payment.view", icon: Banknote },
   { label: "Reports", href: "/reports", permission: "report.view", icon: BarChart3 },
   { label: "Users & Roles", href: "/admin/users", permission: "user.manage", icon: UsersRound, admin: true },
   { label: "Audit Logs", href: "/admin/audit", permission: "audit.view", icon: ClipboardList, admin: true },

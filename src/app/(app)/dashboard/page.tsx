@@ -1,6 +1,7 @@
 import { AlertTriangle, Banknote, CalendarClock, CircleDollarSign, CreditCard, ReceiptText, Truck } from "lucide-react";
 import { formatMoney } from "@/lib/money";
 import { requirePermission } from "@/modules/auth/permissions";
+import { getExpenseSummary } from "@/modules/finance/expense.service";
 import { getStockSummary } from "@/modules/inventory/inventory.service";
 import { getSupplierPayablesSummary } from "@/modules/reports/payables-report.service";
 import { getCashCardReport, getDailySalesReport, getGrossProfitReport } from "@/modules/reports/sales-report.service";
@@ -21,6 +22,14 @@ function todayRange() {
   return { from: date, to: date };
 }
 
+function monthRange() {
+  const today = new Date();
+  const from = new Date(today.getFullYear(), today.getMonth(), 1);
+  const fromDate = `${from.getFullYear()}-${String(from.getMonth() + 1).padStart(2, "0")}-${String(from.getDate()).padStart(2, "0")}`;
+  const toDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+  return { from: fromDate, to: toDate };
+}
+
 export default async function DashboardPage() {
   const user = await requirePermission("dashboard.view");
   const [stock, payables, sales, cashCard, profit] = await Promise.all([
@@ -30,10 +39,12 @@ export default async function DashboardPage() {
     getCashCardReport(todayRange()),
     getGrossProfitReport(todayRange()),
   ]);
+  const expenses = await getExpenseSummary(monthRange());
   const date = new Intl.DateTimeFormat("en-LK", { dateStyle: "full" }).format(new Date());
   const cashRow = cashCard.rows.find((row) => row.method === "CASH");
   const cardRow = cashCard.rows.find((row) => row.method === "CARD");
   const grossProfitTotal = profit.rows.reduce((sum, row) => sum + Number(row.grossProfitEstimate), 0);
+  const overduePayables = payables.summary?.overdueCount ?? 0;
   const cards = [
     {
       title: "Today sales",
@@ -79,10 +90,17 @@ export default async function DashboardPage() {
     },
     {
       title: "Expenses this month",
-      value: "Unavailable",
-      note: "Expense model pending",
+      value: expenses.summary ? formatMoney(expenses.summary.totalAmount) : "No expenses yet",
+      note: expenses.summary ? `${expenses.summary.expenseCount} expense${expenses.summary.expenseCount === 1 ? "" : "s"} this month` : "Expense records are empty",
       icon: ReceiptText,
       tone: "emerald",
+    },
+    {
+      title: "Overdue payables",
+      value: String(overduePayables),
+      note: "Due date passed and balance remains",
+      icon: AlertTriangle,
+      tone: "red",
     },
   ] as const;
 
@@ -120,7 +138,7 @@ export default async function DashboardPage() {
       </section>
 
       <section className="mt-6 rounded-2xl border border-blue-100 bg-blue-50 p-5 text-sm leading-6 text-blue-800">
-        <strong>Reporting boundary:</strong> sales, cash/card, and gross profit now read from completed Sale, SaleLine, and SalePayment rows. Expenses remain unavailable until an Expense model exists.
+        <strong>Reporting boundary:</strong> sales, cash/card, gross profit, expenses, and supplier payables now read from completed PostgreSQL records. Supplier payments reduce payables but never count as expenses.
       </section>
     </div>
   );

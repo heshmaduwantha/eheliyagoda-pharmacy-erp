@@ -14,6 +14,7 @@ export type ReportType =
   | "near-expiry"
   | "expired-quarantined"
   | "supplier-payables"
+  | "supplier-payments"
   | "expenses"
   | "controlled-drugs";
 
@@ -93,12 +94,40 @@ export type SupplierPayableRow = {
   outstandingAmount: MoneyString;
   status: "OPEN" | "PARTIALLY_PAID" | "PAID" | "CANCELLED";
   dueDate: ISODate | null;
+  latestPaymentAt: ISODateTime | null;
 };
 
 export type ExpenseSummaryRow = {
   category: string;
   paymentMethod: string;
   totalAmount: MoneyString;
+  expenseCount: number;
+};
+
+export type SupplierPaymentRow = {
+  paymentId: string;
+  paymentNumber: string;
+  supplierName: string;
+  invoiceNumber: string | null;
+  amount: MoneyString;
+  paymentMethod: string;
+  reference: string | null;
+  paidAt: ISODateTime;
+  createdBy: string | null;
+  outstandingAfter: MoneyString;
+};
+
+export type ExpenseDetailRow = {
+  expenseId: string;
+  expenseNumber: string;
+  date: ISODate;
+  category: string;
+  description: string | null;
+  amount: MoneyString;
+  paymentMethod: string;
+  reference: string | null;
+  notes: string | null;
+  createdBy: string | null;
 };
 
 export type ControlledDrugRegisterRow = {

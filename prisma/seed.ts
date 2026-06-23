@@ -20,6 +20,12 @@ const permissions = [
   ["supplier.manage", "Manage suppliers"],
   ["grn.manage", "Create and confirm goods received notes"],
   ["expense.manage", "Manage expenses"],
+  ["expense.view", "View expenses"],
+  ["expense.create", "Create expenses"],
+  ["expense.update", "Update expenses"],
+  ["expense.delete", "Delete expenses"],
+  ["supplier_payment.view", "View supplier payments"],
+  ["supplier_payment.create", "Create supplier payments"],
   ["report.view", "View reports"],
   ["user.manage", "Manage users"],
   ["audit.view", "View audit logs"],
@@ -37,6 +43,12 @@ const pharmacistPermissionCodes = [
   "supplier.manage",
   "grn.manage",
   "expense.manage",
+  "expense.view",
+  "expense.create",
+  "expense.update",
+  "expense.delete",
+  "supplier_payment.view",
+  "supplier_payment.create",
   "report.view",
   "controlled_drug.sell",
 ];
@@ -361,6 +373,7 @@ async function main() {
           invoiceNo: "INV-SEED-0001",
           totalAmount: invoiceTotal,
           status: SupplierInvoiceStatus.OPEN,
+          dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
         },
       });
       await tx.auditLog.create({
