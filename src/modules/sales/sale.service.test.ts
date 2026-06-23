@@ -625,12 +625,36 @@ test("completed sale can be voided without returning stock", async () => {
   assert.equal(reloadedSale?.status, SaleStatus.VOIDED);
   assert.ok(reloadedSale?.voidedAt);
 
+  const saleLines = await prisma.saleLine.findMany({ where: { saleId: sale.saleId } });
+  assert.equal(saleLines.length, 1);
+  const salePayments = await prisma.salePayment.findMany({ where: { saleId: sale.saleId } });
+  assert.equal(salePayments.length, 1);
+  const saleOutMovement = await prisma.stockMovement.findFirst({ where: { refType: "SALE", refId: sale.saleId } });
+  assert.ok(saleOutMovement);
+  const voidAudit = await prisma.auditLog.findFirst({
+    where: { entityType: "SALE", entityId: sale.saleId, action: "sale.voided" },
+  });
+  assert.ok(voidAudit);
+
   const batchAfterVoid = await prisma.batch.findUnique({ where: { id: fixture.batchIds[0] } });
   assert.ok(batchAfterVoid);
   assert.equal(batchAfterVoid?.qtyOnHandBase.toFixed(3), "19.000");
 
   const returnedMovement = await prisma.stockMovement.findFirst({ where: { refType: "SALE_VOID", refId: result.saleVoidId } });
   assert.equal(returnedMovement, null);
+
+  await assert.rejects(
+    () =>
+      voidSale(
+        {
+          saleId: sale.saleId,
+          reason: "Duplicate void",
+          stockPolicy: "NO_STOCK_RETURN",
+        },
+        actor,
+      ),
+    (error: unknown) => error instanceof SaleVoidError && error.code === "CONFLICT",
+  );
 
   const daily = await getDailySalesReport({
     from: new Date().toISOString().slice(0, 10),
@@ -684,6 +708,14 @@ test("completed sale can return stock to active when safe", async () => {
   const movement = await prisma.stockMovement.findFirst({ where: { refType: "SALE_VOID", refId: result.saleVoidId } });
   assert.ok(movement);
   assert.equal(movement?.movementType, "RETURN_IN");
+  const stockReturnAudit = await prisma.auditLog.findFirst({
+    where: { entityType: "SALE", entityId: sale.saleId, action: "stock.return_in" },
+  });
+  assert.ok(stockReturnAudit);
+  const voidAudit = await prisma.auditLog.findFirst({
+    where: { entityType: "SALE", entityId: sale.saleId, action: "sale.voided" },
+  });
+  assert.ok(voidAudit);
 
   await cleanupSaleEntities(sale.saleId);
 });

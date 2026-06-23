@@ -141,10 +141,19 @@ Added coverage for:
 - No quarantine return quantity model yet
 - No sale refund payment gateway integration yet
 - No write-off or manual stock adjustment flow yet
+- Concurrent double-submit should still be checked once manually in staging or UAT
+
+Manual concurrency checklist:
+
+- Open the same completed sale in two browser sessions
+- Trigger void in both sessions at nearly the same time
+- Confirm one request succeeds
+- Confirm the second request is rejected with a conflict
+- Confirm only one `SaleVoid` row exists
+- Confirm only one set of reversal movements exists when `RETURN_TO_ACTIVE` is used
 
 ## 11. Next milestone
 
 Recommended next step:
 
 - M11B Expired Write-off / Manual Stock Adjustment
-

@@ -170,7 +170,46 @@ function toSaleListItem(sale: SaleRow): SaleVoidListItem {
 
 export async function listSalesForVoidPage(filters: SaleVoidListFilters = {}): Promise<SaleVoidListItem[]> {
   const limit = Math.min(Math.max(filters.limit ?? 40, 1), 100);
+  const normalizedStatus = filters.status && filters.status !== "ALL" ? filters.status : undefined;
+  const query = filters.search?.trim().toLowerCase();
+  const normalizedFrom = normalizeDateOnly(filters.from);
+  const normalizedTo = normalizeDateOnly(filters.to);
+  const hasDateRange = Boolean(normalizedFrom && normalizedTo);
+  const dateWindow = hasDateRange ? toDateWindow({ from: normalizedFrom as string, to: normalizedTo as string }) : null;
+  const where: Prisma.SaleWhereInput = {
+    AND: [
+      normalizedStatus ? { status: normalizedStatus } : {},
+      dateWindow
+        ? normalizedStatus === "COMPLETED"
+          ? { completedAt: { gte: dateWindow.start, lt: dateWindow.endExclusive } }
+          : normalizedStatus === "VOIDED"
+            ? { voidedAt: { gte: dateWindow.start, lt: dateWindow.endExclusive } }
+            : normalizedStatus === "HELD"
+              ? { createdAt: { gte: dateWindow.start, lt: dateWindow.endExclusive } }
+              : {
+                  OR: [
+                    { createdAt: { gte: dateWindow.start, lt: dateWindow.endExclusive } },
+                    { completedAt: { gte: dateWindow.start, lt: dateWindow.endExclusive } },
+                    { voidedAt: { gte: dateWindow.start, lt: dateWindow.endExclusive } },
+                  ],
+                }
+        : {},
+      query
+        ? {
+            OR: [
+              { saleNumber: { contains: query, mode: "insensitive" } },
+              { cashier: { name: { contains: query, mode: "insensitive" } } },
+              { cashier: { username: { contains: query, mode: "insensitive" } } },
+              { lines: { some: { productNameSnapshot: { contains: query, mode: "insensitive" } } } },
+              { voidRecord: { reason: { contains: query, mode: "insensitive" } } },
+            ],
+          }
+        : {},
+    ],
+  };
+
   const rows = await prisma.sale.findMany({
+    where,
     include: {
       cashier: {
         select: {
@@ -231,35 +270,7 @@ export async function listSalesForVoidPage(filters: SaleVoidListFilters = {}): P
     take: limit,
   });
 
-  const normalizedStatus = filters.status && filters.status !== "ALL" ? filters.status : undefined;
-  const query = filters.search?.trim().toLowerCase();
-  const normalizedFrom = normalizeDateOnly(filters.from);
-  const normalizedTo = normalizeDateOnly(filters.to);
-  const hasDateRange = Boolean(normalizedFrom && normalizedTo);
-  const dateWindow = hasDateRange ? toDateWindow({ from: normalizedFrom as string, to: normalizedTo as string }) : null;
-
-  const filtered = rows.filter((sale) => {
-    if (normalizedStatus && sale.status !== normalizedStatus) return false;
-
-    const activity = activityAt(sale);
-    if (dateWindow && (activity < dateWindow.start || activity >= dateWindow.endExclusive)) return false;
-
-    if (!query) return true;
-
-    const haystack = [
-      sale.saleNumber,
-      sale.cashier.name,
-      sale.cashier.username,
-      sale.lines.map((line) => line.productNameSnapshot).join(" "),
-      sale.voidRecord?.reason ?? "",
-    ]
-      .join(" ")
-      .toLowerCase();
-
-    return haystack.includes(query);
-  });
-
-  return filtered.map(toSaleListItem);
+  return rows.map(toSaleListItem);
 }
 
 export async function voidSale(input: VoidSaleInput, actor: CurrentUser): Promise<SaleVoidResult> {
