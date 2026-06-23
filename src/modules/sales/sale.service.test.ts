@@ -233,6 +233,13 @@ test("complete normal OTC sale creates sale, sale lines, payment, and stock move
   const movement = await prisma.stockMovement.findFirst({ where: { refType: "SALE", refId: result.saleId } });
   assert.ok(movement);
   assert.equal(movement?.qtyBase.toFixed(3), "-10.000");
+  const auditActions = await prisma.auditLog.findMany({
+    where: { entityType: "SALE", entityId: result.saleId },
+    select: { action: true },
+  });
+  assert.ok(auditActions.some((entry) => entry.action === "sale.completed"));
+  assert.ok(auditActions.some((entry) => entry.action === "stock.sale_out"));
+  assert.ok(auditActions.some((entry) => entry.action === "payment.recorded"));
   await cleanupSaleEntities(result.saleId);
 });
 
@@ -337,6 +344,30 @@ test("expired medicine batch is not allocated", async () => {
   await cleanupSaleEntities(result.saleId);
 });
 
+test("multi-batch allocation splits one sale line across FEFO batches", async () => {
+  const actor = await getSaleActor();
+  const fixture = await createFixture({
+    name: `SPLIT-${randomUUID().slice(0, 8)}`,
+    defaultSellingPrice: "11.00",
+    batches: [
+      { qtyOnHandBase: "2.000", expiryDate: new Date("2027-01-01"), mrp: "12.00", costPrice: "5.00", sellingPrice: "11.00" },
+      { qtyOnHandBase: "5.000", expiryDate: new Date("2027-12-31"), mrp: "12.00", costPrice: "5.00", sellingPrice: "11.00" },
+    ],
+  });
+
+  const result = await completeSale(saleInput(fixture, { quantity: "4", expectedTotal: "44.00" }), actor);
+  const lines = await prisma.saleLine.findMany({ where: { saleId: result.saleId }, orderBy: { createdAt: "asc" } });
+  assert.equal(lines.length, 2);
+  assert.equal(lines[0].batchId, fixture.batchIds[0]);
+  assert.equal(lines[0].qtyBase.toFixed(3), "2.000");
+  assert.equal(lines[1].batchId, fixture.batchIds[1]);
+  assert.equal(lines[1].qtyBase.toFixed(3), "2.000");
+  assert.equal(result.allocations.length, 2);
+  assert.equal(result.receipt.lines.length, 1);
+  assert.equal(result.receipt.lines[0].batchAllocations.length, 2);
+  await cleanupSaleEntities(result.saleId);
+});
+
 test("quarantined batch is not allocated", async () => {
   const actor = await getSaleActor();
   const fixture = await createFixture({
@@ -437,6 +468,18 @@ test("controlled drug with valid patient and prescriber succeeds", async () => {
     where: { saleId: result.saleId },
   });
   assert.ok(prescription);
+  const prescriptionLines = await prisma.prescriptionSaleLine.findMany({
+    where: { prescriptionId: prescription.id },
+    include: { saleLine: true },
+  });
+  assert.equal(prescriptionLines.length, 1);
+  assert.equal(prescriptionLines[0].saleLine.saleId, result.saleId);
+  const auditActions = await prisma.auditLog.findMany({
+    where: { entityType: "PRESCRIPTION", entityId: prescription.id },
+    select: { action: true },
+  });
+  assert.ok(auditActions.some((entry) => entry.action === "prescription.captured"));
+  assert.ok(auditActions.some((entry) => entry.action === "controlled_drug.sale_validated"));
   await cleanupSaleEntities(result.saleId);
 });
 
