@@ -37,7 +37,7 @@ Notes:
 
 1. In Netlify, choose Add new site → Import from Git.
 2. Select the GitHub repository.
-3. Set the branch to `deploy/netlify-staging`.
+3. Set the branch to `uat_staging`.
 4. Confirm the build command comes from `netlify.toml`.
 5. Confirm the publish directory is `.next`.
 6. Add the environment variables listed above in the Netlify UI.
@@ -70,7 +70,7 @@ Do not copy a real database URL into the repository.
 
 ## GitHub Actions
 
-This repo includes a staging check workflow for the `deploy/netlify-staging` branch.
+This repo includes a staging check workflow for the `uat_staging` branch.
 It is intended to run checks without exposing secrets in source control.
 
 ## Verification commands
@@ -85,4 +85,3 @@ corepack pnpm lint
 corepack pnpm test
 corepack pnpm build
 ```
-

@@ -3,10 +3,10 @@ name: staging-checks
 on:
   push:
     branches:
-      - deploy/netlify-staging
+      - uat_staging
   pull_request:
     branches:
-      - deploy/netlify-staging
+      - uat_staging
 
 jobs:
   check:
