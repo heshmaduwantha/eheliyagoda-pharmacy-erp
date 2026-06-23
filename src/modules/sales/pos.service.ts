@@ -1,5 +1,3 @@
-import "server-only";
-
 import { BatchStatus, Prisma, ProductType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import type {
@@ -8,6 +6,9 @@ import type {
   PosProductSearchResult,
   PosUnitOption,
 } from "./pos.types";
+import { serverOnly } from "@/lib/server-only";
+
+serverOnly();
 
 type ProductReadRow = Prisma.ProductGetPayload<{
   include: {

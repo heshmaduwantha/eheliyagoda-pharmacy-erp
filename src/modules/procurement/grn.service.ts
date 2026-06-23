@@ -1,7 +1,9 @@
-import "server-only";
 import { GrnStatus, Prisma, ProductType, StockMovementType, SupplierInvoiceStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAuditLog } from "@/modules/audit/audit.service";
+import { serverOnly } from "@/lib/server-only";
+
+serverOnly();
 
 export type GrnLineInput = {
   productId: string;

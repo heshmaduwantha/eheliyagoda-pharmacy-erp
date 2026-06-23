@@ -1,8 +1,9 @@
-import "server-only";
-
 import { BatchStatus, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import type { ExpiryReportRow, LowStockRow, ReportResult, StockValuationRow } from "./report.types";
+import { serverOnly } from "@/lib/server-only";
+
+serverOnly();
 
 // TODO(settings): Read system_settings.near_expiry_days when the settings model exists.
 export const DEFAULT_NEAR_EXPIRY_DAYS = 90;

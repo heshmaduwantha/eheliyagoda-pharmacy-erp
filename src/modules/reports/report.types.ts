@@ -113,7 +113,7 @@ export type ControlledDrugRegisterRow = {
   prescriberReference: string;
   capturedBy: string | null;
   saleDateTime: ISODateTime;
-  saleNumber: string | null;
+  saleNumber: string;
 };
 
 export type DashboardReportSummary = {

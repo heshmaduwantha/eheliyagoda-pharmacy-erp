@@ -1,5 +1,3 @@
-import "server-only";
-
 import { PrescriptionRule } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import type {
@@ -9,6 +7,9 @@ import type {
 } from "@/modules/prescriptions/prescription.types";
 import { PrescriptionValidationError } from "@/modules/prescriptions/prescription.types";
 import { validatePrescriptionDecision } from "@/modules/prescriptions/prescription.rules";
+import { serverOnly } from "@/lib/server-only";
+
+serverOnly();
 
 type ProductReader = Pick<typeof prisma, "product">;
 

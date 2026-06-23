@@ -1,10 +1,11 @@
-import "server-only";
-
 import { Prisma } from "@prisma/client";
 import { writeAuditLog } from "@/modules/audit/audit.service";
 import { validatePrescriptionForSale } from "@/modules/sales/prescription-rule.service";
 import { validatePrescriptionDecision } from "./prescription.rules";
 import type { PersistPrescriptionInput, PrescriptionDecisionInput, PrescriptionSaleLinePersistenceInput } from "./prescription.types";
+import { serverOnly } from "@/lib/server-only";
+
+serverOnly();
 
 /**
  * Persists prescription records only from a future successful sale transaction.

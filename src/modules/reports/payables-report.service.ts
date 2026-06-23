@@ -1,8 +1,9 @@
-import "server-only";
-
 import { Prisma, SupplierInvoiceStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import type { ReportResult, SupplierPayableRow } from "./report.types";
+import { serverOnly } from "@/lib/server-only";
+
+serverOnly();
 
 export async function getSupplierPayablesSummary(): Promise<ReportResult<{ outstandingTotal: string; invoiceCount: number }, SupplierPayableRow>> {
   const invoices = await prisma.supplierInvoice.findMany({

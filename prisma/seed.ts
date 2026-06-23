@@ -14,6 +14,7 @@ const prisma = new PrismaClient();
 const permissions = [
   ["dashboard.view", "View the application dashboard"],
   ["pos.access", "Access the point of sale"],
+  ["sale.create", "Complete a sale transaction"],
   ["stock.access", "Access stock screens"],
   ["product.manage", "Manage products"],
   ["supplier.manage", "Manage suppliers"],
@@ -30,6 +31,7 @@ const ownerPermissionCodes = permissions.map(([code]) => code);
 const pharmacistPermissionCodes = [
   "dashboard.view",
   "pos.access",
+  "sale.create",
   "stock.access",
   "product.manage",
   "supplier.manage",

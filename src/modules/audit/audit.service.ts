@@ -1,6 +1,8 @@
-import "server-only";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { serverOnly } from "@/lib/server-only";
+
+serverOnly();
 
 export type WriteAuditLogInput = {
   actorUserId?: string;

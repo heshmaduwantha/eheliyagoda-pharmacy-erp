@@ -1,5 +1,3 @@
-import "server-only";
-
 import { BatchStatus, Prisma, StockMovementType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import type {
@@ -9,6 +7,9 @@ import type {
   StockMovementRecord,
   StockSummary,
 } from "./inventory.types";
+import { serverOnly } from "@/lib/server-only";
+
+serverOnly();
 
 // TODO(settings): Read system_settings.near_expiry_days when that model is introduced.
 const DEFAULT_NEAR_EXPIRY_DAYS = 90;

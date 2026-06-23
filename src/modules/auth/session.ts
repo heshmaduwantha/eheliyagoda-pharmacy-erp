@@ -1,8 +1,10 @@
-import "server-only";
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import { env } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
+import { serverOnly } from "@/lib/server-only";
+
+serverOnly();
 
 const sessionCookieName = "medisquare_session";
 const sessionDurationSeconds = 60 * 60 * 24 * 7;

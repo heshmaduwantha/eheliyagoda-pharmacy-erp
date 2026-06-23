@@ -1,5 +1,6 @@
-import "server-only";
-
+import { PaymentMethod, Prisma, SaleStatus } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
+import { toDateWindow } from "./report.service";
 import type {
   CashCardSummaryRow,
   DailySalesSummary,
@@ -7,35 +8,207 @@ import type {
   ReportDateRange,
   ReportResult,
 } from "./report.types";
+import { serverOnly } from "@/lib/server-only";
 
-const completedSalesUnavailable = "No completed sales yet. Sale, sale-line, and payment models are not implemented.";
+serverOnly();
 
-// TODO(sales): Query only COMPLETED sales after Sale/SaleLine/Payment models exist.
+function emptySalesReport<TSummary, TRow>(message: string): ReportResult<TSummary, TRow> {
+  return { availability: "empty", summary: null, rows: [], message };
+}
+
 export async function getDailySalesReport(range: ReportDateRange): Promise<ReportResult<DailySalesSummary, never>> {
-  void range;
-  return { availability: "unavailable", summary: null, rows: [], message: completedSalesUnavailable };
-}
+  const { start, endExclusive } = toDateWindow(range);
+  const sales = await prisma.sale.findMany({
+    where: {
+      status: SaleStatus.COMPLETED,
+      completedAt: { gte: start, lt: endExclusive },
+    },
+    select: {
+      subtotal: true,
+      discountAmount: true,
+      taxAmount: true,
+      total: true,
+    },
+    orderBy: { completedAt: "asc" },
+  });
 
-// TODO(sales): Group completed-sale payments by CASH/CARD after Payment exists.
-export async function getCashCardReport(range: ReportDateRange): Promise<ReportResult<CashCardSummaryRow[], CashCardSummaryRow>> {
-  void range;
-  return { availability: "unavailable", summary: null, rows: [], message: completedSalesUnavailable };
-}
+  if (!sales.length) return emptySalesReport("No completed sales yet.");
 
-// TODO(sales): Use SaleLine quantity/price/discount snapshots after SaleLine exists.
-export async function getProductWiseSalesReport(range: ReportDateRange): Promise<ReportResult<null, ProductSalesRow>> {
-  void range;
-  return { availability: "unavailable", summary: null, rows: [], message: completedSalesUnavailable };
-}
+  const summary = sales.reduce(
+    (acc, sale) => ({
+      subtotal: acc.subtotal.add(sale.subtotal),
+      discount: acc.discount.add(sale.discountAmount),
+      tax: acc.tax.add(sale.taxAmount),
+      total: acc.total.add(sale.total),
+      saleCount: acc.saleCount + 1,
+    }),
+    {
+      subtotal: new Prisma.Decimal(0),
+      discount: new Prisma.Decimal(0),
+      tax: new Prisma.Decimal(0),
+      total: new Prisma.Decimal(0),
+      saleCount: 0,
+    },
+  );
 
-// TODO(sales): Use cost_price_at_sale snapshots; never current Batch.costPrice for historical COGS.
-export async function getGrossProfitReport(range: ReportDateRange): Promise<ReportResult<null, ProductSalesRow>> {
-  void range;
   return {
-    availability: "unavailable",
-    summary: null,
+    availability: "ready",
+    summary: {
+      subtotal: summary.subtotal.toFixed(2),
+      discount: summary.discount.toFixed(2),
+      tax: summary.tax.toFixed(2),
+      total: summary.total.toFixed(2),
+      saleCount: summary.saleCount,
+    },
     rows: [],
-    message: "Gross profit is pending until completed sale lines with cost-price snapshots exist.",
-    warnings: ["Current batch cost is not used as a substitute for historical COGS."],
   };
+}
+
+export async function getCashCardReport(range: ReportDateRange): Promise<ReportResult<CashCardSummaryRow[], CashCardSummaryRow>> {
+  const { start, endExclusive } = toDateWindow(range);
+  const payments = await prisma.salePayment.findMany({
+    where: {
+      sale: {
+        status: SaleStatus.COMPLETED,
+        completedAt: { gte: start, lt: endExclusive },
+      },
+    },
+    select: {
+      method: true,
+      amount: true,
+    },
+  });
+
+  if (!payments.length) return emptySalesReport("No completed sale payments yet.");
+
+  const grouped = new Map<PaymentMethod, { amount: Prisma.Decimal; paymentCount: number }>();
+  for (const payment of payments) {
+    const current = grouped.get(payment.method) ?? {
+      amount: new Prisma.Decimal(0),
+      paymentCount: 0,
+    };
+    current.amount = current.amount.add(payment.amount);
+    current.paymentCount += 1;
+    grouped.set(payment.method, current);
+  }
+
+  const rows = [...grouped.entries()].map(([method, row]): CashCardSummaryRow => ({
+    method: method === PaymentMethod.CASH ? "CASH" : "CARD",
+    amount: row.amount.toFixed(2),
+    paymentCount: row.paymentCount,
+  }));
+
+  return {
+    availability: "ready",
+    summary: rows,
+    rows,
+  };
+}
+
+function aggregateProductRows(lines: Array<{
+  productId: string;
+  productNameSnapshot: string;
+  qtyBase: Prisma.Decimal;
+  lineTotal: Prisma.Decimal;
+  discountAmount: Prisma.Decimal;
+  costPriceAtSale: Prisma.Decimal;
+}>): ProductSalesRow[] {
+  const grouped = new Map<string, ProductSalesRow>();
+
+  for (const line of lines) {
+    const current = grouped.get(line.productId) ?? {
+      productId: line.productId,
+      productName: line.productNameSnapshot,
+      qtyBaseSold: "0.000",
+      grossSales: "0.00",
+      discount: "0.00",
+      netSales: "0.00",
+      batchAwareCogs: "0.00",
+      grossProfitEstimate: "0.00",
+    };
+
+    const grossSales = new Prisma.Decimal(current.grossSales).add(line.lineTotal);
+    const discount = new Prisma.Decimal(current.discount).add(line.discountAmount);
+    const netSales = grossSales.sub(discount);
+    const cogs = new Prisma.Decimal(current.batchAwareCogs).add(line.qtyBase.mul(line.costPriceAtSale));
+    const grossProfitEstimate = netSales.sub(cogs);
+
+    current.qtyBaseSold = new Prisma.Decimal(current.qtyBaseSold).add(line.qtyBase).toFixed(3);
+    current.grossSales = grossSales.toFixed(2);
+    current.discount = discount.toFixed(2);
+    current.netSales = netSales.toFixed(2);
+    current.batchAwareCogs = cogs.toFixed(2);
+    current.grossProfitEstimate = grossProfitEstimate.toFixed(2);
+    grouped.set(line.productId, current);
+  }
+
+  return [...grouped.values()].sort((left, right) => Number(new Prisma.Decimal(right.netSales).sub(left.netSales)));
+}
+
+export async function getProductWiseSalesReport(range: ReportDateRange): Promise<ReportResult<null, ProductSalesRow>> {
+  const { start, endExclusive } = toDateWindow(range);
+  const lines = await prisma.saleLine.findMany({
+    where: {
+      sale: {
+        status: SaleStatus.COMPLETED,
+        completedAt: { gte: start, lt: endExclusive },
+      },
+    },
+    select: {
+      productId: true,
+      productNameSnapshot: true,
+      qtyBase: true,
+      lineTotal: true,
+      discountAmount: true,
+      costPriceAtSale: true,
+    },
+  });
+
+  if (!lines.length) {
+    return {
+      availability: "empty",
+      summary: null,
+      rows: [],
+      message: "No completed sales yet.",
+    };
+  }
+
+  const rows = aggregateProductRows(lines);
+  return { availability: "ready", summary: null, rows };
+}
+
+export async function getGrossProfitReport(range: ReportDateRange): Promise<ReportResult<null, ProductSalesRow>> {
+  const { start, endExclusive } = toDateWindow(range);
+  const lines = await prisma.saleLine.findMany({
+    where: {
+      sale: {
+        status: SaleStatus.COMPLETED,
+        completedAt: { gte: start, lt: endExclusive },
+      },
+    },
+    select: {
+      productId: true,
+      productNameSnapshot: true,
+      qtyBase: true,
+      lineTotal: true,
+      discountAmount: true,
+      costPriceAtSale: true,
+    },
+  });
+
+  if (!lines.length) {
+    return {
+      availability: "empty",
+      summary: null,
+      rows: [],
+      message: "Gross profit is unavailable until completed sales exist.",
+      warnings: ["Current batch cost is never substituted for historical sale cost."],
+    };
+  }
+
+  const rows = aggregateProductRows(lines).sort(
+    (left, right) => Number(new Prisma.Decimal(right.grossProfitEstimate).sub(left.grossProfitEstimate)),
+  );
+
+  return { availability: "ready", summary: null, rows };
 }

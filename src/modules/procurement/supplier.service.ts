@@ -1,6 +1,8 @@
-import "server-only";
 import { prisma } from "@/lib/prisma";
 import { writeAuditLog } from "@/modules/audit/audit.service";
+import { serverOnly } from "@/lib/server-only";
+
+serverOnly();
 
 export type CreateSupplierInput = {
   name: string;
