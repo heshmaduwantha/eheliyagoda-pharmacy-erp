@@ -1,11 +1,13 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import test, { afterEach } from "node:test";
-import { BatchStatus, Prisma, ProductType, PrescriptionRule } from "@prisma/client";
+import { BatchStatus, Prisma, ProductType, PrescriptionRule, SaleStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { PrescriptionValidationError } from "@/modules/prescriptions/prescription.types";
-import { getGrossProfitReport } from "@/modules/reports/sales-report.service";
+import { getDailySalesReport, getGrossProfitReport } from "@/modules/reports/sales-report.service";
 import { completeSale } from "./sale.service";
+import { voidSale } from "./sale-void.service";
+import { SaleVoidError } from "./sale-void.types";
 import { SaleCompletionError } from "./sale.types";
 
 type SaleActor = {
@@ -81,6 +83,78 @@ async function getSaleActor(): Promise<SaleActor> {
   });
 
   assert.ok(user, "Expected a seeded user with sale.create permission.");
+  return {
+    id: user.id,
+    name: user.name,
+    username: user.username,
+    roleCode: user.role.code,
+    permissions: user.role.rolePermissions.map(({ permission }) => permission.code),
+  };
+}
+
+async function getVoidActor(): Promise<SaleActor> {
+  const user = await prisma.user.findFirst({
+    where: {
+      isActive: true,
+      role: {
+        rolePermissions: {
+          some: { permission: { code: "sale.void" } },
+        },
+      },
+    },
+    select: {
+      id: true,
+      name: true,
+      username: true,
+      role: {
+        select: {
+          code: true,
+          rolePermissions: {
+            select: {
+              permission: { select: { code: true } },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  assert.ok(user, "Expected a seeded user with sale.void permission.");
+  return {
+    id: user.id,
+    name: user.name,
+    username: user.username,
+    roleCode: user.role.code,
+    permissions: user.role.rolePermissions.map(({ permission }) => permission.code),
+  };
+}
+
+async function getNonVoidActor(): Promise<SaleActor> {
+  const user = await prisma.user.findFirst({
+    where: {
+      isActive: true,
+      role: {
+        code: "PHARMACIST_CASHIER",
+      },
+    },
+    select: {
+      id: true,
+      name: true,
+      username: true,
+      role: {
+        select: {
+          code: true,
+          rolePermissions: {
+            select: {
+              permission: { select: { code: true } },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  assert.ok(user, "Expected a seeded pharmacist user.");
   return {
     id: user.id,
     name: user.name,
@@ -201,6 +275,13 @@ async function cleanupSaleEntities(identifier: string) {
     select: { id: true },
   });
   if (!sale) return;
+  const voidRecord = await prisma.saleVoid.findUnique({
+    where: { saleId: sale.id },
+    select: { id: true },
+  });
+  if (voidRecord) {
+    await prisma.stockMovement.deleteMany({ where: { refType: "SALE_VOID", refId: voidRecord.id } });
+  }
   await prisma.stockMovement.deleteMany({ where: { refType: "SALE", refId: sale.id } });
   await prisma.auditLog.deleteMany({ where: { entityType: "SALE", entityId: sale.id } });
   await prisma.sale.deleteMany({ where: { id: sale.id } });
@@ -506,4 +587,162 @@ test("gross profit report uses cost_price_at_sale after sale", async () => {
   assert.ok(row);
   assert.equal(row?.batchAwareCogs, "12.00");
   await cleanupSaleEntities(result.saleId);
+});
+
+test("completed sale can be voided without returning stock", async () => {
+  const actor = await getVoidActor();
+  const fixture = await createFixture({
+    name: `VOID-${randomUUID().slice(0, 8)}`,
+    defaultSellingPrice: "15.00",
+    batches: [
+      { qtyOnHandBase: "20.000", expiryDate: new Date("2027-12-31"), mrp: "18.00", costPrice: "8.00", sellingPrice: "15.00" },
+    ],
+  });
+
+  const sale = await completeSale(saleInput(fixture, { expectedTotal: "15.00" }), await getSaleActor());
+  const batchAfterSale = await prisma.batch.findUnique({ where: { id: fixture.batchIds[0] } });
+  assert.ok(batchAfterSale);
+  assert.equal(batchAfterSale?.qtyOnHandBase.toFixed(3), "19.000");
+
+  const result = await voidSale(
+    {
+      saleId: sale.saleId,
+      reason: "Cashier mistake",
+      refundAmount: sale.total,
+      stockPolicy: "NO_STOCK_RETURN",
+    },
+    actor,
+  );
+
+  assert.equal(result.status, "VOIDED");
+  assert.equal(result.refundAmount, "15.00");
+  assert.equal(result.returnedStockMovements.length, 0);
+
+  const voidRecord = await prisma.saleVoid.findUnique({ where: { saleId: sale.saleId } });
+  assert.ok(voidRecord);
+  assert.equal(voidRecord?.reason, "Cashier mistake");
+  const reloadedSale = await prisma.sale.findUnique({ where: { id: sale.saleId } });
+  assert.equal(reloadedSale?.status, SaleStatus.VOIDED);
+  assert.ok(reloadedSale?.voidedAt);
+
+  const batchAfterVoid = await prisma.batch.findUnique({ where: { id: fixture.batchIds[0] } });
+  assert.ok(batchAfterVoid);
+  assert.equal(batchAfterVoid?.qtyOnHandBase.toFixed(3), "19.000");
+
+  const returnedMovement = await prisma.stockMovement.findFirst({ where: { refType: "SALE_VOID", refId: result.saleVoidId } });
+  assert.equal(returnedMovement, null);
+
+  const daily = await getDailySalesReport({
+    from: new Date().toISOString().slice(0, 10),
+    to: new Date().toISOString().slice(0, 10),
+  });
+  assert.equal(daily.availability, "empty");
+
+  const profit = await getGrossProfitReport({
+    from: new Date().toISOString().slice(0, 10),
+    to: new Date().toISOString().slice(0, 10),
+  });
+  assert.equal(profit.availability, "empty");
+
+  await cleanupSaleEntities(sale.saleId);
+});
+
+test("completed sale can return stock to active when safe", async () => {
+  const actor = await getVoidActor();
+  const fixture = await createFixture({
+    name: `RETURN-${randomUUID().slice(0, 8)}`,
+    defaultSellingPrice: "12.00",
+    batches: [
+      { qtyOnHandBase: "3.000", expiryDate: new Date("2027-12-31"), mrp: "14.00", costPrice: "6.00", sellingPrice: "12.00" },
+    ],
+  });
+
+  const sale = await completeSale(saleInput(fixture, { quantity: "3", expectedTotal: "36.00" }), await getSaleActor());
+  const batchAfterSale = await prisma.batch.findUnique({ where: { id: fixture.batchIds[0] } });
+  assert.ok(batchAfterSale);
+  assert.equal(batchAfterSale?.qtyOnHandBase.toFixed(3), "0.000");
+  assert.equal(batchAfterSale?.status, BatchStatus.DEPLETED);
+
+  const result = await voidSale(
+    {
+      saleId: sale.saleId,
+      reason: "Counter mistake",
+      refundAmount: sale.total,
+      stockPolicy: "RETURN_TO_ACTIVE",
+      refundMethod: "CASH",
+      refundReference: "REF-001",
+    },
+    actor,
+  );
+
+  assert.equal(result.returnedStockMovements.length, 1);
+  const batchAfterVoid = await prisma.batch.findUnique({ where: { id: fixture.batchIds[0] } });
+  assert.ok(batchAfterVoid);
+  assert.equal(batchAfterVoid?.qtyOnHandBase.toFixed(3), "3.000");
+  assert.equal(batchAfterVoid?.status, BatchStatus.ACTIVE);
+
+  const movement = await prisma.stockMovement.findFirst({ where: { refType: "SALE_VOID", refId: result.saleVoidId } });
+  assert.ok(movement);
+  assert.equal(movement?.movementType, "RETURN_IN");
+
+  await cleanupSaleEntities(sale.saleId);
+});
+
+test("held sale cannot be voided", async () => {
+  const actor = await getVoidActor();
+  const sale = await prisma.sale.create({
+    data: {
+      saleNumber: `HELD-${randomUUID().slice(0, 8)}`,
+      status: SaleStatus.HELD,
+      cashierId: actor.id,
+      subtotal: new Prisma.Decimal(0),
+      discountAmount: new Prisma.Decimal(0),
+      taxAmount: new Prisma.Decimal(0),
+      total: new Prisma.Decimal(0),
+    },
+  });
+
+  await assert.rejects(
+    () =>
+      voidSale(
+        {
+          saleId: sale.id,
+          reason: "Not completed",
+          stockPolicy: "NO_STOCK_RETURN",
+        },
+        actor,
+      ),
+    (error: unknown) => error instanceof SaleVoidError && error.code === "CONFLICT",
+  );
+
+  await prisma.sale.deleteMany({ where: { id: sale.id } });
+});
+
+test("user without sale.void permission cannot void", async () => {
+  const actor = await getNonVoidActor();
+  assert.equal(actor.permissions.includes("sale.void"), false);
+
+  const fixture = await createFixture({
+    name: `NO-VOID-${randomUUID().slice(0, 8)}`,
+    defaultSellingPrice: "10.00",
+    batches: [
+      { qtyOnHandBase: "10.000", expiryDate: new Date("2027-12-31"), mrp: "12.00", costPrice: "5.00", sellingPrice: "10.00" },
+    ],
+  });
+  const sale = await completeSale(saleInput(fixture, { expectedTotal: "10.00" }), await getSaleActor());
+
+  await assert.rejects(
+    () =>
+      voidSale(
+        {
+          saleId: sale.saleId,
+          reason: "Unauthorized void",
+          stockPolicy: "NO_STOCK_RETURN",
+        },
+        actor,
+      ),
+    (error: unknown) => error instanceof SaleVoidError && error.code === "FORBIDDEN",
+  );
+
+  await cleanupSaleEntities(sale.saleId);
 });

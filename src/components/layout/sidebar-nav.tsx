@@ -10,6 +10,7 @@ const items: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", permission: "dashboard.view", icon: LayoutDashboard },
   { label: "Point of Sale", href: "/pos", permission: "pos.access", icon: ShoppingCart },
   { label: "Stock", href: "/stock", permission: "stock.access", icon: Boxes },
+  { label: "Sales", href: "/sales", permission: "sale.create", icon: ReceiptText },
   { label: "Goods Received", href: "/stock/grn", permission: "grn.manage", icon: PackagePlus },
   { label: "Products", href: "/products", permission: "product.manage", icon: PackageSearch },
   { label: "Suppliers", href: "/suppliers", permission: "supplier.manage", icon: Truck },

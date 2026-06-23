@@ -21,6 +21,7 @@ model User {
   pharmacistCertificateVerified Boolean    @default(false)
   auditLogs                     AuditLog[] @relation("AuditActor")
   sales                         Sale[]     @relation("SaleCashier")
+  saleVoids                     SaleVoid[] @relation("SaleVoidActor")
   expenses                      Expense[]  @relation("ExpenseCreatedBy")
   supplierPayments              SupplierPayment[] @relation("SupplierPaymentCreatedBy")
   capturedPrescriptions         Prescription[] @relation("PrescriptionCapturedBy")
@@ -336,6 +337,7 @@ model Sale {
   voidedAt        DateTime?
   lines           SaleLine[]
   payments        SalePayment[]
+  voidRecord      SaleVoid?
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
@@ -385,6 +387,29 @@ model SalePayment {
 
   @@index([saleId])
   @@index([method])
+}
+
+enum SaleVoidStockPolicy {
+  NO_STOCK_RETURN
+  RETURN_TO_ACTIVE
+}
+
+model SaleVoid {
+  id              String             @id @default(uuid()) @db.Uuid
+  saleId          String             @unique @db.Uuid
+  sale            Sale               @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  reason          String             @db.VarChar(500)
+  refundAmount    Decimal            @db.Decimal(12, 2)
+  refundMethod    PaymentMethod?
+  refundReference String?            @db.VarChar(120)
+  stockPolicy     SaleVoidStockPolicy @default(NO_STOCK_RETURN)
+  voidedById      String             @db.Uuid
+  voidedBy        User               @relation("SaleVoidActor", fields: [voidedById], references: [id], onDelete: Restrict)
+  voidedAt        DateTime           @default(now())
+  createdAt       DateTime           @default(now())
+
+  @@index([voidedAt])
+  @@index([voidedById])
 }
 
 // ---------------------------------------------------------------------------

@@ -65,6 +65,7 @@ export async function completeSaleAction(rawInput: unknown) {
     const input = completeSaleSchema.parse(rawInput);
     const sale = await completeSale(input, actor);
     revalidatePath("/pos");
+    revalidatePath("/sales");
     revalidatePath("/dashboard");
     revalidatePath("/reports");
     revalidatePath("/stock");

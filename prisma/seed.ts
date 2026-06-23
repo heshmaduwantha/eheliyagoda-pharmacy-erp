@@ -24,6 +24,7 @@ const permissions = [
   ["expense.create", "Create expenses"],
   ["expense.update", "Update expenses"],
   ["expense.delete", "Delete expenses"],
+  ["sale.void", "Void completed sales"],
   ["supplier_payment.view", "View supplier payments"],
   ["supplier_payment.create", "Create supplier payments"],
   ["report.view", "View reports"],
