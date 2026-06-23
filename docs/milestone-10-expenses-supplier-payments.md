@@ -1,132 +1,131 @@
-# Milestone 10 — Expenses + Supplier Payments Operational Finance
+# Milestone 10 — Expenses + Supplier Payments
 
-## Scope
+## 1. Purpose
 
-මෙම milestone එකෙන් pharmacy එකේ operational finance layer එක real PostgreSQL data එකට connect කළා.
+Milestone 10 එකෙන් pharmacy එකේ operational finance layer එක ගොඩනැඟුණා.
 
-මෙහිදී:
+මෙය operating expenses සහ supplier invoice payments handle කරන phase එකක්. මෙය full double-entry GL එකක් නෙවෙයි.
 
-- manual expenses record කිරීම
+මෙහි scope එක:
+
+- operating expenses record කිරීම
 - supplier invoice payments record කිරීම
-- payables summary සහ expense summary reports
+- expense/payables/payment reports
 - dashboard finance widgets
-- RBAC permission checks
-- audit logging
+- RBAC සහ audit logging
 
-එවැනි read/write flows add කළා.
+මෙහි scope එකට අයිති නැති දේවල්:
 
-Sale completion, stock mutation, GRN flow, FEFO allocation, සහ payment gateway logic මේ milestone එකට අයත් නැහැ.
+- no full double-entry GL
+- no stock mutation
+- no sale completion changes
+- no sale void/refund
+- no stock write-off / adjustment
+- no day-end / Z-report
 
-## What was added
+## 2. Data model added
 
-### Database / Prisma
+Milestone 10 තුළ database layer එකට පහත additions කරලා තියෙනවා:
 
-`prisma/schema.prisma` තුළ:
-
-- `ExpenseCategory` enum
-- `Expense` model
-- `SupplierPayment` model
+- `ExpenseCategory`
+- `Expense`
+- `SupplierPayment`
 - `SupplierInvoice.dueDate`
-- `User` ↔ `Expense` / `SupplierPayment` relations
+- `User` ↔ `Expense` relation
+- `User` ↔ `SupplierPayment` relation
 - `Supplier` ↔ `SupplierPayment` relation
 - `SupplierInvoice` ↔ `SupplierPayment` relation
 
-### Migrations / Seed
+මෙම model set එකෙන්:
 
-- `prisma/migrations/20260623180000_milestone10_expenses_supplier_payments/migration.sql`
-- `prisma/seed.ts` permission updates
-- seeded supplier invoices now include due dates
+- expenses operational cost records වෙනවා
+- supplier payments liabilities settle කරනවා
+- supplier invoice due dates සහ overdue reporting possible වෙනවා
 
-### Finance module
+## 3. Expense rules
 
-- `src/modules/finance/expense.types.ts`
-- `src/modules/finance/expense.service.ts`
-- `src/modules/finance/supplier-payment.types.ts`
-- `src/modules/finance/supplier-payment.service.ts`
-- `src/modules/finance/finance.actions.ts`
+Expense flow එකට පහත rules apply වෙනවා:
 
-### UI
+- expense amount positive විය යුතුයි
+- category required
+- date required
+- payment method required
+- soft-deleted expenses reports වලින් exclude වෙනවා
+- deleted expense records user interface එකේ immutable වගේ treat වෙනවා
+- audit actions ලියනවා:
+  - `expense.created`
+  - `expense.updated`
+  - `expense.deleted`
 
-- `src/components/finance/FinanceSummaryCards.tsx`
-- `src/components/finance/ExpenseForm.tsx`
-- `src/components/finance/ExpenseTable.tsx`
-- `src/components/finance/SupplierPaymentForm.tsx`
-- `src/components/finance/SupplierPaymentTable.tsx`
-- `src/app/(app)/expenses/page.tsx`
-- `src/app/(app)/suppliers/payments/page.tsx`
-- `src/app/(app)/suppliers/page.tsx`
-- `src/components/layout/sidebar-nav.tsx`
+Expense records supplier invoice outstanding balances අඩු කරන්නේ නැහැ.
 
-### Reports / Dashboard
+## 4. Supplier payment rules
 
-- `src/modules/reports/payables-report.service.ts`
-- `src/modules/reports/report.service.ts`
-- `src/modules/reports/report.types.ts`
-- `src/components/reports/ReportFilter.tsx`
-- `src/app/(app)/reports/page.tsx`
-- `src/app/(app)/dashboard/page.tsx`
+Supplier payment flow එකට පහත rules apply වෙනවා:
 
-### Tests
+- `SupplierPayment` එක `SupplierInvoice` එකකට අයිති වෙනවා
+- `SupplierPayment` එක කිසිවිටෙක `Expense` එකක් වෙන්නේ නැහැ
+- payment amount positive විය යුතුයි
+- overpayment reject වෙනවා
+- already paid invoice එකකට extra payment දාන්න බැහැ
+- `SupplierInvoice.paidAmount` සහ `SupplierInvoice.status` එකම transaction එකේ update වෙනවා
+- invoice row lock එකක් double-submit overpayment වලට protection දෙනවා
+- audit actions:
+  - `supplier_payment.recorded`
+  - `supplier_invoice.status_updated`
 
-- `src/modules/finance/finance.service.test.ts`
-- `package.json` test script includes finance tests
+## 5. Reports unlocked
 
-## Business rules enforced
+Milestone 10 නිසා පහත read-only reports real data වලට connect වෙලා තියෙනවා:
 
-- Expense create/update/delete needs `expense.*` permissions
-- Supplier payment create needs `supplier_payment.create`
-- Supplier payment is recorded against a supplier invoice
-- Supplier invoice paid amount and status update in the same transaction
-- Overpayment is rejected
-- Amount fields are validated as money strings before Decimal parsing
-- Deleted expenses are excluded from reports
-- Supplier payments are not treated as expenses
-- Audit logs are written for create/update/delete/payment events
+- expense summary
+- expense category grouping
+- expense payment method grouping
+- supplier payables summary
+- outstanding amount calculation
+- due date / overdue count
+- supplier payment report
+- dashboard finance widgets
 
-## Report behavior
+Important separation:
 
-### Expenses
+- expenses report එක `Expense` rows only භාවිතා කරනවා
+- supplier payment records expenses report එකට ඇතුළත් වෙන්නේ නැහැ
+- supplier payables summary එක invoice + payment data වලින් generate වෙනවා
+- reports are read-only
 
-Expense reports now come from real `Expense` rows.
+## 6. Permission matrix
 
-They support:
+| Permission | OWNER_DOCTOR | PHARMACIST_CASHIER |
+|---|---:|---:|
+| `expense.view` | Yes | Yes |
+| `expense.create` | Yes | Yes |
+| `expense.update` | Yes | Yes |
+| `expense.delete` | Yes | Yes |
+| `supplier_payment.view` | Yes | Yes |
+| `supplier_payment.create` | Yes | Yes |
 
-- category grouping
-- payment method grouping
-- soft-delete exclusion
-- summary totals
+Single-pharmacy workflow එකක් නිසා operational finance actions දෙකටම these roles access දීලා තියෙනවා.
 
-### Supplier payables
+Server-side permission checks අදාල actions/services තුළම enforce වෙනවා. UI visibility පමණක් authorization එක නෙවෙයි.
 
-Supplier payables now come from real `SupplierInvoice` balances.
+## 7. Audit actions
 
-They show:
+Finance changes සඳහා audit trail එක තියෙනවා:
 
-- invoice total
-- paid amount
-- outstanding amount
-- due date
-- latest payment timestamp
-- overdue count
+- `expense.created`
+- `expense.updated`
+- `expense.deleted`
+- `supplier_payment.recorded`
+- `supplier_invoice.status_updated`
 
-### Supplier payments
+Audit rows තුළ actor id, entity type, entity id සහ useful metadata store වෙනවා.
 
-Supplier payment reports now come from real `SupplierPayment` rows.
+Money mutation events transaction boundary එක තුළ audit කරනවා.
 
-They show:
+## 8. Verification
 
-- payment number
-- supplier
-- invoice number
-- amount
-- method
-- reference
-- paid time
-- created by
-
-## Verification
-
-Validated successfully:
+Validated commands:
 
 ```bash
 node node_modules/prisma/build/index.js generate
@@ -146,28 +145,22 @@ Final result:
 - Lint ✅
 - Build ✅
 
-## Notes
+## 9. Remaining risks
 
-- Existing sale completion logic was not changed.
-- No stock mutation was added in this milestone.
-- No payment gateway integration was added.
-- Reports remain read-only.
-- Supplier payment double-submit protection uses a row lock on the invoice record.
+මෙම milestone එක complete වුණත්, production readiness සඳහා තව ඉතිරි වන points තියෙනවා:
 
-## Manual / conceptual concurrency check
+- manual / conceptual concurrent supplier payment test එක once-run කරන්න ඕන
+- production seed / role validation after deploy still recommended
+- finance UI browser smoke test still needed
+- no day-end report yet
+- no sale void/refund yet
+- no stock write-off / adjustment yet
 
-If you want to validate the invoice lock behavior manually:
+## 10. Next milestone
 
-1. Create one supplier invoice with an outstanding balance.
-2. Fire two supplier payment submissions at the same time for amounts that together exceed the outstanding balance.
-3. Confirm one request succeeds and the other fails.
-4. Confirm the final `SupplierInvoice.paidAmount` never exceeds the invoice total.
-5. Confirm no duplicate payment row appears for the rejected request.
+Recommended next work:
 
-## Recommended next milestone
-
-After this, the clean next work is:
-
-1. Sale void / refund + write-off / adjustment
-2. Day-end / Z-report + receipt printing hardening
-3. Production hardening / UAT cleanup
+1. M11A Sale Void / Refund
+2. M11B Expired Write-off / Manual Stock Adjustment
+3. M12 Day-end / Z-report + Receipt Printing
+4. M13 Production Hardening + UAT
