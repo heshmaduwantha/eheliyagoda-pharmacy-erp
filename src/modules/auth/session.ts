@@ -9,6 +9,7 @@ serverOnly();
 const sessionCookieName = "medisquare_session";
 const sessionDurationSeconds = 60 * 60 * 24 * 7;
 const signingKey = new TextEncoder().encode(env.AUTH_SECRET);
+const appUrlIsHttps = new URL(env.APP_URL).protocol === "https:";
 
 export type CurrentUser = {
   id: string;
@@ -50,7 +51,7 @@ export async function createSession(userId: string) {
   (await cookies()).set(sessionCookieName, token, {
     httpOnly: true,
     sameSite: "lax",
-    secure: env.NODE_ENV === "production",
+    secure: appUrlIsHttps,
     maxAge: sessionDurationSeconds,
     path: "/",
   });
