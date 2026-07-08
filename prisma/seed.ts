@@ -8,8 +8,9 @@ import {
   SupplierInvoiceStatus,
 } from "@prisma/client";
 import { hash } from "bcryptjs";
+import { env } from "../src/lib/env";
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({ datasourceUrl: env.DATABASE_URL });
 
 const permissions = [
   ["dashboard.view", "View the application dashboard"],

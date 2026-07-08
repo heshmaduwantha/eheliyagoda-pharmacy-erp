@@ -20,10 +20,14 @@ corepack pnpm dev
 
 ### PostgreSQL and Prisma
 
-PostgreSQL is required for later Phase 1 tasks. Set `DATABASE_URL` in your local `.env` file:
+PostgreSQL is required for later Phase 1 tasks. Set the `PG_DB_*` fields in your local `.env` file and let the app and Prisma wrapper derive `DATABASE_URL` from them:
 
 ```bash
-DATABASE_URL="postgresql://USER:PASSWORD@localhost:5432/medisquare"
+PG_DB_HOST="localhost"
+PG_DB_PORT="5432"
+PG_DB_NAME="medisquare"
+PG_DB_USER="USER"
+PG_DB_PASSWORD="PASSWORD"
 ```
 
 Useful commands:
@@ -40,7 +44,11 @@ Never commit `.env`; use `.env.example` as the template.
 
 Create `.env` from `.env.example` and provide these server-only values:
 
-- `DATABASE_URL`: PostgreSQL connection URL
+- `PG_DB_HOST`: PostgreSQL host
+- `PG_DB_PORT`: PostgreSQL port
+- `PG_DB_NAME`: PostgreSQL database name
+- `PG_DB_USER`: PostgreSQL username
+- `PG_DB_PASSWORD`: PostgreSQL password
 - `REDIS_URL`: Redis connection URL
 - `AUTH_SECRET`: at least 32 random characters; for example, generate one with `openssl rand -base64 48`
 - `APP_URL`: local application URL, usually `http://localhost:3000`
