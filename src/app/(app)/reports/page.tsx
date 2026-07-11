@@ -34,7 +34,7 @@ function countRangeSummary(rows: Array<{ paymentMethod: string; totalAmount: str
 }
 
 export default async function ReportsPage({ searchParams }: { searchParams: Promise<{ type?: string; from?: string; to?: string }> }) {
-  const user = await requirePermission("report.view");
+  const actor = await requirePermission("reports.read");
   const params = await searchParams;
   const type = normalizeReportType(params.type);
   const range = normalizeReportDateRange(params.from, params.to);
@@ -182,8 +182,8 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
       </div>
     );
   } else {
-    await requirePermission("controlled_drug.sell");
-    const report = await getControlledDrugRegister(user.id);
+    await requirePermission("reports.controlled_drugs.read");
+    const report = await getControlledDrugRegister(actor.id);
     content = (
       <div className="grid gap-4">
         <div className="flex items-start gap-3 rounded-2xl border border-red-100 bg-red-50 p-4 text-sm text-red-800">
@@ -207,11 +207,11 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
             Read-only reporting
           </p>
           <h1 className="mt-1 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">Reports</h1>
-          <p className="mt-2 text-slate-500">Authoritative PostgreSQL read models and honest availability states.</p>
+          <p className="mt-2 text-slate-500">Sales, stock, and finance at a glance.</p>
         </div>
         <div className="flex items-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-4 py-2.5 text-xs font-semibold text-blue-700">
           <Info className="size-4" />
-          Frontend totals are never authoritative
+          Figures are for review
         </div>
       </div>
       <div className="mt-6">

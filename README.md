@@ -107,6 +107,10 @@ Phase 1 — Foundation + Auth/RBAC
 
 ## Current status
 
-Foundation setup in progress
+This README still contains the original foundation-era setup notes.
 
-Authentication, Redis, products, inventory, and POS are intentionally not implemented yet. Prisma is configured without domain models until the Auth/RBAC schema task.
+For current day-to-day usage, see [User guide](./docs/user-guide.md).
+
+## Documentation
+
+- [User guide](./docs/user-guide.md)

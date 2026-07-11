@@ -61,7 +61,7 @@ async function getSaleActor(): Promise<SaleActor> {
       isActive: true,
       role: {
         rolePermissions: {
-          some: { permission: { code: "sale.create" } },
+          some: { permission: { code: "pos.sale.create" } },
         },
       },
     },
@@ -82,7 +82,7 @@ async function getSaleActor(): Promise<SaleActor> {
     },
   });
 
-  assert.ok(user, "Expected a seeded user with sale.create permission.");
+  assert.ok(user, "Expected a seeded user with pos.sale.create permission.");
   return {
     id: user.id,
     name: user.name,
@@ -98,7 +98,7 @@ async function getVoidActor(): Promise<SaleActor> {
       isActive: true,
       role: {
         rolePermissions: {
-          some: { permission: { code: "sale.void" } },
+          some: { permission: { code: "pos.sale.void" } },
         },
       },
     },
@@ -119,7 +119,7 @@ async function getVoidActor(): Promise<SaleActor> {
     },
   });
 
-  assert.ok(user, "Expected a seeded user with sale.void permission.");
+  assert.ok(user, "Expected a seeded user with pos.sale.void permission.");
   return {
     id: user.id,
     name: user.name,
@@ -134,7 +134,7 @@ async function getNonVoidActor(): Promise<SaleActor> {
     where: {
       isActive: true,
       role: {
-        code: "PHARMACIST_CASHIER",
+        code: "pharmacist",
       },
     },
     select: {
@@ -211,9 +211,13 @@ async function createFixture(options: FixtureOptions): Promise<Fixture> {
   }
 
   const cleanup = async () => {
-    await prisma.stockMovement.deleteMany({
-      where: { refType: "SALE", refId: { in: [] } },
+    const sales = await prisma.saleLine.findMany({
+      where: { productId: product.id },
+      distinct: ["saleId"],
+      select: { saleId: true },
     });
+    for (const sale of sales) await cleanupSaleEntities(sale.saleId);
+    await prisma.stockMovement.deleteMany({ where: { batchId: { in: batches.map((item) => item.id) } } });
     await prisma.batch.deleteMany({ where: { id: { in: batches.map((item) => item.id) } } });
     await prisma.productUnit.deleteMany({ where: { productId: product.id } });
     await prisma.product.delete({ where: { id: product.id } });
@@ -275,15 +279,22 @@ async function cleanupSaleEntities(identifier: string) {
     select: { id: true },
   });
   if (!sale) return;
-  const voidRecord = await prisma.saleVoid.findUnique({
-    where: { saleId: sale.id },
-    select: { id: true },
-  });
+  const [voidRecord, prescription] = await Promise.all([
+    prisma.saleVoid.findUnique({ where: { saleId: sale.id }, select: { id: true } }),
+    prisma.prescription.findUnique({ where: { saleId: sale.id }, select: { id: true } }),
+  ]);
   if (voidRecord) {
     await prisma.stockMovement.deleteMany({ where: { refType: "SALE_VOID", refId: voidRecord.id } });
   }
   await prisma.stockMovement.deleteMany({ where: { refType: "SALE", refId: sale.id } });
-  await prisma.auditLog.deleteMany({ where: { entityType: "SALE", entityId: sale.id } });
+  await prisma.auditLog.deleteMany({
+    where: {
+      OR: [
+        { entityType: "SALE", entityId: sale.id },
+        ...(prescription ? [{ entityType: "PRESCRIPTION", entityId: prescription.id }] : []),
+      ],
+    },
+  });
   await prisma.sale.deleteMany({ where: { id: sale.id } });
 }
 
@@ -339,6 +350,50 @@ test("completed sale decrements batch qty", async () => {
   assert.ok(batch);
   assert.equal(batch?.qtyOnHandBase.toFixed(3), "20.000");
   assert.equal(result.allocations[0].qtyBase, "5.000");
+  await cleanupSaleEntities(result.saleId);
+});
+
+test("repeated client request id returns the committed sale without moving stock twice", async () => {
+  const actor = await getSaleActor();
+  const fixture = await createFixture({
+    name: `IDEMP-${randomUUID().slice(0, 8)}`,
+    defaultSellingPrice: "10.00",
+    batches: [
+      { qtyOnHandBase: "5.000", expiryDate: new Date("2027-12-31"), mrp: "12.00", costPrice: "5.00", sellingPrice: "10.00" },
+    ],
+  });
+  const input = saleInput(fixture, { quantity: "1", expectedTotal: "10.00" });
+
+  const first = await completeSale(input, actor);
+  const repeated = await completeSale(input, actor);
+
+  assert.equal(repeated.saleId, first.saleId);
+  assert.equal(await prisma.sale.count({ where: { clientRequestId: input.clientRequestId } }), 1);
+  assert.equal(await prisma.stockMovement.count({ where: { refType: "SALE", refId: first.saleId } }), 1);
+  const batch = await prisma.batch.findUnique({ where: { id: fixture.batchIds[0] }, select: { qtyOnHandBase: true } });
+  assert.equal(batch?.qtyOnHandBase.toFixed(3), "4.000");
+  await cleanupSaleEntities(first.saleId);
+});
+
+test("multiple sale lines sharing a batch update the cached quantity once by the aggregate", async () => {
+  const actor = await getSaleActor();
+  const fixture = await createFixture({
+    name: `AGG-${randomUUID().slice(0, 8)}`,
+    defaultSellingPrice: "9.00",
+    batches: [
+      { qtyOnHandBase: "10.000", expiryDate: new Date("2027-12-31"), mrp: "10.00", costPrice: "4.00", sellingPrice: "9.00" },
+    ],
+  });
+  const input = saleInput(fixture, { expectedTotal: "45.00", payments: [{ method: "CASH", amount: "45.00" }] });
+  input.lines = [
+    { ...input.lines[0], clientLineId: randomUUID(), quantity: "2" },
+    { ...input.lines[0], clientLineId: randomUUID(), quantity: "3" },
+  ];
+
+  const result = await completeSale(input, actor);
+  const batch = await prisma.batch.findUnique({ where: { id: fixture.batchIds[0] }, select: { qtyOnHandBase: true } });
+  assert.equal(batch?.qtyOnHandBase.toFixed(3), "5.000");
+  assert.equal(await prisma.stockMovement.count({ where: { refType: "SALE", refId: result.saleId } }), 2);
   await cleanupSaleEntities(result.saleId);
 });
 
@@ -591,6 +646,9 @@ test("gross profit report uses cost_price_at_sale after sale", async () => {
 
 test("completed sale can be voided without returning stock", async () => {
   const actor = await getVoidActor();
+  const today = new Date().toISOString().slice(0, 10);
+  const dailyBefore = await getDailySalesReport({ from: today, to: today });
+  const profitBefore = await getGrossProfitReport({ from: today, to: today });
   const fixture = await createFixture({
     name: `VOID-${randomUUID().slice(0, 8)}`,
     defaultSellingPrice: "15.00",
@@ -656,17 +714,12 @@ test("completed sale can be voided without returning stock", async () => {
     (error: unknown) => error instanceof SaleVoidError && error.code === "CONFLICT",
   );
 
-  const daily = await getDailySalesReport({
-    from: new Date().toISOString().slice(0, 10),
-    to: new Date().toISOString().slice(0, 10),
-  });
-  assert.equal(daily.availability, "empty");
+  const daily = await getDailySalesReport({ from: today, to: today });
+  assert.deepEqual(daily.summary, dailyBefore.summary);
 
-  const profit = await getGrossProfitReport({
-    from: new Date().toISOString().slice(0, 10),
-    to: new Date().toISOString().slice(0, 10),
-  });
-  assert.equal(profit.availability, "empty");
+  const profit = await getGrossProfitReport({ from: today, to: today });
+  assert.deepEqual(profit.rows, profitBefore.rows);
+  assert.equal(profit.rows.some((row) => row.productId === fixture.productId), false);
 
   await cleanupSaleEntities(sale.saleId);
 });

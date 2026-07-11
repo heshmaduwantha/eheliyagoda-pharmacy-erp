@@ -1,7 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { BatchStatus, PaymentMethod, Prisma, ProductType, SaleStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { writeAuditLog } from "@/modules/audit/audit.service";
+import { writeAuditLogs } from "@/modules/audit/audit.service";
+import { hasPermission } from "@/modules/auth/permissions";
 import { validateAndPersistPrescriptionForCompletedSale } from "@/modules/prescriptions/prescription.service";
 import { validatePrescriptionForSale } from "./prescription-rule.service";
 import type { CurrentUser } from "@/modules/auth/session";
@@ -136,11 +137,9 @@ async function lockRows(tx: Prisma.TransactionClient, ids: string[], table: "Pro
   await tx.$queryRaw(sql);
 }
 
-async function lockCandidateBatches(tx: Prisma.TransactionClient, product: ProductRow) {
-  const medicineClause = isMedicine(product)
-    ? Prisma.sql`AND b."expiryDate" IS NOT NULL AND b."expiryDate" >= CURRENT_DATE`
-    : Prisma.empty;
-
+async function lockCandidateBatches(tx: Prisma.TransactionClient, products: ProductRow[]) {
+  const productIds = products.map((product) => product.id).sort((left, right) => left.localeCompare(right));
+  if (productIds.length === 0) return [];
   return tx.$queryRaw<LockedBatchRow[]>(Prisma.sql`
     SELECT
       b.id,
@@ -155,12 +154,15 @@ async function lockCandidateBatches(tx: Prisma.TransactionClient, product: Produ
       b."createdAt"
     FROM "Batch" b
     INNER JOIN "Product" p ON p.id = b."productId"
-    WHERE b."productId" = ${product.id}::uuid
+    WHERE b."productId" IN (${Prisma.join(productIds.map((id) => Prisma.sql`${id}::uuid`))})
       AND p."isActive" = TRUE
       AND b.status = 'ACTIVE'
       AND b."qtyOnHandBase" > 0
-      ${medicineClause}
-    ORDER BY b."expiryDate" ASC NULLS LAST, b."createdAt" ASC
+      AND (
+        p."productType" <> 'MEDICINE'
+        OR (b."expiryDate" IS NOT NULL AND b."expiryDate" >= CURRENT_DATE)
+      )
+    ORDER BY b."productId" ASC, b."expiryDate" ASC NULLS LAST, b."createdAt" ASC, b.id ASC
     FOR UPDATE
   `);
 }
@@ -362,9 +364,104 @@ function buildReceipt(input: {
   };
 }
 
+async function getCommittedSaleByRequestId(
+  clientRequestId: string,
+  actorUserId: string,
+): Promise<SaleCompletionResult | null> {
+  const sale = await prisma.sale.findUnique({
+    where: { clientRequestId },
+    select: {
+      id: true,
+      cashierId: true,
+      saleNumber: true,
+      status: true,
+      subtotal: true,
+      discountAmount: true,
+      taxAmount: true,
+      total: true,
+      completedAt: true,
+      lines: {
+        select: {
+          id: true,
+          clientLineId: true,
+          productId: true,
+          productNameSnapshot: true,
+          unitId: true,
+          unit: { select: { unitName: true } },
+          batchId: true,
+          batchNoSnapshot: true,
+          expiryDateSnapshot: true,
+          qty: true,
+          qtyBase: true,
+          unitPrice: true,
+          lineTotal: true,
+          discountAmount: true,
+          costPriceAtSale: true,
+          mrpAtSale: true,
+          barcodeUsed: true,
+        },
+        orderBy: { createdAt: "asc" },
+      },
+      payments: {
+        select: { method: true, amount: true, cardReference: true },
+        orderBy: { createdAt: "asc" },
+      },
+    },
+  });
+  if (!sale || sale.status !== SaleStatus.COMPLETED || !sale.completedAt) return null;
+  if (sale.cashierId !== actorUserId) {
+    throw new SaleCompletionError("CONFLICT", "This sale request identifier is already in use.");
+  }
+
+  const allocations: PlannedAllocation[] = sale.lines.map((line) => ({
+    saleLineId: line.id,
+    clientLineId: line.clientLineId ?? line.id,
+    productId: line.productId,
+    productName: line.productNameSnapshot,
+    unitId: line.unitId,
+    unitName: line.unit.unitName,
+    batchId: line.batchId,
+    batchNumber: line.batchNoSnapshot,
+    expiryDate: line.expiryDateSnapshot,
+    qty: line.qty,
+    qtyBase: line.qtyBase,
+    unitPrice: line.unitPrice,
+    lineTotal: line.lineTotal,
+    costPriceAtSale: line.costPriceAtSale,
+    mrpAtSale: line.mrpAtSale,
+    barcodeUsed: line.barcodeUsed,
+    lineGrossDiscount: line.discountAmount,
+  }));
+  const receipt = buildReceipt({
+    saleId: sale.id,
+    saleNumber: sale.saleNumber,
+    status: SaleStatus.COMPLETED,
+    completedAt: sale.completedAt,
+    subtotal: sale.subtotal,
+    discountAmount: sale.discountAmount,
+    taxAmount: sale.taxAmount,
+    total: sale.total,
+    allocations,
+    payments: sale.payments,
+  });
+
+  return {
+    saleId: sale.id,
+    saleNumber: sale.saleNumber,
+    status: SaleStatus.COMPLETED,
+    subtotal: sale.subtotal.toFixed(2),
+    discountAmount: sale.discountAmount.toFixed(2),
+    taxAmount: sale.taxAmount.toFixed(2),
+    total: sale.total.toFixed(2),
+    allocations: receipt.allocations,
+    completedAt: sale.completedAt.toISOString(),
+    receipt,
+  };
+}
+
 function validateActor(actor: CurrentUser) {
   if (!actor?.id) throw new SaleCompletionError("UNAUTHORIZED", "You must sign in to complete a sale.");
-  if (!actor.permissions.includes("sale.create")) {
+  if (!hasPermission(actor, "pos.sale.create")) {
     throw new SaleCompletionError("FORBIDDEN", "You do not have permission to complete sales.");
   }
 }
@@ -398,6 +495,9 @@ export async function completeSale(input: SaleCompletionInput, actor: CurrentUse
     throw new SaleCompletionError("VALIDATION_ERROR", "Add at least one payment before completing the sale.");
   }
 
+  const existingSale = await getCommittedSaleByRequestId(input.clientRequestId, actor.id);
+  if (existingSale) return existingSale;
+
   const discountAmount = decimalOrZero(input.discountAmount, "discountAmount");
   const taxAmount = decimalOrZero(input.taxAmount, "taxAmount");
   if (discountAmount.lt(0)) throw new SaleCompletionError("VALIDATION_ERROR", "Discount cannot be negative.");
@@ -406,7 +506,8 @@ export async function completeSale(input: SaleCompletionInput, actor: CurrentUse
   const productIds = [...new Set(input.lines.map((line) => line.productId))];
   const unitIds = [...new Set(input.lines.map((line) => line.unitId))];
 
-  return prisma.$transaction(async (tx) => {
+  try {
+    return await prisma.$transaction(async (tx) => {
     await lockRows(tx, productIds, "Product");
     await lockRows(tx, unitIds, "ProductUnit");
 
@@ -473,7 +574,7 @@ export async function completeSale(input: SaleCompletionInput, actor: CurrentUse
       },
       tx,
     );
-    if (prescriptionValidation.requirement.requiresControlledDetails && !actor.permissions.includes("controlled_drug.sell")) {
+    if (prescriptionValidation.requirement.requiresControlledDetails && !hasPermission(actor, "controlled_drugs.sale.create")) {
       throw new SaleCompletionError("FORBIDDEN", "You do not have permission to sell controlled medicines.");
     }
 
@@ -504,19 +605,24 @@ export async function completeSale(input: SaleCompletionInput, actor: CurrentUse
     }
 
     const groupedLines = groupLinesByProduct(input);
-    const preparedGroups: PreparedProductGroup[] = [];
-    for (const [productId] of groupedLines) {
+    const lockedBatches = await lockCandidateBatches(tx, products);
+    const lockedBatchesByProduct = new Map<string, LockedBatchRow[]>();
+    for (const batch of lockedBatches) {
+      const bucket = lockedBatchesByProduct.get(batch.productId);
+      if (bucket) bucket.push(batch);
+      else lockedBatchesByProduct.set(batch.productId, [batch]);
+    }
+    const preparedGroups: PreparedProductGroup[] = groupedLines.map(([productId]) => {
       const product = productMap.get(productId);
       if (!product) {
         throw new SaleCompletionError("CATALOG_PRODUCT_NOT_FOUND", "One or more products are unavailable.");
       }
-      const batches = await lockCandidateBatches(tx, product);
-      preparedGroups.push({
+      return {
         product,
         lines: preparedLines.filter((line) => line.product.id === productId),
-        batches,
-      });
-    }
+        batches: lockedBatchesByProduct.get(productId) ?? [],
+      };
+    });
 
     const allocations: PlannedAllocation[] = [];
     for (const group of preparedGroups) {
@@ -545,118 +651,97 @@ export async function completeSale(input: SaleCompletionInput, actor: CurrentUse
     });
 
     const saleLineInputs = allocations.map((allocation) => {
-      const line = preparedLines.find((item) => item.input.clientLineId === allocation.clientLineId);
-      if (!line) {
-        throw new SaleCompletionError("INTERNAL_ERROR", "Unable to resolve sale line allocation.");
-      }
-      const saleLineId = allocation.saleLineId;
-
       const allocatedLineDiscount = subtotal.gt(0)
         ? discountAmount.mul(allocation.lineTotal).div(subtotal)
         : new Prisma.Decimal(0);
-
       allocation.lineGrossDiscount = allocatedLineDiscount;
-
-      return tx.saleLine.create({
-        data: {
-          id: saleLineId,
-          saleId: sale.id,
-          clientLineId: allocation.clientLineId,
-          productId: allocation.productId,
-          batchId: allocation.batchId,
-          unitId: allocation.unitId,
-          qty: allocation.qty,
-          qtyBase: allocation.qtyBase,
-          unitPrice: allocation.unitPrice,
-          lineTotal: allocation.lineTotal,
-          discountAmount: allocatedLineDiscount,
-          costPriceAtSale: allocation.costPriceAtSale,
-          mrpAtSale: allocation.mrpAtSale,
-          barcodeUsed: allocation.barcodeUsed,
-          productNameSnapshot: allocation.productName,
-          batchNoSnapshot: allocation.batchNumber,
-          expiryDateSnapshot: allocation.expiryDate,
-        },
-      });
+      return {
+        id: allocation.saleLineId,
+        saleId: sale.id,
+        clientLineId: allocation.clientLineId,
+        productId: allocation.productId,
+        batchId: allocation.batchId,
+        unitId: allocation.unitId,
+        qty: allocation.qty,
+        qtyBase: allocation.qtyBase,
+        unitPrice: allocation.unitPrice,
+        lineTotal: allocation.lineTotal,
+        discountAmount: allocatedLineDiscount,
+        costPriceAtSale: allocation.costPriceAtSale,
+        mrpAtSale: allocation.mrpAtSale,
+        barcodeUsed: allocation.barcodeUsed,
+        productNameSnapshot: allocation.productName,
+        batchNoSnapshot: allocation.batchNumber,
+        expiryDateSnapshot: allocation.expiryDate,
+      };
     });
+    await tx.saleLine.createMany({ data: saleLineInputs });
 
-    const createdSaleLines = await Promise.all(saleLineInputs);
-
+    const qtyByBatch = new Map<string, Prisma.Decimal>();
     for (const allocation of allocations) {
-      const batch = batchMap.get(allocation.batchId);
+      const currentQty = qtyByBatch.get(allocation.batchId) ?? new Prisma.Decimal(0);
+      qtyByBatch.set(allocation.batchId, currentQty.add(allocation.qtyBase));
+    }
+
+    const batchUpdates = [...qtyByBatch.entries()].map(([batchId, allocatedQty]) => {
+      const batch = batchMap.get(batchId);
       if (!batch) {
         throw new SaleCompletionError("INTERNAL_ERROR", "Unable to resolve a locked batch.");
       }
-      const updatedQty = batch.qtyOnHandBase.sub(allocation.qtyBase);
+      const updatedQty = batch.qtyOnHandBase.sub(allocatedQty);
       if (updatedQty.lt(0)) {
         throw new SaleCompletionError(
           "INVENTORY_INSUFFICIENT_STOCK",
           "A concurrent checkout exhausted stock before completion.",
           {
-            productId: allocation.productId,
-            batchId: allocation.batchId,
+            productId: batch.productId,
+            batchId,
             availableQtyBase: batch.qtyOnHandBase.toFixed(3),
-            requestedQtyBase: allocation.qtyBase.toFixed(3),
+            requestedQtyBase: allocatedQty.toFixed(3),
           },
         );
       }
+      return { batchId, updatedQty };
+    });
 
-      await tx.stockMovement.create({
-        data: {
-          productId: allocation.productId,
-          batchId: allocation.batchId,
-          movementType: "SALE_OUT",
-          qtyBase: allocation.qtyBase.neg(),
-          refType: "SALE",
-          refId: sale.id,
-          note: `Sale ${sale.saleNumber}`,
-          createdById: actor.id,
-        },
-      });
+    await tx.stockMovement.createMany({
+      data: allocations.map((allocation) => ({
+        id: randomUUID(),
+        productId: allocation.productId,
+        batchId: allocation.batchId,
+        movementType: "SALE_OUT",
+        qtyBase: allocation.qtyBase.neg(),
+        refType: "SALE",
+        refId: sale.id,
+        note: `Sale ${sale.saleNumber}`,
+        createdById: actor.id,
+      })),
+    });
 
+    for (const update of batchUpdates) {
       await tx.batch.update({
-        where: { id: allocation.batchId },
+        where: { id: update.batchId },
         data: {
-          qtyOnHandBase: updatedQty,
-          status: updatedQty.lte(0) ? BatchStatus.DEPLETED : BatchStatus.ACTIVE,
+          qtyOnHandBase: update.updatedQty,
+          status: update.updatedQty.lte(0) ? BatchStatus.DEPLETED : BatchStatus.ACTIVE,
         },
       });
-
-      await writeAuditLog(
-        {
-          actorUserId: actor.id,
-          action: "stock.sale_out",
-          entityType: "SALE",
-          entityId: sale.id,
-          afterData: {
-            saleLineId: allocation.saleLineId,
-            productId: allocation.productId,
-            batchId: allocation.batchId,
-            qtyBase: allocation.qtyBase.toFixed(3),
-          },
-        },
-        tx,
-      );
     }
 
-    const createdPayments = await Promise.all(
-      input.payments.map((payment) =>
-        tx.salePayment.create({
-          data: {
-            saleId: sale.id,
-            method: payment.method === "CARD" ? PaymentMethod.CARD : PaymentMethod.CASH,
-            amount: decimal(payment.amount, "payment.amount"),
-            cardReference: payment.cardReference?.trim() || null,
-          },
-        }),
-      ),
-    );
+    const createdPayments = input.payments.map((payment) => ({
+      id: randomUUID(),
+      saleId: sale.id,
+      method: payment.method === "CARD" ? PaymentMethod.CARD : PaymentMethod.CASH,
+      amount: decimal(payment.amount, "payment.amount"),
+      cardReference: payment.cardReference?.trim() || null,
+    }));
+    await tx.salePayment.createMany({ data: createdPayments });
 
-    const saleLinePersistence = createdSaleLines.map((saleLine) => ({
-      saleLineId: saleLine.id,
-      productId: saleLine.productId,
-      batchId: saleLine.batchId,
-      qtyBase: saleLine.qtyBase.toFixed(3),
+    const saleLinePersistence = allocations.map((allocation) => ({
+      saleLineId: allocation.saleLineId,
+      productId: allocation.productId,
+      batchId: allocation.batchId,
+      qtyBase: allocation.qtyBase.toFixed(3),
     }));
 
     if (prescriptionValidation.shouldPersist) {
@@ -674,9 +759,20 @@ export async function completeSale(input: SaleCompletionInput, actor: CurrentUse
       );
     }
 
-    for (const payment of createdPayments) {
-      await writeAuditLog(
-        {
+    await writeAuditLogs([
+      ...allocations.map((allocation) => ({
+        actorUserId: actor.id,
+        action: "stock.sale_out",
+        entityType: "SALE",
+        entityId: sale.id,
+        afterData: {
+          saleLineId: allocation.saleLineId,
+          productId: allocation.productId,
+          batchId: allocation.batchId,
+          qtyBase: allocation.qtyBase.toFixed(3),
+        },
+      })),
+      ...createdPayments.map((payment) => ({
           actorUserId: actor.id,
           action: "payment.recorded",
           entityType: "SALE",
@@ -687,12 +783,7 @@ export async function completeSale(input: SaleCompletionInput, actor: CurrentUse
             amount: payment.amount.toFixed(2),
             cardReference: payment.cardReference,
           },
-        },
-        tx,
-      );
-    }
-
-    await writeAuditLog(
+      })),
       {
         actorUserId: actor.id,
         action: "sale.completed",
@@ -705,12 +796,11 @@ export async function completeSale(input: SaleCompletionInput, actor: CurrentUse
           discountAmount: discountAmount.toFixed(2),
           taxAmount: taxAmount.toFixed(2),
           total: total.toFixed(2),
-          lineCount: createdSaleLines.length,
+          lineCount: allocations.length,
           paymentCount: createdPayments.length,
         },
       },
-      tx,
-    );
+    ], tx);
 
     const receipt = buildReceipt({
       saleId: sale.id,
@@ -736,8 +826,15 @@ export async function completeSale(input: SaleCompletionInput, actor: CurrentUse
       allocations: receipt.allocations,
       completedAt: completedAt.toISOString(),
       receipt,
-    } satisfies SaleCompletionResult;
-  });
+      } satisfies SaleCompletionResult;
+    }, { maxWait: 5_000, timeout: 15_000 });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      const committedSale = await getCommittedSaleByRequestId(input.clientRequestId, actor.id);
+      if (committedSale) return committedSale;
+    }
+    throw error;
+  }
 }
 
 function groupBatchesById(groups: PreparedProductGroup[]) {

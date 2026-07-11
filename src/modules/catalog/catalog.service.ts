@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { Prisma, PrescriptionRule, ProductType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAuditLog } from "@/modules/audit/audit.service";
@@ -107,18 +108,18 @@ export async function createProduct(input: CreateProductInput, actorUserId: stri
       include: { units: true },
     });
 
-    for (const unit of input.units) {
-      if (!unit.barcode?.trim()) continue;
-      const matchingUnit = product.units.find((u) => u.unitName === unit.unitName);
-      await tx.productBarcode.create({
-        data: {
+    const barcodes = input.units.flatMap((unit) => {
+      if (!unit.barcode?.trim()) return [];
+      const matchingUnit = product.units.find((item) => item.unitName === unit.unitName);
+      return [{
+          id: randomUUID(),
           productId: product.id,
           unitId: matchingUnit?.id ?? null,
           barcode: unit.barcode.trim(),
           isPrimary: unit.isSaleDefault ?? false,
-        },
-      });
-    }
+      }];
+    });
+    if (barcodes.length > 0) await tx.productBarcode.createMany({ data: barcodes });
 
     await writeAuditLog(
       {
@@ -132,5 +133,5 @@ export async function createProduct(input: CreateProductInput, actorUserId: stri
     );
 
     return product;
-  });
+  }, { maxWait: 5_000, timeout: 10_000 });
 }

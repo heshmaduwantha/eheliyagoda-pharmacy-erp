@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { withPerformanceTrace } from "@/lib/performance";
 import { ForbiddenError, UnauthorizedError, requirePermission } from "@/modules/auth/permissions";
 import { PrescriptionValidationError } from "@/modules/prescriptions/prescription.types";
 import { completeSale } from "./sale.service";
@@ -60,43 +61,44 @@ const completeSaleSchema = z.object({
 });
 
 export async function completeSaleAction(rawInput: unknown) {
-  try {
-    const actor = await requirePermission("sale.create", { onDenied: "throw" });
-    const input = completeSaleSchema.parse(rawInput);
-    const sale = await completeSale(input, actor);
-    revalidatePath("/pos");
-    revalidatePath("/sales");
-    revalidatePath("/dashboard");
-    revalidatePath("/reports");
-    revalidatePath("/stock");
-    revalidatePath("/stock/batches");
-    revalidatePath("/stock/movements");
-    revalidatePath("/stock/expiry");
-    revalidatePath("/admin/audit");
-    return { ok: true as const, sale };
-  } catch (error) {
-    if (error instanceof SaleCompletionError) {
-      return { ok: false as const, error: { code: error.code, message: error.message, details: error.details ?? null } };
+  return withPerformanceTrace({ route: "/pos/complete", method: "ACTION" }, async () => {
+    try {
+      const actor = await requirePermission("sale.create", { onDenied: "throw" });
+      const input = completeSaleSchema.parse(rawInput);
+      const sale = await completeSale(input, actor);
+      revalidatePath("/sales");
+      revalidatePath("/dashboard");
+      revalidatePath("/reports");
+      revalidatePath("/stock");
+      revalidatePath("/stock/batches");
+      revalidatePath("/stock/movements");
+      revalidatePath("/stock/expiry");
+      revalidatePath("/admin/audit");
+      return { ok: true as const, sale };
+    } catch (error) {
+      if (error instanceof SaleCompletionError) {
+        return { ok: false as const, error: { code: error.code, message: error.message, details: error.details ?? null } };
+      }
+      if (error instanceof PrescriptionValidationError) {
+        return { ok: false as const, error: { code: error.code, message: error.message, details: null } };
+      }
+      if (error instanceof ForbiddenError) {
+        return { ok: false as const, error: { code: "FORBIDDEN", message: "You do not have permission to complete sales.", details: null } };
+      }
+      if (error instanceof UnauthorizedError) {
+        return { ok: false as const, error: { code: "UNAUTHORIZED", message: "Your session is no longer valid.", details: null } };
+      }
+      if (error instanceof z.ZodError) {
+        return {
+          ok: false as const,
+          error: {
+            code: "VALIDATION_ERROR",
+            message: error.issues[0]?.message ?? "Sale input is invalid.",
+            details: error.flatten(),
+          },
+        };
+      }
+      return { ok: false as const, error: { code: "INTERNAL_ERROR", message: "Sale completion failed.", details: null } };
     }
-    if (error instanceof PrescriptionValidationError) {
-      return { ok: false as const, error: { code: error.code, message: error.message, details: null } };
-    }
-    if (error instanceof ForbiddenError) {
-      return { ok: false as const, error: { code: "FORBIDDEN", message: "You do not have permission to complete sales.", details: null } };
-    }
-    if (error instanceof UnauthorizedError) {
-      return { ok: false as const, error: { code: "UNAUTHORIZED", message: "Your session is no longer valid.", details: null } };
-    }
-    if (error instanceof z.ZodError) {
-      return {
-        ok: false as const,
-        error: {
-          code: "VALIDATION_ERROR",
-          message: error.issues[0]?.message ?? "Sale input is invalid.",
-          details: error.flatten(),
-        },
-      };
-    }
-    return { ok: false as const, error: { code: "INTERNAL_ERROR", message: "Sale completion failed.", details: null } };
-  }
+  });
 }

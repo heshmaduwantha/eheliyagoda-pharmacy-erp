@@ -51,7 +51,7 @@ export default async function SalesPage({
           </p>
           <h1 className="mt-1 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">Sales</h1>
           <p className="mt-2 max-w-2xl text-slate-500">
-            Completed and voided sales are read from PostgreSQL. Void actions write a reversal record and keep the original sale history intact.
+            Review completed and voided sales.
           </p>
         </div>
 

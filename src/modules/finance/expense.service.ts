@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAuditLog } from "@/modules/audit/audit.service";
-import { ForbiddenError, UnauthorizedError } from "@/modules/auth/permissions";
+import { ForbiddenError, UnauthorizedError, hasPermission } from "@/modules/auth/permissions";
 import type { CurrentUser } from "@/modules/auth/session";
 import { serverOnly } from "@/lib/server-only";
 import {
@@ -26,7 +26,7 @@ export type ExpenseSummaryResult = {
 
 function assertActorPermission(actor: CurrentUser | undefined, permission: string) {
   if (!actor?.id) throw new UnauthorizedError();
-  if (!actor.permissions.includes(permission)) throw new ForbiddenError();
+  if (!hasPermission(actor, permission)) throw new ForbiddenError();
 }
 
 function decimal(value: string | number | Prisma.Decimal | undefined, field: string) {

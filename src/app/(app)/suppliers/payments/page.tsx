@@ -28,7 +28,7 @@ export default async function SupplierPaymentsPage() {
     <div className="grid gap-7">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-sm font-bold text-teal-700">Operational finance</p>
+          <p className="text-sm font-bold text-teal-700">Finance</p>
           <h1 className="mt-1 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">Supplier payments</h1>
           <p className="mt-2 max-w-3xl text-slate-500">Record payments against supplier invoices. These payments reduce supplier payables and never count as expenses.</p>
         </div>

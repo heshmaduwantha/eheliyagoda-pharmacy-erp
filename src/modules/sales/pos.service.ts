@@ -10,13 +10,56 @@ import { serverOnly } from "@/lib/server-only";
 
 serverOnly();
 
-type ProductReadRow = Prisma.ProductGetPayload<{
-  include: {
-    units: true;
-    barcodes: true;
-    batches: true;
-  };
-}>;
+const productSelect = {
+  id: true,
+  name: true,
+  genericName: true,
+  strength: true,
+  form: true,
+  productType: true,
+  category: true,
+  baseUnitName: true,
+  prescriptionRule: true,
+  isControlled: true,
+  isSpecialDrug: true,
+  isActive: true,
+  defaultSellingPrice: true,
+} satisfies Prisma.ProductSelect;
+
+const unitSelect = {
+  id: true,
+  productId: true,
+  unitName: true,
+  factorToBase: true,
+  isPurchaseDefault: true,
+  isSaleDefault: true,
+} satisfies Prisma.ProductUnitSelect;
+
+const barcodeSelect = {
+  id: true,
+  productId: true,
+  unitId: true,
+  barcode: true,
+  isPrimary: true,
+} satisfies Prisma.ProductBarcodeSelect;
+
+const stockBatchSelect = {
+  id: true,
+  productId: true,
+  expiryDate: true,
+  qtyOnHandBase: true,
+  status: true,
+} satisfies Prisma.BatchSelect;
+
+type ProductBaseRow = Prisma.ProductGetPayload<{ select: typeof productSelect }>;
+type UnitRow = Prisma.ProductUnitGetPayload<{ select: typeof unitSelect }>;
+type BarcodeRow = Prisma.ProductBarcodeGetPayload<{ select: typeof barcodeSelect }>;
+type StockBatchRow = Prisma.BatchGetPayload<{ select: typeof stockBatchSelect }>;
+type ProductReadRow = ProductBaseRow & {
+  units: UnitRow[];
+  barcodes: BarcodeRow[];
+  batches: StockBatchRow[];
+};
 
 function startOfToday() {
   const value = new Date();
@@ -101,11 +144,51 @@ function serializeProduct(product: ProductReadRow): PosProductSearchResult {
   };
 }
 
-const productReadInclude = {
-  units: true,
-  barcodes: true,
-  batches: { where: { status: BatchStatus.ACTIVE, qtyOnHandBase: { gt: 0 } } },
-} satisfies Prisma.ProductInclude;
+function groupByProductId<T extends { productId: string }>(rows: T[]) {
+  const grouped = new Map<string, T[]>();
+  for (const row of rows) {
+    const bucket = grouped.get(row.productId);
+    if (bucket) bucket.push(row);
+    else grouped.set(row.productId, [row]);
+  }
+  return grouped;
+}
+
+async function hydrateProductRows(products: ProductBaseRow[]): Promise<ProductReadRow[]> {
+  if (products.length === 0) return [];
+  const productIds = products.map((product) => product.id);
+  const [units, barcodes, batches] = await Promise.all([
+    prisma.productUnit.findMany({
+      where: { productId: { in: productIds } },
+      select: unitSelect,
+      orderBy: { factorToBase: "asc" },
+    }),
+    prisma.productBarcode.findMany({
+      where: { productId: { in: productIds } },
+      select: barcodeSelect,
+      orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }],
+    }),
+    prisma.batch.findMany({
+      where: {
+        productId: { in: productIds },
+        status: BatchStatus.ACTIVE,
+        qtyOnHandBase: { gt: 0 },
+      },
+      select: stockBatchSelect,
+      orderBy: [{ expiryDate: { sort: "asc", nulls: "last" } }, { createdAt: "asc" }],
+    }),
+  ]);
+  const unitsByProduct = groupByProductId(units);
+  const barcodesByProduct = groupByProductId(barcodes);
+  const batchesByProduct = groupByProductId(batches);
+
+  return products.map((product) => ({
+    ...product,
+    units: unitsByProduct.get(product.id) ?? [],
+    barcodes: barcodesByProduct.get(product.id) ?? [],
+    batches: batchesByProduct.get(product.id) ?? [],
+  }));
+}
 
 export async function searchProductsForPos(query: string): Promise<PosProductSearchResult[]> {
   const normalized = query.trim();
@@ -120,11 +203,11 @@ export async function searchProductsForPos(query: string): Promise<PosProductSea
           ]
         : undefined,
     },
-    include: productReadInclude,
+    select: productSelect,
     orderBy: { name: "asc" },
-    take: 100,
+    take: 40,
   });
-  return products.map(serializeProduct);
+  return (await hydrateProductRows(products)).map(serializeProduct);
 }
 
 export async function lookupProductByBarcode(barcode: string): Promise<PosBarcodeLookupResult | null> {
@@ -132,10 +215,18 @@ export async function lookupProductByBarcode(barcode: string): Promise<PosBarcod
   if (!normalized) return null;
   const match = await prisma.productBarcode.findUnique({
     where: { barcode: normalized },
-    include: { product: { include: productReadInclude } },
+    select: { barcode: true, productId: true, unitId: true },
   });
-  if (!match?.product.isActive) return null;
-  const product = serializeProduct(match.product);
+  if (!match) return null;
+
+  const products = await prisma.product.findMany({
+    where: { id: match.productId, isActive: true },
+    select: productSelect,
+    take: 1,
+  });
+  const productRow = (await hydrateProductRows(products))[0];
+  if (!productRow) return null;
+  const product = serializeProduct(productRow);
   return {
     barcode: match.barcode,
     product,
@@ -147,12 +238,14 @@ export async function lookupProductByBarcode(barcode: string): Promise<PosBarcod
 }
 
 export async function getProductUnits(productId: string): Promise<PosUnitOption[]> {
-  const product = await prisma.product.findFirst({
-    where: { id: productId, isActive: true },
-    include: productReadInclude,
-  });
+  const [product, units, barcodes] = await Promise.all([
+    prisma.product.findFirst({ where: { id: productId, isActive: true }, select: productSelect }),
+    prisma.productUnit.findMany({ where: { productId }, select: unitSelect, orderBy: { factorToBase: "asc" } }),
+    prisma.productBarcode.findMany({ where: { productId }, select: barcodeSelect }),
+  ]);
   if (!product) return [];
-  return product.units.map((unit) => serializeUnit(product, unit));
+  const readRow: ProductReadRow = { ...product, units, barcodes, batches: [] };
+  return units.map((unit) => serializeUnit(readRow, unit));
 }
 
 export async function getPosBatchPreview(
@@ -168,11 +261,11 @@ export async function getPosBatchPreview(
   }
   if (requestedQty.lte(0)) return null;
 
-  const unit = await prisma.productUnit.findFirst({
-    where: { id: unitId, productId, product: { isActive: true } },
-    include: { product: { select: { productType: true } } },
-  });
-  if (!unit) return null;
+  const [unit, product] = await Promise.all([
+    prisma.productUnit.findFirst({ where: { id: unitId, productId }, select: unitSelect }),
+    prisma.product.findFirst({ where: { id: productId, isActive: true }, select: { productType: true } }),
+  ]);
+  if (!unit || !product) return null;
 
   const today = startOfToday();
   const batches = await prisma.batch.findMany({
@@ -180,14 +273,19 @@ export async function getPosBatchPreview(
       productId,
       status: BatchStatus.ACTIVE,
       qtyOnHandBase: { gt: 0 },
-      ...(unit.product.productType === ProductType.MEDICINE ? { expiryDate: { gte: today } } : {}),
+      ...(product.productType === ProductType.MEDICINE ? { expiryDate: { gte: today } } : {}),
     },
-    orderBy: { createdAt: "asc" },
-  });
-  batches.sort((left, right) => {
-    if (left.expiryDate == null) return right.expiryDate == null ? 0 : 1;
-    if (right.expiryDate == null) return -1;
-    return left.expiryDate.getTime() - right.expiryDate.getTime();
+    select: {
+      id: true,
+      batchNo: true,
+      expiryDate: true,
+      status: true,
+      qtyOnHandBase: true,
+      mrp: true,
+      costPrice: true,
+      sellingPrice: true,
+    },
+    orderBy: [{ expiryDate: { sort: "asc", nulls: "last" } }, { createdAt: "asc" }],
   });
 
   const requestedQtyBase = requestedQty.mul(unit.factorToBase);

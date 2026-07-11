@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { GrnStatus, Prisma, ProductType, StockMovementType, SupplierInvoiceStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAuditLog } from "@/modules/audit/audit.service";
@@ -176,32 +177,33 @@ export async function confirmGrn(grnId: string, actorUserId: string) {
         }
       }
 
-      const batch = await tx.batch.create({
-        data: {
-          productId: line.productId,
-          grnLineId: line.id,
-          batchNo: line.batchNo,
-          expiryDate: line.expiryDate,
-          mrp: line.mrp,
-          costPrice: line.costPrice,
-          sellingPrice: line.sellingPrice,
-          qtyOnHandBase: line.qtyBase,
-        },
-      });
-
-      await tx.stockMovement.create({
-        data: {
-          productId: line.productId,
-          batchId: batch.id,
-          movementType: StockMovementType.GRN_IN,
-          qtyBase: line.qtyBase,
-          refType: "GRN",
-          refId: grn.id,
-          note: `GRN ${grn.grnNo}`,
-          createdById: actorUserId,
-        },
-      });
     }
+
+    const batches = grn.lines.map((line) => ({
+      id: randomUUID(),
+      productId: line.productId,
+      grnLineId: line.id,
+      batchNo: line.batchNo,
+      expiryDate: line.expiryDate,
+      mrp: line.mrp,
+      costPrice: line.costPrice,
+      sellingPrice: line.sellingPrice,
+      qtyOnHandBase: line.qtyBase,
+    }));
+    await tx.batch.createMany({ data: batches });
+    await tx.stockMovement.createMany({
+      data: batches.map((batch, index) => ({
+        id: randomUUID(),
+        productId: batch.productId,
+        batchId: batch.id,
+        movementType: StockMovementType.GRN_IN,
+        qtyBase: grn.lines[index].qtyBase,
+        refType: "GRN",
+        refId: grn.id,
+        note: `GRN ${grn.grnNo}`,
+        createdById: actorUserId,
+      })),
+    });
 
     if (grn.invoiceTotal.gt(0)) {
       await tx.supplierInvoice.create({
@@ -234,5 +236,5 @@ export async function confirmGrn(grnId: string, actorUserId: string) {
     );
 
     return confirmed;
-  });
+  }, { maxWait: 5_000, timeout: 15_000 });
 }

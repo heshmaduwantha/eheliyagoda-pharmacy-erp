@@ -7,19 +7,20 @@ import { BarChart3, Banknote, Boxes, ClipboardList, LayoutDashboard, PackagePlus
 type NavItem = { label: string; href: string; permission: string; icon: LucideIcon; admin?: boolean };
 
 const items: NavItem[] = [
-  { label: "Dashboard", href: "/dashboard", permission: "dashboard.view", icon: LayoutDashboard },
-  { label: "Point of Sale", href: "/pos", permission: "pos.access", icon: ShoppingCart },
-  { label: "Stock", href: "/stock", permission: "stock.access", icon: Boxes },
-  { label: "Sales", href: "/sales", permission: "sale.create", icon: ReceiptText },
-  { label: "Goods Received", href: "/stock/grn", permission: "grn.manage", icon: PackagePlus },
-  { label: "Products", href: "/products", permission: "product.manage", icon: PackageSearch },
-  { label: "Suppliers", href: "/suppliers", permission: "supplier.manage", icon: Truck },
-  { label: "Expenses", href: "/expenses", permission: "expense.view", icon: ReceiptText },
-  { label: "Supplier Payments", href: "/suppliers/payments", permission: "supplier_payment.view", icon: Banknote },
-  { label: "Reports", href: "/reports", permission: "report.view", icon: BarChart3 },
-  { label: "Users & Roles", href: "/admin/users", permission: "user.manage", icon: UsersRound, admin: true },
-  { label: "Audit Logs", href: "/admin/audit", permission: "audit.view", icon: ClipboardList, admin: true },
-  { label: "Settings", href: "/admin/settings", permission: "settings.manage", icon: Settings, admin: true },
+  { label: "Dashboard", href: "/dashboard", permission: "reports.dashboard.read", icon: LayoutDashboard },
+  { label: "Point of Sale", href: "/pos", permission: "pos.sale.read", icon: ShoppingCart },
+  { label: "Stock", href: "/stock", permission: "inventory.stock.read", icon: Boxes },
+  { label: "Sales", href: "/sales", permission: "pos.sale.create", icon: ReceiptText },
+  { label: "Goods Received", href: "/stock/grn", permission: "procurement.grn.manage", icon: PackagePlus },
+  { label: "Products", href: "/products", permission: "inventory.product.manage", icon: PackageSearch },
+  { label: "Suppliers", href: "/suppliers", permission: "suppliers.manage", icon: Truck },
+  { label: "Expenses", href: "/expenses", permission: "expenses.read", icon: ReceiptText },
+  { label: "Supplier Payments", href: "/suppliers/payments", permission: "suppliers.payments.read", icon: Banknote },
+  { label: "Reports", href: "/reports", permission: "reports.read", icon: BarChart3 },
+  { label: "Users", href: "/admin/users", permission: "admin.users.manage", icon: UsersRound, admin: true },
+  { label: "Roles", href: "/admin/roles", permission: "admin.roles.manage", icon: ClipboardList, admin: true },
+  { label: "Permissions", href: "/admin/permissions", permission: "admin.permissions.read", icon: Settings, admin: true },
+  { label: "Audit Logs", href: "/admin/audit", permission: "audit.read", icon: ClipboardList, admin: true },
 ];
 
 export function SidebarNav({ permissions, mobile = false }: { permissions: string[]; mobile?: boolean }) {

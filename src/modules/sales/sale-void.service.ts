@@ -1,6 +1,7 @@
 import { BatchStatus, Prisma, SaleStatus, StockMovementType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAuditLog } from "@/modules/audit/audit.service";
+import { hasPermission } from "@/modules/auth/permissions";
 import { serverOnly } from "@/lib/server-only";
 import type { CurrentUser } from "@/modules/auth/session";
 import type {
@@ -105,7 +106,7 @@ function activityAt(sale: SaleRow) {
 
 function validateActor(actor: CurrentUser) {
   if (!actor?.id) throw new SaleVoidError("UNAUTHORIZED", "You must sign in to void a sale.");
-  if (!actor.permissions.includes("sale.void")) {
+  if (!hasPermission(actor, "pos.sale.void")) {
     throw new SaleVoidError("FORBIDDEN", "You do not have permission to void sales.");
   }
 }

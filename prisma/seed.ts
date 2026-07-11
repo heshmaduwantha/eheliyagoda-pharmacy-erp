@@ -9,72 +9,14 @@ import {
 } from "@prisma/client";
 import { hash } from "bcryptjs";
 import { env } from "../src/lib/env";
+import { seedAllPermissionsAndRoles } from "../src/modules/admin/rbac.service";
 
 const prisma = new PrismaClient({ datasourceUrl: env.DATABASE_URL });
-
-const permissions = [
-  ["dashboard.view", "View the application dashboard"],
-  ["pos.access", "Access the point of sale"],
-  ["sale.create", "Complete a sale transaction"],
-  ["stock.access", "Access stock screens"],
-  ["product.manage", "Manage products"],
-  ["supplier.manage", "Manage suppliers"],
-  ["grn.manage", "Create and confirm goods received notes"],
-  ["expense.manage", "Manage expenses"],
-  ["expense.view", "View expenses"],
-  ["expense.create", "Create expenses"],
-  ["expense.update", "Update expenses"],
-  ["expense.delete", "Delete expenses"],
-  ["sale.void", "Void completed sales"],
-  ["supplier_payment.view", "View supplier payments"],
-  ["supplier_payment.create", "Create supplier payments"],
-  ["report.view", "View reports"],
-  ["user.manage", "Manage users"],
-  ["audit.view", "View audit logs"],
-  ["settings.manage", "Manage settings"],
-  ["controlled_drug.sell", "Sell controlled drugs"],
-] as const;
-
-const ownerPermissionCodes = permissions.map(([code]) => code);
-const pharmacistPermissionCodes = [
-  "dashboard.view",
-  "pos.access",
-  "sale.create",
-  "stock.access",
-  "product.manage",
-  "supplier.manage",
-  "grn.manage",
-  "expense.manage",
-  "expense.view",
-  "expense.create",
-  "expense.update",
-  "expense.delete",
-  "supplier_payment.view",
-  "supplier_payment.create",
-  "report.view",
-  "controlled_drug.sell",
-];
 
 function requiredSeedValue(name: string) {
   const value = process.env[name]?.trim();
   if (!value) throw new Error(`Missing required seed environment variable: ${name}`);
   return value;
-}
-
-async function assignPermissions(roleId: string, permissionCodes: readonly string[]) {
-  const permissionRows = await prisma.permission.findMany({
-    where: { code: { in: [...permissionCodes] } },
-    select: { id: true, code: true },
-  });
-  if (permissionRows.length !== permissionCodes.length) throw new Error("Seed permission mapping is incomplete.");
-
-  for (const permission of permissionRows) {
-    await prisma.rolePermission.upsert({
-      where: { roleId_permissionId: { roleId, permissionId: permission.id } },
-      create: { roleId, permissionId: permission.id },
-      update: {},
-    });
-  }
 }
 
 type DevProductInput = {
@@ -174,40 +116,48 @@ async function main() {
   const pharmacistUsername = requiredSeedValue("SEED_PHARMACIST_USERNAME");
   const pharmacistPassword = requiredSeedValue("SEED_PHARMACIST_PASSWORD");
 
-  for (const [code, description] of permissions) {
-    await prisma.permission.upsert({ where: { code }, create: { code, description }, update: { description } });
+  await seedAllPermissionsAndRoles(prisma);
+
+  const ownerRole = await prisma.role.findUnique({ where: { code: "owner" } });
+  const pharmacistRole = await prisma.role.findUnique({ where: { code: "pharmacist" } });
+  if (!ownerRole || !pharmacistRole) {
+    throw new Error("Default RBAC roles were not seeded correctly.");
   }
-
-  const ownerRole = await prisma.role.upsert({
-    where: { code: "OWNER_DOCTOR" },
-    create: { code: "OWNER_DOCTOR", name: "Owner Doctor" },
-    update: { name: "Owner Doctor" },
-  });
-  const pharmacistRole = await prisma.role.upsert({
-    where: { code: "PHARMACIST_CASHIER" },
-    create: { code: "PHARMACIST_CASHIER", name: "Pharmacist Cashier" },
-    update: { name: "Pharmacist Cashier" },
-  });
-
-  await assignPermissions(ownerRole.id, ownerPermissionCodes);
-  await assignPermissions(pharmacistRole.id, pharmacistPermissionCodes);
 
   const ownerUser = await prisma.user.upsert({
     where: { username: ownerUsername },
-    create: { name: "Owner Doctor", username: ownerUsername, passwordHash: await hash(ownerPassword, 12), roleId: ownerRole.id },
-    update: { name: "Owner Doctor", roleId: ownerRole.id, isActive: true },
+    create: {
+      name: "Owner",
+      username: ownerUsername,
+      passwordHash: await hash(ownerPassword, 12),
+      roleId: ownerRole.id,
+    },
+    update: { name: "Owner", roleId: ownerRole.id, isActive: true },
+  });
+  await prisma.userRole.upsert({
+    where: { userId_roleId: { userId: ownerUser.id, roleId: ownerRole.id } },
+    create: { userId: ownerUser.id, roleId: ownerRole.id },
+    update: { assignedById: null },
   });
   await prisma.user.upsert({
     where: { username: pharmacistUsername },
     create: {
-      name: "Certified Pharmacist",
+      name: "Pharmacist",
       username: pharmacistUsername,
       passwordHash: await hash(pharmacistPassword, 12),
       roleId: pharmacistRole.id,
       pharmacistCertificateVerified: false,
     },
-    update: { name: "Certified Pharmacist", roleId: pharmacistRole.id, isActive: true },
+    update: { name: "Pharmacist", roleId: pharmacistRole.id, isActive: true },
   });
+  const pharmacistUser = await prisma.user.findUnique({ where: { username: pharmacistUsername }, select: { id: true } });
+  if (pharmacistUser) {
+    await prisma.userRole.upsert({
+      where: { userId_roleId: { userId: pharmacistUser.id, roleId: pharmacistRole.id } },
+      create: { userId: pharmacistUser.id, roleId: pharmacistRole.id },
+      update: { assignedById: null },
+    });
+  }
 
   const existingSupplier = await prisma.supplier.findFirst({ where: { name: "Eheliyagoda Medical Distributors" } });
   const supplier = existingSupplier

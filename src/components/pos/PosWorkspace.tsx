@@ -1,6 +1,6 @@
 "use client";
 
-import { useDeferredValue, useEffect, useMemo, useState, useTransition } from "react";
+import { useDeferredValue, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { CircleAlert, CircleCheck, ShoppingCart } from "lucide-react";
 import { completeSaleAction } from "@/modules/sales/sale.actions";
 import {
@@ -49,6 +49,10 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
   const [controlledDrugOpen, setControlledDrugOpen] = useState(false);
   const [isSearching, startSearchTransition] = useTransition();
   const [isCompletingSale, setIsCompletingSale] = useState(false);
+  const saleSubmissionRef = useRef<{ requestId: string | null; inFlight: boolean }>({
+    requestId: null,
+    inFlight: false,
+  });
 
   const totals = useMemo(() => calculatePosTotals(lines), [lines]);
   const promptedProductCount = lines.filter((line) => line.prescriptionRule === "PROMPT_SKIPPABLE").length;
@@ -156,12 +160,14 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
   };
 
   const submitSale = async (payments: PosPaymentInput[], prescription?: PrescriptionDecisionInput) => {
-    if (lines.length === 0) return;
+    if (lines.length === 0 || saleSubmissionRef.current.inFlight) return;
 
+    const requestId = saleSubmissionRef.current.requestId ?? crypto.randomUUID();
+    saleSubmissionRef.current = { requestId, inFlight: true };
     setIsCompletingSale(true);
     try {
       const result = await completeSaleAction({
-        clientRequestId: crypto.randomUUID(),
+        clientRequestId: requestId,
         requestedStatus: "COMPLETED",
         lines: lines.map((line) => ({
           clientLineId: line.id,
@@ -183,16 +189,36 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
       });
 
       if (!result.ok) {
+        saleSubmissionRef.current.requestId = null;
         setNotice({ tone: "warning", message: result.error.message });
         return;
       }
 
+      const soldByProduct = new Map<string, number>();
+      for (const allocation of result.sale.allocations) {
+        soldByProduct.set(
+          allocation.productId,
+          (soldByProduct.get(allocation.productId) ?? 0) + Number(allocation.qtyBase),
+        );
+      }
+      setProducts((current) => current.map((product) => {
+        const soldQty = soldByProduct.get(product.id);
+        if (soldQty == null) return product;
+        const availableQty = Math.max(0, Number(product.availableQtyBase) - soldQty);
+        return {
+          ...product,
+          availableQtyBase: availableQty.toFixed(3),
+          hasActiveStock: availableQty > 0,
+        };
+      }));
+      saleSubmissionRef.current.requestId = null;
       setReceipt(result.sale.receipt);
       setNotice({ tone: "success", message: `Sale ${result.sale.saleNumber} completed successfully.` });
       clearCart(true);
     } catch {
       setNotice({ tone: "error", message: "Sale completion failed unexpectedly." });
     } finally {
+      saleSubmissionRef.current.inFlight = false;
       setIsCompletingSale(false);
       clearTransactionState();
     }
@@ -242,7 +268,7 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
             Point of Sale
           </h1>
           <p className="mt-2 text-slate-500">
-            Live catalogue and authoritative sale completion through PostgreSQL. No stock mutation happens outside the completed-sale transaction.
+            Search products, add items, and take payment.
           </p>
         </div>
         <div className="w-full max-w-xl">
@@ -297,39 +323,43 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
         </div>
       </div>
 
-      <UnitSelectorModal
-        line={selectedLine}
-        onClose={() => setSelectedLine(null)}
-        onSelect={changeUnit}
-      />
-      <PaymentModal
-        mode={paymentMode}
-        onClose={() => setPaymentOpen(false)}
-        onComplete={handlePaymentComplete}
-        open={paymentOpen}
-        total={totals.total}
-      />
-      <PrescriptionPromptModal
-        isSubmitting={isCompletingSale}
-        onClose={() => {
-          setPromptOpen(false);
-          setPendingPayments(null);
-        }}
-        onConfirm={handlePromptDecision}
-        open={promptOpen}
-        productCount={promptedProductCount}
-      />
-      <ControlledDrugModal
-        isSubmitting={isCompletingSale}
-        onClose={() => {
-          setControlledDrugOpen(false);
-          setPendingPayments(null);
-        }}
-        onConfirm={handleControlledDecision}
-        open={controlledDrugOpen}
-        productCount={controlledProductCount}
-      />
-      <ReceiptModal onClose={() => setReceipt(null)} receipt={receipt} />
+      {selectedLine ? (
+        <UnitSelectorModal line={selectedLine} onClose={() => setSelectedLine(null)} onSelect={changeUnit} />
+      ) : null}
+      {paymentOpen ? (
+        <PaymentModal
+          mode={paymentMode}
+          onClose={() => setPaymentOpen(false)}
+          onComplete={handlePaymentComplete}
+          open
+          total={totals.total}
+        />
+      ) : null}
+      {promptOpen ? (
+        <PrescriptionPromptModal
+          isSubmitting={isCompletingSale}
+          onClose={() => {
+            setPromptOpen(false);
+            setPendingPayments(null);
+          }}
+          onConfirm={handlePromptDecision}
+          open
+          productCount={promptedProductCount}
+        />
+      ) : null}
+      {controlledDrugOpen ? (
+        <ControlledDrugModal
+          isSubmitting={isCompletingSale}
+          onClose={() => {
+            setControlledDrugOpen(false);
+            setPendingPayments(null);
+          }}
+          onConfirm={handleControlledDecision}
+          open
+          productCount={controlledProductCount}
+        />
+      ) : null}
+      {receipt ? <ReceiptModal onClose={() => setReceipt(null)} receipt={receipt} /> : null}
     </div>
   );
 }

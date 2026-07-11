@@ -104,7 +104,7 @@ async function cleanupSupplierPayment(paymentId: string) {
 }
 
 test("create expense persists row and writes audit", async () => {
-  const actor = await getFinanceActor("expense.create");
+  const actor = await getFinanceActor("expenses.create");
   const expense = await createExpense(
     {
       date: "2026-06-23",
@@ -128,7 +128,7 @@ test("create expense persists row and writes audit", async () => {
 });
 
 test("update expense persists change and writes audit", async () => {
-  const actor = await getFinanceActor("expense.update");
+  const actor = await getFinanceActor("expenses.update");
   const expense = await createExpense(
     {
       date: "2026-06-23",
@@ -137,7 +137,7 @@ test("update expense persists change and writes audit", async () => {
       paymentMethod: PaymentMethod.CASH,
       description: "Monthly rent",
     },
-    await getFinanceActor("expense.create"),
+    await getFinanceActor("expenses.create"),
   );
 
   const updated = await updateExpense(
@@ -158,7 +158,7 @@ test("update expense persists change and writes audit", async () => {
 });
 
 test("expense summary groups by category and payment method and excludes deleted rows", async () => {
-  const actor = await getFinanceActor("expense.create");
+  const actor = await getFinanceActor("expenses.create");
   const expense1 = await createExpense(
     { date: "2026-06-23", category: "RENT", amount: "5000.00", paymentMethod: PaymentMethod.CASH },
     actor,
@@ -189,7 +189,7 @@ test("expense summary groups by category and payment method and excludes deleted
 });
 
 test("deleted expense is excluded from reports", async () => {
-  const actor = await getFinanceActor("expense.create");
+  const actor = await getFinanceActor("expenses.create");
   const expense = await createExpense(
     { date: "2026-06-23", category: "OTHER", amount: "77.00", paymentMethod: PaymentMethod.CASH },
     actor,
@@ -224,7 +224,7 @@ test("permission guard blocks unauthorized expense create", async () => {
 });
 
 test("supplier payment creates payment row and updates invoice status", async () => {
-  const actor = await getFinanceActor("supplier_payment.create");
+  const actor = await getFinanceActor("suppliers.payments.create");
   const { invoice } = await createSupplierInvoiceFixture("1000.00", "0.00");
 
   const payment = await recordSupplierPayment(
@@ -255,7 +255,7 @@ test("supplier payment creates payment row and updates invoice status", async ()
 });
 
 test("full supplier payment sets invoice status paid", async () => {
-  const actor = await getFinanceActor("supplier_payment.create");
+  const actor = await getFinanceActor("suppliers.payments.create");
   const { invoice } = await createSupplierInvoiceFixture("250.00", "0.00");
 
   await recordSupplierPayment(
@@ -275,7 +275,7 @@ test("full supplier payment sets invoice status paid", async () => {
 });
 
 test("already paid invoice rejects extra payment", async () => {
-  const actor = await getFinanceActor("supplier_payment.create");
+  const actor = await getFinanceActor("suppliers.payments.create");
   const { invoice } = await createSupplierInvoiceFixture("150.00", "150.00");
 
   await assert.rejects(
@@ -298,7 +298,7 @@ test("already paid invoice rejects extra payment", async () => {
 });
 
 test("overpayment is rejected and invoice is unchanged", async () => {
-  const actor = await getFinanceActor("supplier_payment.create");
+  const actor = await getFinanceActor("suppliers.payments.create");
   const { invoice } = await createSupplierInvoiceFixture("300.00", "50.00");
 
   await assert.rejects(
@@ -321,7 +321,7 @@ test("overpayment is rejected and invoice is unchanged", async () => {
 });
 
 test("supplier payment does not create expense", async () => {
-  const actor = await getFinanceActor("supplier_payment.create");
+  const actor = await getFinanceActor("suppliers.payments.create");
   const { invoice } = await createSupplierInvoiceFixture("100.00", "0.00");
   const beforeExpenses = await prisma.expense.count();
 
@@ -364,7 +364,7 @@ test("unauthorized supplier payment create is blocked", async () => {
 });
 
 test("supplier payables and supplier payment reports use real records", async () => {
-  const actor = await getFinanceActor("supplier_payment.create");
+  const actor = await getFinanceActor("suppliers.payments.create");
   const { invoice } = await createSupplierInvoiceFixture("500.00", "0.00");
   await recordSupplierPayment(
     {
@@ -381,7 +381,8 @@ test("supplier payables and supplier payment reports use real records", async ()
   assert.ok(invoiceRow);
   assert.equal(invoiceRow?.outstandingAmount, "300.00");
 
-  const payments = await getSupplierPaymentsReport({ from: "2026-06-01", to: "2026-06-30" });
+  const today = new Date().toISOString().slice(0, 10);
+  const payments = await getSupplierPaymentsReport({ from: today, to: today });
   assert.equal(payments.availability, "ready");
   assert.ok(payments.rows.some((row) => row.invoiceNumber === invoice.invoiceNo));
 });

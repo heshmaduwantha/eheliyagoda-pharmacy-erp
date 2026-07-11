@@ -5,7 +5,7 @@ import { serverOnly } from "@/lib/server-only";
 serverOnly();
 
 export type WriteAuditLogInput = {
-  actorUserId?: string;
+  actorUserId?: string | null;
   action: string;
   entityType: string;
   entityId?: string;
@@ -25,4 +25,10 @@ export type AuditClient = Pick<typeof prisma, "auditLog">;
  */
 export async function writeAuditLog(input: WriteAuditLogInput, client: AuditClient = prisma) {
   return client.auditLog.create({ data: input });
+}
+
+/** Writes several distinct audit events in one statement inside the caller's transaction. */
+export async function writeAuditLogs(inputs: WriteAuditLogInput[], client: AuditClient = prisma) {
+  if (inputs.length === 0) return { count: 0 };
+  return client.auditLog.createMany({ data: inputs });
 }

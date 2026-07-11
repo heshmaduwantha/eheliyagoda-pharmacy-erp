@@ -86,7 +86,7 @@ export function ReceiptModal({ receipt, onClose }: { receipt: SaleReceipt | null
         </div>
 
         <div className="mt-5 rounded-xl bg-emerald-50 p-3 text-center text-xs font-medium leading-5 text-emerald-800">
-          The sale, stock deduction, and payment records were written in a single PostgreSQL transaction.
+          Sale completed and stock updated.
         </div>
 
         <button

@@ -1,10 +1,8 @@
 import { AlertTriangle, Banknote, CalendarClock, CircleDollarSign, CreditCard, ReceiptText, Truck } from "lucide-react";
 import { formatMoney } from "@/lib/money";
+import { withPerformanceTrace } from "@/lib/performance";
 import { requirePermission } from "@/modules/auth/permissions";
-import { getExpenseSummary } from "@/modules/finance/expense.service";
-import { getStockSummary } from "@/modules/inventory/inventory.service";
-import { getSupplierPayablesSummary } from "@/modules/reports/payables-report.service";
-import { getCashCardReport, getDailySalesReport, getGrossProfitReport } from "@/modules/reports/sales-report.service";
+import { getDashboardMetrics } from "@/modules/dashboard/dashboard.service";
 
 const toneClass = {
   teal: "bg-teal-50 text-teal-700",
@@ -16,88 +14,63 @@ const toneClass = {
   slate: "bg-slate-100 text-slate-600",
 } as const;
 
-function todayRange() {
-  const today = new Date();
-  const date = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-  return { from: date, to: date };
-}
-
-function monthRange() {
-  const today = new Date();
-  const from = new Date(today.getFullYear(), today.getMonth(), 1);
-  const fromDate = `${from.getFullYear()}-${String(from.getMonth() + 1).padStart(2, "0")}-${String(from.getDate()).padStart(2, "0")}`;
-  const toDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-  return { from: fromDate, to: toDate };
-}
-
-export default async function DashboardPage() {
+async function renderDashboardPage() {
   const user = await requirePermission("dashboard.view");
-  const [stock, payables, sales, cashCard, profit] = await Promise.all([
-    getStockSummary(),
-    getSupplierPayablesSummary(),
-    getDailySalesReport(todayRange()),
-    getCashCardReport(todayRange()),
-    getGrossProfitReport(todayRange()),
-  ]);
-  const expenses = await getExpenseSummary(monthRange());
+  const metrics = await getDashboardMetrics();
   const date = new Intl.DateTimeFormat("en-LK", { dateStyle: "full" }).format(new Date());
-  const cashRow = cashCard.rows.find((row) => row.method === "CASH");
-  const cardRow = cashCard.rows.find((row) => row.method === "CARD");
-  const grossProfitTotal = profit.rows.reduce((sum, row) => sum + Number(row.grossProfitEstimate), 0);
-  const overduePayables = payables.summary?.overdueCount ?? 0;
   const cards = [
     {
       title: "Today sales",
-      value: sales.summary ? formatMoney(sales.summary.total) : "No completed sales yet",
-      note: sales.summary ? `${sales.summary.saleCount} completed sale${sales.summary.saleCount === 1 ? "" : "s"}` : "Sale model is live",
+      value: metrics.saleCount > 0 ? formatMoney(metrics.salesTotal) : "No completed sales yet",
+      note: metrics.saleCount > 0 ? `${metrics.saleCount} completed sale${metrics.saleCount === 1 ? "" : "s"}` : "Sale model is live",
       icon: CircleDollarSign,
       tone: "slate",
     },
     {
       title: "Cash vs card",
-      value: cashCard.rows.length ? `${formatMoney(cashRow?.amount ?? "0.00")} cash / ${formatMoney(cardRow?.amount ?? "0.00")} card` : "No completed payments yet",
-      note: cashCard.rows.length ? "Payment split from completed sales" : "Payment records are empty",
+      value: metrics.paymentCount > 0 ? `${formatMoney(metrics.cashTotal)} cash / ${formatMoney(metrics.cardTotal)} card` : "No completed payments yet",
+      note: metrics.paymentCount > 0 ? "Payment split from completed sales" : "Payment records are empty",
       icon: CreditCard,
       tone: "blue",
     },
     {
       title: "Gross profit",
-      value: profit.rows.length ? formatMoney(grossProfitTotal.toFixed(2)) : "No completed sales yet",
-      note: profit.rows.length ? "Based on sale-line cost snapshots" : "Historical sale cost is pending",
+      value: metrics.profitLineCount > 0 ? formatMoney(metrics.grossProfitTotal) : "No completed sales yet",
+      note: metrics.profitLineCount > 0 ? "Based on sale-line cost snapshots" : "Historical sale cost is pending",
       icon: Banknote,
       tone: "violet",
     },
     {
       title: "Low stock",
-      value: stock.lowStockCount.toLocaleString("en-LK"),
+      value: metrics.lowStockCount.toLocaleString("en-LK"),
       note: "At or below reorder level",
       icon: AlertTriangle,
       tone: "amber",
     },
     {
       title: "Near expiry",
-      value: stock.nearExpiryCount.toLocaleString("en-LK"),
+      value: metrics.nearExpiryCount.toLocaleString("en-LK"),
       note: "Active batches within 90 days",
       icon: CalendarClock,
       tone: "red",
     },
     {
       title: "Supplier payables",
-      value: formatMoney(payables.summary?.outstandingTotal ?? "0.00"),
+      value: formatMoney(metrics.outstandingTotal),
       note: "Separate from expenses",
       icon: Truck,
       tone: "teal",
     },
     {
       title: "Expenses this month",
-      value: expenses.summary ? formatMoney(expenses.summary.totalAmount) : "No expenses yet",
-      note: expenses.summary ? `${expenses.summary.expenseCount} expense${expenses.summary.expenseCount === 1 ? "" : "s"} this month` : "Expense records are empty",
+      value: metrics.expenseCount > 0 ? formatMoney(metrics.expenseTotal) : "No expenses yet",
+      note: metrics.expenseCount > 0 ? `${metrics.expenseCount} expense${metrics.expenseCount === 1 ? "" : "s"} this month` : "Expense records are empty",
       icon: ReceiptText,
       tone: "emerald",
     },
     {
       title: "Overdue payables",
-      value: String(overduePayables),
+      value: String(metrics.overdueCount),
       note: "Due date passed and balance remains",
       icon: AlertTriangle,
       tone: "red",
@@ -110,9 +83,9 @@ export default async function DashboardPage() {
         <div>
           <p className="text-sm font-bold text-teal-700">Welcome back, {user.name}</p>
           <h1 className="mt-1 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">
-            Operations overview
+            Dashboard
           </h1>
-          <p className="mt-2 text-slate-500">Real PostgreSQL metrics and honest availability states.</p>
+          <p className="mt-2 text-slate-500">Today&apos;s pharmacy overview.</p>
         </div>
         <div className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-600 shadow-sm">
           {date}
@@ -138,8 +111,12 @@ export default async function DashboardPage() {
       </section>
 
       <section className="mt-6 rounded-2xl border border-blue-100 bg-blue-50 p-5 text-sm leading-6 text-blue-800">
-        <strong>Reporting boundary:</strong> sales, cash/card, gross profit, expenses, and supplier payables now read from completed PostgreSQL records. Supplier payments reduce payables but never count as expenses.
+        <strong>Today&apos;s view:</strong> sales, payments, profit, expenses, and supplier balances are shown separately.
       </section>
     </div>
   );
+}
+
+export default function DashboardPage() {
+  return withPerformanceTrace({ route: "/dashboard", method: "RSC" }, renderDashboardPage);
 }
