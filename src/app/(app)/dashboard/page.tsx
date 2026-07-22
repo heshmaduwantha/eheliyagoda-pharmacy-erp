@@ -1,122 +1,175 @@
-import { AlertTriangle, Banknote, CalendarClock, CircleDollarSign, CreditCard, ReceiptText, Truck } from "lucide-react";
+import { AlertTriangle, Banknote, Clock, CreditCard, DollarSign, Receipt, Truck, ChevronRight, LayoutDashboard } from "lucide-react";
+import Link from "next/link";
 import { formatMoney } from "@/lib/money";
 import { withPerformanceTrace } from "@/lib/performance";
 import { requirePermission } from "@/modules/auth/permissions";
 import { getDashboardMetrics } from "@/modules/dashboard/dashboard.service";
 
-const toneClass = {
-  teal: "bg-teal-50 text-teal-700",
-  blue: "bg-blue-50 text-blue-700",
-  emerald: "bg-emerald-50 text-emerald-700",
-  amber: "bg-amber-50 text-amber-700",
-  violet: "bg-violet-50 text-violet-700",
-  red: "bg-red-50 text-red-700",
-  slate: "bg-slate-100 text-slate-600",
-} as const;
+export default function DashboardPage() {
+  return withPerformanceTrace({ route: "/dashboard", method: "RSC" }, renderDashboardPage);
+}
 
 async function renderDashboardPage() {
-  const user = await requirePermission("dashboard.view");
+  await requirePermission("dashboard.view");
   const metrics = await getDashboardMetrics();
-  const date = new Intl.DateTimeFormat("en-LK", { dateStyle: "full" }).format(new Date());
-  const cards = [
-    {
-      title: "Today sales",
-      value: metrics.saleCount > 0 ? formatMoney(metrics.salesTotal) : "No completed sales yet",
-      note: metrics.saleCount > 0 ? `${metrics.saleCount} completed sale${metrics.saleCount === 1 ? "" : "s"}` : "Sale model is live",
-      icon: CircleDollarSign,
-      tone: "slate",
-    },
-    {
-      title: "Cash vs card",
-      value: metrics.paymentCount > 0 ? `${formatMoney(metrics.cashTotal)} cash / ${formatMoney(metrics.cardTotal)} card` : "No completed payments yet",
-      note: metrics.paymentCount > 0 ? "Payment split from completed sales" : "Payment records are empty",
-      icon: CreditCard,
-      tone: "blue",
-    },
-    {
-      title: "Gross profit",
-      value: metrics.profitLineCount > 0 ? formatMoney(metrics.grossProfitTotal) : "No completed sales yet",
-      note: metrics.profitLineCount > 0 ? "Based on sale-line cost snapshots" : "Historical sale cost is pending",
-      icon: Banknote,
-      tone: "violet",
-    },
-    {
-      title: "Low stock",
-      value: metrics.lowStockCount.toLocaleString("en-LK"),
-      note: "At or below reorder level",
-      icon: AlertTriangle,
-      tone: "amber",
-    },
-    {
-      title: "Near expiry",
-      value: metrics.nearExpiryCount.toLocaleString("en-LK"),
-      note: "Active batches within 90 days",
-      icon: CalendarClock,
-      tone: "red",
-    },
-    {
-      title: "Supplier payables",
-      value: formatMoney(metrics.outstandingTotal),
-      note: "Separate from expenses",
-      icon: Truck,
-      tone: "teal",
-    },
-    {
-      title: "Expenses this month",
-      value: metrics.expenseCount > 0 ? formatMoney(metrics.expenseTotal) : "No expenses yet",
-      note: metrics.expenseCount > 0 ? `${metrics.expenseCount} expense${metrics.expenseCount === 1 ? "" : "s"} this month` : "Expense records are empty",
-      icon: ReceiptText,
-      tone: "emerald",
-    },
-    {
-      title: "Overdue payables",
-      value: String(metrics.overdueCount),
-      note: "Due date passed and balance remains",
-      icon: AlertTriangle,
-      tone: "red",
-    },
-  ] as const;
+  
+  const dateStr = new Intl.DateTimeFormat("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" }).format(new Date());
+
+  const todaySalesValue = metrics.saleCount > 0 ? formatMoney(metrics.salesTotal) : "No completed sales yet";
+  const cashVsCardValue = metrics.paymentCount > 0 ? `${formatMoney(metrics.cashTotal)} / ${formatMoney(metrics.cardTotal)}` : "No completed payments yet";
+  const grossProfitValue = metrics.profitLineCount > 0 ? formatMoney(metrics.grossProfitTotal) : "No completed sales yet";
 
   return (
-    <div>
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <div className="grid gap-4 min-w-0">
+      {/* Header */}
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <div>
-          <p className="text-sm font-bold text-teal-700">Welcome back, {user.name}</p>
+          <p className="flex items-center gap-2 text-sm font-bold text-teal-700">
+            <LayoutDashboard className="size-4" />
+            Main workspace
+          </p>
           <h1 className="mt-1 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">
             Dashboard
           </h1>
-          <p className="mt-2 text-slate-500">Today&apos;s pharmacy overview.</p>
+          <p className="mt-2 text-slate-500">
+            Today&apos;s pharmacy overview.
+          </p>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-600 shadow-sm">
-          {date}
+        <div className="inline-flex items-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-[0_8px_30px_rgba(15,51,58,.04)]">
+          {dateStr}
         </div>
       </div>
 
-      <section className="mt-7 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {cards.map(({ title, value, note, icon: Icon, tone }) => (
-          <article
-            className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_8px_30px_rgba(15,51,58,.05)]"
-            key={title}
-          >
-            <div className={`grid size-11 place-items-center rounded-2xl ${toneClass[tone]}`}>
-              <Icon className="size-5" />
-            </div>
-            <p className="mt-5 text-sm font-medium text-slate-500">{title}</p>
-            <p className={`mt-1 font-black text-slate-900 ${value.length > 18 ? "text-lg" : "text-2xl"}`}>
-              {value}
-            </p>
-            <p className="mt-2 text-xs text-slate-500">{note}</p>
-          </article>
-        ))}
-      </section>
+      {/* Hero Metrics */}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Card 1: Today Sales */}
+        <Link href="/sales" className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-teal-600 to-emerald-500 p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg sm:col-span-2">
+          {/* Decorative background blur */}
+          <div className="absolute -right-8 -top-8 size-32 rounded-full bg-white/20 blur-2xl transition-transform duration-700 group-hover:scale-125"></div>
+          <div className="absolute right-4 top-4 text-white/50 transition-colors duration-300 group-hover:text-white">
+            <ChevronRight className="size-5" />
+          </div>
+          <div className="mb-2 inline-flex size-8 items-center justify-center rounded-xl bg-white/20 text-white backdrop-blur-md transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3">
+            <DollarSign className="size-4" />
+          </div>
+          <p className="text-[11px] font-semibold text-emerald-50 uppercase tracking-widest">Today sales</p>
+          <p className="mt-1 text-2xl font-black tracking-tight text-white drop-shadow-sm">{todaySalesValue}</p>
+          <p className="mt-1 text-[11px] font-medium text-emerald-100/90">Sale model is live</p>
+        </Link>
 
-      <section className="mt-6 rounded-2xl border border-blue-100 bg-blue-50 p-5 text-sm leading-6 text-blue-800">
-        <strong>Today&apos;s view:</strong> sales, payments, profit, expenses, and supplier balances are shown separately.
-      </section>
+        {/* Card 2: Gross Profit */}
+        <Link href="/sales" className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-600 p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg sm:col-span-2">
+          {/* Decorative background blur */}
+          <div className="absolute -right-8 -top-8 size-32 rounded-full bg-white/20 blur-2xl transition-transform duration-700 group-hover:scale-125"></div>
+          <div className="absolute right-4 top-4 text-white/50 transition-colors duration-300 group-hover:text-white">
+            <ChevronRight className="size-5" />
+          </div>
+          <div className="mb-2 inline-flex size-8 items-center justify-center rounded-xl bg-white/20 text-white backdrop-blur-md transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3">
+            <Banknote className="size-4" />
+          </div>
+          <p className="text-[11px] font-semibold text-indigo-50 uppercase tracking-widest">Gross profit</p>
+          <p className="mt-1 text-2xl font-black tracking-tight text-white drop-shadow-sm">{grossProfitValue}</p>
+          <p className="mt-1 text-[11px] font-medium text-indigo-100/90">Historical sale cost is pending</p>
+        </Link>
+      </div>
+
+      {/* Standard Financials */}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {/* Cash vs Card */}
+        <Link href="/sales" className="group relative rounded-2xl border border-slate-200/60 bg-white p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-blue-300 hover:shadow-md">
+          <div className="absolute right-4 top-4 text-slate-300 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+            <ChevronRight className="size-5" />
+          </div>
+          <div className="mb-2 inline-flex size-8 items-center justify-center rounded-xl bg-blue-50 text-blue-500 transition-colors duration-300 group-hover:bg-blue-500 group-hover:text-white group-hover:shadow-md group-hover:shadow-blue-500/20">
+            <CreditCard className="size-4" />
+          </div>
+          <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Cash vs card</p>
+          <p className="mt-1 text-xl font-black tracking-tight text-slate-900">{cashVsCardValue}</p>
+        </Link>
+
+        {/* Expenses */}
+        <Link href="/expenses" className="group relative rounded-2xl border border-slate-200/60 bg-white p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-emerald-300 hover:shadow-md">
+          <div className="absolute right-4 top-4 text-slate-300 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+            <ChevronRight className="size-5" />
+          </div>
+          <div className="mb-2 inline-flex size-8 items-center justify-center rounded-xl bg-emerald-50 text-emerald-500 transition-colors duration-300 group-hover:bg-emerald-500 group-hover:text-white group-hover:shadow-md group-hover:shadow-emerald-500/20">
+            <Receipt className="size-4" />
+          </div>
+          <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Expenses this month</p>
+          <p className="mt-1 text-xl font-black tracking-tight text-slate-900">{formatMoney(metrics.expenseTotal)}</p>
+        </Link>
+
+        {/* Supplier Payables */}
+        <Link href="/suppliers/payments" className="group relative rounded-2xl border border-slate-200/60 bg-white p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-teal-300 hover:shadow-md">
+          <div className="absolute right-4 top-4 text-slate-300 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+            <ChevronRight className="size-5" />
+          </div>
+          <div className="mb-2 inline-flex size-8 items-center justify-center rounded-xl bg-teal-50 text-teal-600 transition-colors duration-300 group-hover:bg-teal-500 group-hover:text-white group-hover:shadow-md group-hover:shadow-teal-500/20">
+            <Truck className="size-4" />
+          </div>
+          <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Supplier payables</p>
+          <p className="mt-1 text-xl font-black tracking-tight text-slate-900">{formatMoney(metrics.outstandingTotal)}</p>
+        </Link>
+      </div>
+
+      {/* Action Required Section */}
+      <div>
+        <h2 className="mb-2 flex items-center gap-2 text-sm font-black tracking-tight text-slate-800">
+          <div className="flex size-5 items-center justify-center rounded-full bg-rose-100 text-rose-500">
+            <AlertTriangle className="size-3" />
+          </div>
+          Action Required
+        </h2>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {/* Low Stock */}
+          <Link href="/products" className="group relative rounded-2xl border border-amber-200/60 bg-gradient-to-b from-white to-amber-50/50 p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:bg-amber-50 hover:shadow-md">
+            <div className="absolute right-4 top-4 text-amber-300 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+              <ChevronRight className="size-5" />
+            </div>
+            <div className="mb-2 inline-flex size-8 items-center justify-center rounded-xl bg-amber-100 text-amber-600 transition-all duration-300 group-hover:bg-amber-500 group-hover:text-white group-hover:shadow-md group-hover:shadow-amber-500/30">
+              <AlertTriangle className="size-4" />
+            </div>
+            <p className="text-[11px] font-semibold text-amber-800 uppercase tracking-wider">Low stock</p>
+            <p className="mt-1 text-xl font-black tracking-tight text-amber-950">{metrics.lowStockCount}</p>
+          </Link>
+
+          {/* Near Expiry */}
+          <Link href="/stock/batches" className="group relative rounded-2xl border border-orange-200/60 bg-gradient-to-b from-white to-orange-50/50 p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:bg-orange-50 hover:shadow-md">
+            <div className="absolute right-4 top-4 text-orange-300 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+              <ChevronRight className="size-5" />
+            </div>
+            <div className="mb-2 inline-flex size-8 items-center justify-center rounded-xl bg-orange-100 text-orange-600 transition-all duration-300 group-hover:bg-orange-500 group-hover:text-white group-hover:shadow-md group-hover:shadow-orange-500/30">
+              <Clock className="size-4" />
+            </div>
+            <p className="text-[11px] font-semibold text-orange-800 uppercase tracking-wider">Near expiry</p>
+            <p className="mt-1 text-xl font-black tracking-tight text-orange-950">{metrics.nearExpiryCount}</p>
+          </Link>
+
+          {/* Expired Stock */}
+          <Link href="/stock/batches" className="group relative rounded-2xl border border-red-200/60 bg-gradient-to-b from-white to-red-50/50 p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:bg-red-50 hover:shadow-md">
+            <div className="absolute right-4 top-4 text-red-300 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+              <ChevronRight className="size-5" />
+            </div>
+            <div className="mb-2 inline-flex size-8 items-center justify-center rounded-xl bg-red-100 text-red-600 transition-all duration-300 group-hover:bg-red-500 group-hover:text-white group-hover:shadow-md group-hover:shadow-red-500/30">
+              <AlertTriangle className="size-4" />
+            </div>
+            <p className="text-[11px] font-semibold text-red-800 uppercase tracking-wider">Expired stock</p>
+            <p className="mt-1 text-xl font-black tracking-tight text-red-950">{metrics.expiredOrQuarantinedCount}</p>
+          </Link>
+
+          {/* Overdue Payables */}
+          <Link href="/suppliers/payments" className="group relative rounded-2xl border border-rose-200/60 bg-gradient-to-b from-white to-rose-50/50 p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:bg-rose-50 hover:shadow-md">
+            <div className="absolute right-4 top-4 text-rose-300 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+              <ChevronRight className="size-5" />
+            </div>
+            <div className="mb-2 inline-flex size-8 items-center justify-center rounded-xl bg-rose-100 text-rose-600 transition-all duration-300 group-hover:bg-rose-600 group-hover:text-white group-hover:shadow-md group-hover:shadow-rose-600/30">
+              <AlertTriangle className="size-4" />
+            </div>
+            <p className="text-[11px] font-semibold text-rose-800 uppercase tracking-wider">Overdue payables</p>
+            <p className="mt-1 text-xl font-black tracking-tight text-rose-950">{metrics.overdueCount}</p>
+          </Link>
+        </div>
+      </div>
     </div>
   );
-}
-
-export default function DashboardPage() {
-  return withPerformanceTrace({ route: "/dashboard", method: "RSC" }, renderDashboardPage);
 }

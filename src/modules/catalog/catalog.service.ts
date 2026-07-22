@@ -30,25 +30,41 @@ export type CreateProductInput = {
 };
 
 /** Lists/searches active products with their units and barcodes for catalog screens. */
-export async function searchProducts(query?: string) {
+export async function searchProducts(
+  options: { query?: string; filter?: string; page?: number; pageSize?: number } = {}
+) {
+  const { query, filter, page = 1, pageSize = 10 } = options;
   const trimmed = query?.trim();
-  return prisma.product.findMany({
-    where: trimmed
-      ? {
-          OR: [
-            { name: { contains: trimmed, mode: "insensitive" } },
-            { genericName: { contains: trimmed, mode: "insensitive" } },
-            { barcodes: { some: { barcode: { contains: trimmed } } } },
-          ],
-        }
-      : undefined,
-    include: {
-      units: { orderBy: { factorToBase: "asc" } },
-      barcodes: true,
-    },
-    orderBy: { createdAt: "desc" },
-    take: 100,
-  });
+
+  const where: Prisma.ProductWhereInput = {};
+  
+  if (trimmed) {
+    where.OR = [
+      { name: { contains: trimmed, mode: "insensitive" } },
+      { genericName: { contains: trimmed, mode: "insensitive" } },
+      { barcodes: { some: { barcode: { contains: trimmed } } } },
+    ];
+  }
+  
+  if (filter === "controlled") {
+    where.isControlled = true;
+  }
+
+  const [data, total] = await Promise.all([
+    prisma.product.findMany({
+      where,
+      include: {
+        units: { orderBy: { factorToBase: "asc" } },
+        barcodes: true,
+      },
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
+    prisma.product.count({ where }),
+  ]);
+
+  return { data, total };
 }
 
 /** Resolves a scanned barcode to a product + matched unit. Used by POS/GRN screens. */

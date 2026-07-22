@@ -8,7 +8,7 @@ import { requirePermission } from "@/modules/auth/permissions";
 export default async function AdminUserDetailPage({ params }: { params: Promise<{ id: string }> }) {
   await requirePermission("admin.users.manage");
   const { id } = await params;
-  const [user, roles] = await Promise.all([getAdminUser(id), listAdminRoles()]);
+  const [user, { data: roles }] = await Promise.all([getAdminUser(id), listAdminRoles({ status: "active" })]);
   if (!user) notFound();
 
   return (

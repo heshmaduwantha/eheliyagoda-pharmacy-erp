@@ -1,20 +1,59 @@
 import type { ReportDateRange, ReportType } from "@/modules/reports/report.types";
 
 const reportOptions: { value: ReportType; label: string }[] = [
-  { value: "daily-sales", label: "Daily sales" },
+  { value: "daily-sales", label: "Sales summary" },
   { value: "cash-card", label: "Cash vs card" },
-  { value: "product-sales", label: "Product-wise sales" },
+  { value: "product-sales", label: "Sales by product" },
   { value: "gross-profit", label: "Gross profit" },
-  { value: "stock-valuation", label: "Stock valuation" },
+  { value: "stock-valuation", label: "Stock value" },
   { value: "low-stock", label: "Low stock" },
-  { value: "near-expiry", label: "Near expiry" },
-  { value: "expired-quarantined", label: "Expired / quarantined" },
-  { value: "supplier-payables", label: "Supplier payables" },
-  { value: "supplier-payments", label: "Supplier payments" },
+  { value: "near-expiry", label: "Expiring soon" },
+  { value: "expired-quarantined", label: "Expired stock" },
+  { value: "supplier-payables", label: "What you owe suppliers" },
+  { value: "supplier-payments", label: "Payments made" },
   { value: "expenses", label: "Expenses" },
-  { value: "controlled-drugs", label: "Controlled drug register" },
+  { value: "controlled-drugs", label: "Controlled drugs register" },
 ];
 
 export function ReportFilter({ type, range }: { type: ReportType; range: ReportDateRange }) {
-  return <form className="grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm lg:grid-cols-[minmax(220px,1fr)_180px_180px_auto_auto] lg:items-end"><label className="grid gap-1.5 text-sm font-bold text-slate-700">Report type<select className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 font-normal outline-none focus:border-teal-500" defaultValue={type} name="type">{reportOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label><label className="grid gap-1.5 text-sm font-bold text-slate-700">From<input className="rounded-xl border border-slate-200 px-3 py-2.5 font-normal outline-none focus:border-teal-500" defaultValue={range.from} name="from" type="date" /></label><label className="grid gap-1.5 text-sm font-bold text-slate-700">To<input className="rounded-xl border border-slate-200 px-3 py-2.5 font-normal outline-none focus:border-teal-500" defaultValue={range.to} name="to" type="date" /></label><button className="rounded-xl bg-teal-700 px-5 py-2.5 text-sm font-bold text-white hover:bg-teal-800" type="submit">View report</button><button className="cursor-not-allowed rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-bold text-slate-400" disabled title="CSV export is not implemented" type="button">CSV pending</button></form>;
+  return (
+    <form className="grid gap-3 lg:grid-cols-[minmax(220px,1fr)_180px_180px_auto] lg:items-end">
+      <label className="grid gap-1.5 text-sm font-medium text-slate-700">
+        Report type
+        <select
+          className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-teal-500"
+          defaultValue={type}
+          name="type"
+        >
+          {reportOptions.map((option) => (
+            <option key={option.value} value={option.value}>{option.label}</option>
+          ))}
+        </select>
+      </label>
+      <label className="grid gap-1.5 text-sm font-medium text-slate-700">
+        From
+        <input
+          className="rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-teal-500"
+          defaultValue={range.from}
+          name="from"
+          type="date"
+        />
+      </label>
+      <label className="grid gap-1.5 text-sm font-medium text-slate-700">
+        To
+        <input
+          className="rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-teal-500"
+          defaultValue={range.to}
+          name="to"
+          type="date"
+        />
+      </label>
+      <button
+        className="rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-teal-700"
+        type="submit"
+      >
+        Apply
+      </button>
+    </form>
+  );
 }

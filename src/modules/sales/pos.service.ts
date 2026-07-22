@@ -205,7 +205,7 @@ export async function searchProductsForPos(query: string): Promise<PosProductSea
     },
     select: productSelect,
     orderBy: { name: "asc" },
-    take: 40,
+    take: normalized ? 40 : 10,
   });
   return (await hydrateProductRows(products)).map(serializeProduct);
 }

@@ -22,6 +22,8 @@ export type ExpenseListFilters = {
   paymentMethod?: PaymentMethod;
   includeDeleted?: boolean;
   limit?: number;
+  page?: number;
+  pageSize?: number;
 };
 
 export type ExpenseListRow = {

@@ -13,7 +13,7 @@ function dateRangeToFinanceFilters(range: ReportDateRange) {
 }
 
 export async function getSupplierPayablesSummary(): Promise<ReportResult<{ outstandingTotal: string; invoiceCount: number; overdueCount: number }, SupplierPayableRow>> {
-  const invoices = await listSupplierInvoiceBalances(1000);
+  const { data: invoices } = await listSupplierInvoiceBalances({ pageSize: 1000 });
   const rows = invoices.map((invoice) => ({
     invoiceId: invoice.supplierInvoiceId,
     supplierName: invoice.supplierName,
@@ -45,8 +45,8 @@ export async function getExpensesSummary(range: ReportDateRange) {
   return getExpenseSummary(dateRangeToFinanceFilters(range));
 }
 
-export async function getSupplierPaymentsReport(range: ReportDateRange): Promise<ReportResult<{ totalAmount: string; paymentCount: number }, SupplierPaymentRow>> {
-  const payments = await listSupplierPayments(dateRangeToFinanceFilters(range));
+export async function getSupplierPaymentsReport(range: ReportDateRange & { page?: number }): Promise<ReportResult<{ totalAmount: string; paymentCount: number; totalPages?: number }, SupplierPaymentRow>> {
+  const { data: payments, total } = await listSupplierPayments({ ...dateRangeToFinanceFilters(range), limit: 10, page: range.page });
   const rows = payments.map((payment) => ({
     paymentId: payment.id,
     paymentNumber: payment.paymentNumber,
@@ -63,7 +63,7 @@ export async function getSupplierPaymentsReport(range: ReportDateRange): Promise
   const totalAmount = rows.reduce((sum, row) => sum.add(row.amount), new Prisma.Decimal(0));
   return {
     availability: rows.length ? "ready" : "empty",
-    summary: { totalAmount: totalAmount.toFixed(2), paymentCount: rows.length },
+    summary: { totalAmount: totalAmount.toFixed(2), paymentCount: total, totalPages: Math.ceil(total / 10) },
     rows,
     message: rows.length ? undefined : "No supplier payments found.",
   };

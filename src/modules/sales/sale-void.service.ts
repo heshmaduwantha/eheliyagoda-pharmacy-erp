@@ -169,8 +169,8 @@ function toSaleListItem(sale: SaleRow): SaleVoidListItem {
   };
 }
 
-export async function listSalesForVoidPage(filters: SaleVoidListFilters = {}): Promise<SaleVoidListItem[]> {
-  const limit = Math.min(Math.max(filters.limit ?? 40, 1), 100);
+export async function listSalesForVoidPage(filters: SaleVoidListFilters = {}): Promise<{ data: SaleVoidListItem[]; total: number }> {
+  const { page = 1, pageSize = 10 } = filters;
   const normalizedStatus = filters.status && filters.status !== "ALL" ? filters.status : undefined;
   const query = filters.search?.trim().toLowerCase();
   const normalizedFrom = normalizeDateOnly(filters.from);
@@ -209,69 +209,73 @@ export async function listSalesForVoidPage(filters: SaleVoidListFilters = {}): P
     ],
   };
 
-  const rows = await prisma.sale.findMany({
-    where,
-    include: {
-      cashier: {
-        select: {
-          name: true,
-          username: true,
+  const [rows, total] = await Promise.all([
+    prisma.sale.findMany({
+      where,
+      include: {
+        cashier: {
+          select: {
+            name: true,
+            username: true,
+          },
         },
-      },
-      lines: {
-        select: {
-          id: true,
-          productNameSnapshot: true,
-          batchNoSnapshot: true,
-          expiryDateSnapshot: true,
-          qty: true,
-          qtyBase: true,
-          unitPrice: true,
-          lineTotal: true,
-          unit: {
-            select: {
-              unitName: true,
+        lines: {
+          select: {
+            id: true,
+            productNameSnapshot: true,
+            batchNoSnapshot: true,
+            expiryDateSnapshot: true,
+            qty: true,
+            qtyBase: true,
+            unitPrice: true,
+            lineTotal: true,
+            unit: {
+              select: {
+                unitName: true,
+              },
+            },
+          },
+          orderBy: {
+            createdAt: "asc",
+          },
+        },
+        payments: {
+          select: {
+            id: true,
+            method: true,
+            amount: true,
+            cardReference: true,
+          },
+          orderBy: {
+            createdAt: "asc",
+          },
+        },
+        voidRecord: {
+          select: {
+            id: true,
+            reason: true,
+            refundAmount: true,
+            refundMethod: true,
+            refundReference: true,
+            stockPolicy: true,
+            voidedAt: true,
+            voidedBy: {
+              select: {
+                name: true,
+                username: true,
+              },
             },
           },
         },
-        orderBy: {
-          createdAt: "asc",
-        },
       },
-      payments: {
-        select: {
-          id: true,
-          method: true,
-          amount: true,
-          cardReference: true,
-        },
-        orderBy: {
-          createdAt: "asc",
-        },
-      },
-      voidRecord: {
-        select: {
-          id: true,
-          reason: true,
-          refundAmount: true,
-          refundMethod: true,
-          refundReference: true,
-          stockPolicy: true,
-          voidedAt: true,
-          voidedBy: {
-            select: {
-              name: true,
-              username: true,
-            },
-          },
-        },
-      },
-    },
-    orderBy: { createdAt: "desc" },
-    take: limit,
-  });
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
+    prisma.sale.count({ where }),
+  ]);
 
-  return rows.map(toSaleListItem);
+  return { data: rows.map(toSaleListItem), total };
 }
 
 export async function voidSale(input: VoidSaleInput, actor: CurrentUser): Promise<SaleVoidResult> {

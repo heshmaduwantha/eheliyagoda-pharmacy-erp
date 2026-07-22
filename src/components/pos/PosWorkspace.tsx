@@ -320,6 +320,7 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
             onHold={() => setNotice({ tone: "warning", message: "Held sales are not implemented yet." })}
             onPayment={openPayment}
           />
+
         </div>
       </div>
 

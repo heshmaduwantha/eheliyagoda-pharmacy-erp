@@ -41,7 +41,7 @@ async function run() {
   await loadDashboard();
   await searchProductsForPos("");
   await searchProductsForPos(productQuery);
-  await searchProducts(productQuery);
+  await searchProducts({ query: productQuery });
 
   const results: BenchmarkResult[] = [];
   results.push(await benchmark("login-preflight", getBootstrapState));
@@ -51,7 +51,7 @@ async function run() {
   results.push(await benchmark("dashboard", loadDashboard));
   results.push(await benchmark("pos-load", () => searchProductsForPos("")));
   results.push(await benchmark("product-search", () => searchProductsForPos(productQuery)));
-  results.push(await benchmark("catalog-list", () => searchProducts(productQuery)));
+  results.push(await benchmark("catalog-list", () => searchProducts({ query: productQuery })));
 
   console.info(`[performance.baseline] ${JSON.stringify(results)}`);
 }

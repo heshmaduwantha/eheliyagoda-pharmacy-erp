@@ -14,11 +14,32 @@ export type CreateSupplierInput = {
 };
 
 /** Lists suppliers (active first) for procurement screens. */
-export function listSuppliers() {
-  return prisma.supplier.findMany({
-    orderBy: [{ isActive: "desc" }, { name: "asc" }],
-    take: 200,
-  });
+export async function listSuppliers(options: { page?: number; pageSize?: number; search?: string } = {}) {
+  const { page = 1, pageSize = 10, search } = options;
+  const trimmed = search?.trim();
+
+  const where: import("@prisma/client").Prisma.SupplierWhereInput = trimmed
+    ? {
+        OR: [
+          { name: { contains: trimmed, mode: "insensitive" } },
+          { contactPerson: { contains: trimmed, mode: "insensitive" } },
+          { phone: { contains: trimmed, mode: "insensitive" } },
+          { email: { contains: trimmed, mode: "insensitive" } },
+        ],
+      }
+    : {};
+
+  const [data, total] = await Promise.all([
+    prisma.supplier.findMany({
+      where,
+      orderBy: [{ isActive: "desc" }, { name: "asc" }],
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
+    prisma.supplier.count({ where }),
+  ]);
+
+  return { data, total };
 }
 
 /** Active suppliers only — used to populate the GRN supplier selector. */

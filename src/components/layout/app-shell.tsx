@@ -1,13 +1,67 @@
 import Link from "next/link";
-import { Bell, HeartPulse, LogOut, Search, ShieldCheck } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { logoutAction } from "@/modules/auth/actions";
 import { SidebarNav } from "./sidebar-nav";
 import { Brand } from "@/components/ui/brand";
 import type { CurrentUser } from "@/modules/auth/session";
+import { NotificationBell } from "./notification-bell";
+import type { AlertCounts } from "@/modules/dashboard/dashboard.service";
 
-export function AppShell({ children, user }: Readonly<{ children: React.ReactNode; user: CurrentUser }>) {
+export function AppShell({ children, user, alerts }: Readonly<{ children: React.ReactNode; user: CurrentUser; alerts: AlertCounts }>) {
   const initials = user.name.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase();
-  const roleLabel = user.roleNames && user.roleNames.length > 0 ? user.roleNames.join(", ") : user.roleName ?? user.roleCode;
 
-  return <div className="min-h-screen bg-[#f4f8f8]"><aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col overflow-hidden bg-[linear-gradient(180deg,#064e59_0%,#006b6b_55%,#007f72_100%)] px-4 py-6 shadow-2xl shadow-teal-950/10 lg:flex"><div className="px-2"><Link href="/dashboard"><Brand inverse /></Link></div><div className="mt-8 rounded-2xl border border-white/10 bg-white/6 px-3 py-3 text-sm text-white"><span className="flex items-center gap-2 font-semibold"><HeartPulse className="size-4 text-teal-300" />Patient-first care</span></div><div className="mt-6 flex-1 overflow-y-auto"><SidebarNav permissions={user.permissions} /></div><div className="rounded-2xl border border-white/10 bg-teal-950/20 p-4 text-teal-50"><div className="flex items-center gap-2 text-sm font-semibold"><ShieldCheck className="size-5 text-teal-300" />Secure access</div><p className="mt-2 text-xs leading-5 text-teal-100/60">Your account access is protected.</p></div></aside><div className="lg:pl-64"><header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl"><div className="flex h-[72px] items-center gap-4 px-4 sm:px-6 lg:px-8"><Link className="lg:hidden" href="/dashboard"><Brand compact /></Link><div className="hidden max-w-xl flex-1 items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-400 sm:flex"><Search className="size-4" /><span>Search coming soon</span></div><div className="ml-auto flex items-center gap-3"><button aria-label="Notifications" className="grid size-10 place-items-center rounded-full border border-slate-200 text-slate-500" type="button"><Bell className="size-[18px]" /></button><div className="hidden sm:block text-right"><p className="text-sm font-bold text-slate-800">{user.name}</p><p className="text-xs text-slate-500">{roleLabel}</p></div><div className="grid size-10 place-items-center rounded-full bg-teal-100 text-sm font-bold text-teal-800">{initials}</div><form action={logoutAction}><button aria-label="Log out" className="grid size-10 place-items-center rounded-full text-slate-400 transition hover:bg-red-50 hover:text-red-600" type="submit"><LogOut className="size-[18px]" /></button></form></div></div></header><main className="mx-auto max-w-[1480px] px-4 py-6 pb-24 sm:px-6 lg:px-8 lg:py-8">{children}</main></div><SidebarNav mobile permissions={user.permissions} /></div>;
+  return (
+    <div className="min-h-screen bg-[#f4f8f8]">
+      {/* Desktop sidebar */}
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col overflow-hidden bg-[#064e59] px-4 pt-6 pb-6 shadow-xl lg:flex">
+        <div className="px-2">
+          <Link href="/dashboard">
+            <Brand inverse />
+          </Link>
+        </div>
+        <div className="mt-6 flex-1 overflow-y-auto">
+          <SidebarNav permissions={user.permissions} />
+        </div>
+        {/* User badge at bottom */}
+        <div className="mt-4 flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-2.5">
+          <div className="grid size-8 shrink-0 place-items-center rounded-full bg-teal-500 text-xs font-bold text-white">
+            {initials}
+          </div>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold text-white">{user.name}</p>
+          </div>
+          <form action={logoutAction} className="ml-auto">
+            <button aria-label="Log out" className="grid size-7 place-items-center rounded-lg text-teal-300 transition hover:bg-white/10 hover:text-white" type="submit">
+              <LogOut className="size-4" />
+            </button>
+          </form>
+        </div>
+      </aside>
+
+      {/* Main content */}
+      <div className="flex min-h-screen min-w-0 flex-col lg:pl-64">
+        <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl">
+          <div className="flex h-12 items-center gap-4 px-4 sm:px-6 lg:px-8">
+            <Link className="lg:hidden" href="/dashboard">
+              <Brand compact />
+            </Link>
+            <div className="ml-auto flex items-center gap-3">
+              <NotificationBell alerts={alerts} />
+
+            </div>
+          </div>
+        </header>
+        <main className="mx-auto flex-1 min-w-0 w-full max-w-[1480px] px-2 py-4 pb-12 sm:px-4 lg:px-6 lg:py-4">
+          {children}
+        </main>
+
+        <footer className="mt-auto border-t border-slate-200/60 bg-white/50 py-4 text-center text-xs font-medium text-slate-500 pb-20 lg:pb-4">
+          All rights reserved by Medicare © 2026
+        </footer>
+      </div>
+
+      {/* Mobile bottom nav */}
+      <SidebarNav mobile permissions={user.permissions} />
+    </div>
+  );
 }

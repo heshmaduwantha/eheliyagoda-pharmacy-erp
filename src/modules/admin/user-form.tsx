@@ -4,6 +4,7 @@ import { useActionState, useEffect, useMemo, useRef } from "react";
 import type { AdminRoleListRow, AdminUserDetail } from "./rbac.service";
 import { saveUserAction } from "./rbac.actions";
 import { idleFormState } from "@/lib/forms";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Field, FormAlert, SubmitButton, inputClass } from "@/components/ui/form";
 
 type UserFormProps = {
@@ -56,13 +57,17 @@ export function UserForm({ user, roles }: UserFormProps) {
 
       <div className="grid gap-4 sm:grid-cols-[1fr_1fr]">
         <Field error={state.status === "error" ? state.fieldErrors?.primaryRoleId : undefined} htmlFor="primaryRoleId" label="Primary role">
-          <select className={inputClass} defaultValue={defaultPrimaryRoleId} id="primaryRoleId" name="primaryRoleId" required>
-            {roles.map((role) => (
-              <option key={role.id} value={role.id}>
-                {role.name} {role.isActive ? "" : "(inactive)"}
-              </option>
-            ))}
-          </select>
+          <SearchableSelect
+            id="primaryRoleId"
+            name="primaryRoleId"
+            defaultValue={defaultPrimaryRoleId}
+            required
+            placeholder="Select a role..."
+            options={roles.map((role) => ({
+              value: role.id,
+              label: `${role.name} ${role.isActive ? "" : "(inactive)"}`,
+            }))}
+          />
         </Field>
         <div className="rounded-2xl border border-slate-200 bg-white p-4">
           <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Role assignment</p>

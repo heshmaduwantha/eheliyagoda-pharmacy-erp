@@ -7,7 +7,7 @@ import { requirePermission } from "@/modules/auth/permissions";
 
 export default async function AdminUsersNewPage() {
   await requirePermission("admin.users.manage");
-  const roles = await listAdminRoles({ status: "active" });
+  const { data: roles } = await listAdminRoles({ status: "active" });
   if (roles.length === 0) redirect("/admin/roles/new");
 
   return (

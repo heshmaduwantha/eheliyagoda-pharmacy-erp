@@ -26,7 +26,7 @@ export const permissionRegistry: PermissionDefinition[] = [
   { code: "inventory.product.manage", module: "inventory", resource: "product", action: "manage", description: "Create and update products" },
   { code: "inventory.batch.read", module: "inventory", resource: "batch", action: "read", description: "View stock batches" },
   { code: "inventory.batch.adjust", module: "inventory", resource: "batch", action: "adjust", description: "Adjust batch quantities" },
-  { code: "inventory.stock.writeoff", module: "inventory", resource: "stock", action: "writeoff", description: "Write off stock" },
+  { code: "inventory.stock.writeoff", module: "inventory", resource: "stock", action: "writeoff", description: "Write off expired stock", isSensitive: true },
   { code: "inventory.expiry_quarantine.manage", module: "inventory", resource: "expiry_quarantine", action: "manage", description: "Move stock in and out of quarantine" },
 
   // Procurement

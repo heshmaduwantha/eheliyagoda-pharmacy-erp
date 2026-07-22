@@ -38,7 +38,7 @@ export function ConfirmGrnButton({ grnId }: { grnId: string }) {
           </p>
           <div className="flex gap-2">
             <button
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-teal-600 to-emerald-500 px-5 py-2.5 text-sm font-bold text-white shadow-lg disabled:opacity-60"
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-teal-700 disabled:opacity-60"
               disabled={pending}
               onClick={onConfirm}
               type="button"
@@ -53,11 +53,12 @@ export function ConfirmGrnButton({ grnId }: { grnId: string }) {
         </div>
       ) : (
         <button
-          className="inline-flex w-fit items-center gap-2 rounded-xl bg-gradient-to-r from-teal-600 to-emerald-500 px-5 py-2.5 text-sm font-bold text-white shadow-lg"
+          className="inline-flex w-fit items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-teal-700"
           onClick={() => setConfirming(true)}
           type="button"
         >
-          <ShieldCheck className="size-4" /> Confirm GRN
+          <CheckCircle2 className="size-4" />
+          Confirm & process GRN
         </button>
       )}
     </div>

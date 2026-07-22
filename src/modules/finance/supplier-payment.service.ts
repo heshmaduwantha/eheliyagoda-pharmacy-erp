@@ -74,25 +74,32 @@ function paymentWhere(filters: SupplierPaymentListFilters = {}) {
   return where;
 }
 
-export async function listSupplierInvoiceBalances(limit = 100): Promise<SupplierInvoiceBalanceRow[]> {
-  const invoices = await prisma.supplierInvoice.findMany({
-    where: { status: { not: SupplierInvoiceStatus.CANCELLED } },
-    select: {
-      id: true,
-      supplierId: true,
-      invoiceNo: true,
-      totalAmount: true,
-      paidAmount: true,
-      status: true,
-      dueDate: true,
-      supplier: { select: { name: true } },
-      payments: { select: { paidAt: true }, orderBy: { paidAt: "desc" }, take: 1 },
-    },
-    orderBy: [{ status: "asc" }, { createdAt: "desc" }],
-    take: limit,
-  });
+export async function listSupplierInvoiceBalances(options: { page?: number; pageSize?: number } = {}): Promise<{ data: SupplierInvoiceBalanceRow[]; total: number }> {
+  const { page = 1, pageSize = 10 } = options;
+  const where = { status: { not: SupplierInvoiceStatus.CANCELLED } };
 
-  return invoices.map((invoice) => {
+  const [invoices, total] = await Promise.all([
+    prisma.supplierInvoice.findMany({
+      where,
+      select: {
+        id: true,
+        supplierId: true,
+        invoiceNo: true,
+        totalAmount: true,
+        paidAmount: true,
+        status: true,
+        dueDate: true,
+        supplier: { select: { name: true } },
+        payments: { select: { paidAt: true }, orderBy: { paidAt: "desc" }, take: 1 },
+      },
+      orderBy: [{ status: "asc" }, { createdAt: "desc" }],
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
+    prisma.supplierInvoice.count({ where }),
+  ]);
+
+  const mapped = invoices.map((invoice) => {
     const outstanding = Prisma.Decimal.max(invoice.totalAmount.sub(invoice.paidAmount), 0);
     return {
       supplierInvoiceId: invoice.id,
@@ -107,25 +114,35 @@ export async function listSupplierInvoiceBalances(limit = 100): Promise<Supplier
       latestPaymentAt: invoice.payments[0]?.paidAt ? invoice.payments[0].paidAt.toISOString() : null,
     };
   });
+
+  return { data: mapped, total };
 }
 
-export async function listSupplierPayments(filters: SupplierPaymentListFilters = {}): Promise<SupplierPaymentListRow[]> {
-  const payments = await prisma.supplierPayment.findMany({
-    where: paymentWhere(filters),
-    select: {
-      id: true,
-      paymentNumber: true,
-      amount: true,
-      paymentMethod: true,
-      reference: true,
-      paidAt: true,
-      supplierInvoice: { select: { invoiceNo: true, totalAmount: true, paidAmount: true } },
-      supplier: { select: { name: true } },
-      createdBy: { select: { name: true } },
-    },
-    orderBy: [{ paidAt: "desc" }, { createdAt: "desc" }],
-    take: filters.limit ?? 100,
-  });
+export async function listSupplierPayments(filters: SupplierPaymentListFilters = {}): Promise<{ data: SupplierPaymentListRow[]; total: number }> {
+  const page = filters.page ?? 1;
+  const pageSize = filters.limit ?? 10;
+  
+  const where = paymentWhere(filters);
+  const [payments, total] = await Promise.all([
+    prisma.supplierPayment.findMany({
+      where,
+      select: {
+        id: true,
+        paymentNumber: true,
+        amount: true,
+        paymentMethod: true,
+        reference: true,
+        paidAt: true,
+        supplierInvoice: { select: { invoiceNo: true, totalAmount: true, paidAmount: true } },
+        supplier: { select: { name: true } },
+        createdBy: { select: { name: true } },
+      },
+      orderBy: [{ paidAt: "desc" }, { createdAt: "desc" }],
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
+    prisma.supplierPayment.count({ where }),
+  ]);
 
   const rows: SupplierPaymentListRow[] = [];
   for (const payment of payments) {
@@ -143,7 +160,7 @@ export async function listSupplierPayments(filters: SupplierPaymentListFilters =
       outstandingAfter: currentOutstanding.toFixed(2),
     });
   }
-  return rows;
+  return { data: rows, total };
 }
 
 export async function recordSupplierPayment(input: CreateSupplierPaymentInput, actor: CurrentUser) {

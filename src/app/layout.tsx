@@ -6,6 +6,15 @@ export const metadata: Metadata = {
   description: "Secure pharmacy and clinic operations platform",
 };
 
+import { Toaster } from "sonner";
+
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en"><body>{children}</body></html>;
+  return (
+    <html lang="en">
+      <body>
+        {children}
+        <Toaster position="top-center" richColors />
+      </body>
+    </html>
+  );
 }

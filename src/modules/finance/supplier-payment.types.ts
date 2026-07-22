@@ -19,6 +19,7 @@ export type SupplierPaymentListFilters = {
   supplierId?: string;
   invoiceId?: string;
   limit?: number;
+  page?: number;
 };
 
 export type SupplierPaymentListRow = {

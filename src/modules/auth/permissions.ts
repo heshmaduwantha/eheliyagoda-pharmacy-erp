@@ -33,7 +33,7 @@ export function hasPermission(userOrId: CurrentUser | string, permissionCode: st
   }
   return measurePerformanceSegmentSync(
     "permissionMs",
-    () => userOrId.permissions.includes(canonicalPermission) || userOrId.permissions.includes(permissionCode),
+    () => userOrId.roleCode === "owner" || userOrId.permissions.includes(canonicalPermission) || userOrId.permissions.includes(permissionCode),
   );
 }
 

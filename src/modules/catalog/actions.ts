@@ -33,11 +33,22 @@ const createProductSchema = z.object({
 export async function createProductAction(_prev: FormState, formData: FormData): Promise<FormState> {
   const actor = await requirePermission("product.manage", { onDenied: "throw" });
 
-  let units: unknown = [];
+  let units: unknown[] = [];
   try {
     units = JSON.parse(String(formData.get("units") ?? "[]"));
   } catch {
     return { status: "error", message: "Invalid unit configuration." };
+  }
+
+  const baseUnitName = formData.get("baseUnitName")?.toString().trim() || "";
+  
+  if (units.length === 0 && baseUnitName) {
+    units.push({
+      unitName: baseUnitName,
+      factorToBase: 1,
+      isSaleDefault: true,
+      isPurchaseDefault: true,
+    });
   }
 
   const parsed = createProductSchema.safeParse({
@@ -47,8 +58,10 @@ export async function createProductAction(_prev: FormState, formData: FormData):
     form: formData.get("form") || undefined,
     productType: formData.get("productType"),
     category: formData.get("category") || undefined,
-    baseUnitName: formData.get("baseUnitName"),
-    prescriptionRule: formData.get("prescriptionRule"),
+    baseUnitName,
+    prescriptionRule: (formData.get("isControlled") === "on" || formData.get("isControlled") === "true") 
+      ? "HARD_REQUIRED_CONTROLLED" 
+      : formData.get("prescriptionRule"),
     isControlled: formData.get("isControlled") === "on" || formData.get("isControlled") === "true",
     defaultSellingPrice: formData.get("defaultSellingPrice") || undefined,
     reorderLevel: formData.get("reorderLevel") || undefined,
@@ -57,9 +70,10 @@ export async function createProductAction(_prev: FormState, formData: FormData):
 
   if (!parsed.success) {
     const flat = parsed.error.flatten();
+    import("node:fs").then(fs => fs.writeFileSync("/Users/pavithrameddaduwage/Desktop/ERP/eheliyagoda-pharmacy-erp/zod_error.log", JSON.stringify(flat, null, 2)));
     return {
       status: "error",
-      message: flat.formErrors[0] ?? "Please correct the highlighted fields.",
+      message: "Please check the form for errors.",
       fieldErrors: toFieldErrors(flat.fieldErrors),
     };
   }

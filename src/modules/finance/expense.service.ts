@@ -79,27 +79,34 @@ function expenseWhere(filters: ExpenseListFilters = {}) {
   return where;
 }
 
-export async function listExpenses(filters: ExpenseListFilters = {}): Promise<ExpenseListRow[]> {
-  const expenses = await prisma.expense.findMany({
-    where: expenseWhere(filters),
-    select: {
-      id: true,
-      expenseNumber: true,
-      date: true,
-      category: true,
-      description: true,
-      amount: true,
-      paymentMethod: true,
-      reference: true,
-      notes: true,
-      deletedAt: true,
-      createdBy: { select: { name: true } },
-    },
-    orderBy: [{ date: "desc" }, { createdAt: "desc" }],
-    take: filters.limit ?? 100,
-  });
+export async function listExpenses(filters: ExpenseListFilters = {}): Promise<{ data: ExpenseListRow[]; total: number }> {
+  const { page = 1, pageSize = 10 } = filters;
+  const where = expenseWhere(filters);
 
-  return expenses.map((expense) => ({
+  const [expenses, total] = await Promise.all([
+    prisma.expense.findMany({
+      where,
+      select: {
+        id: true,
+        expenseNumber: true,
+        date: true,
+        category: true,
+        description: true,
+        amount: true,
+        paymentMethod: true,
+        reference: true,
+        notes: true,
+        deletedAt: true,
+        createdBy: { select: { name: true } },
+      },
+      orderBy: [{ date: "desc" }, { createdAt: "desc" }],
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
+    prisma.expense.count({ where }),
+  ]);
+
+  const rows = expenses.map((expense) => ({
     id: expense.id,
     expenseNumber: expense.expenseNumber,
     date: expense.date.toISOString().slice(0, 10),
@@ -112,6 +119,8 @@ export async function listExpenses(filters: ExpenseListFilters = {}): Promise<Ex
     createdBy: expense.createdBy?.name ?? null,
     deletedAt: expense.deletedAt ? expense.deletedAt.toISOString() : null,
   }));
+
+  return { data: rows, total };
 }
 
 export async function getExpenseSummary(filters: ExpenseListFilters = {}): Promise<ExpenseSummaryResult> {

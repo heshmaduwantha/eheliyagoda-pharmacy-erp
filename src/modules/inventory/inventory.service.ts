@@ -143,17 +143,25 @@ export async function getStockSummary(): Promise<StockSummary> {
   return { totalActiveProducts, lowStockCount, nearExpiryCount, expiredOrQuarantinedCount };
 }
 
-export async function getBatchList(filters: InventoryFilterInput = {}): Promise<InventoryBatchRecord[]> {
-  const rows = await prisma.batch.findMany({
-    where: {
-      status: batchStatus(filters.status),
-      OR: batchSearchWhere(filters.search),
-    },
-    include: batchInclude,
-    orderBy: [{ createdAt: "desc" }],
-    take: 250,
-  });
-  return rows.map(serializeBatch);
+export async function getBatchList(filters: InventoryFilterInput = {}): Promise<{ data: InventoryBatchRecord[]; total: number }> {
+  const { page = 1, pageSize = 10 } = filters;
+  const where = {
+    status: batchStatus(filters.status),
+    OR: batchSearchWhere(filters.search),
+  };
+
+  const [rows, total] = await Promise.all([
+    prisma.batch.findMany({
+      where,
+      include: batchInclude,
+      orderBy: [{ createdAt: "desc" }],
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
+    prisma.batch.count({ where }),
+  ]);
+  
+  return { data: rows.map(serializeBatch), total };
 }
 
 export async function getLatestActiveBatches(limit = 4): Promise<InventoryBatchRecord[]> {
@@ -166,27 +174,34 @@ export async function getLatestActiveBatches(limit = 4): Promise<InventoryBatchR
   return rows.map(serializeBatch);
 }
 
-export async function getStockMovementList(filters: InventoryFilterInput = {}): Promise<StockMovementRecord[]> {
+export async function getStockMovementList(filters: InventoryFilterInput = {}): Promise<{ data: StockMovementRecord[]; total: number }> {
+  const { page = 1, pageSize = 10 } = filters;
   const query = filters.search?.trim();
-  const rows = await prisma.stockMovement.findMany({
-    where: {
-      movementType: movementType(filters.status),
-      OR: query
-        ? [
-            { product: { name: { contains: query, mode: "insensitive" } } },
-            { batch: { batchNo: { contains: query, mode: "insensitive" } } },
-            { refType: { contains: query, mode: "insensitive" } },
-            { refId: { contains: query, mode: "insensitive" } },
-          ]
-        : undefined,
-    },
-    include: {
-      product: { select: { name: true, baseUnitName: true } },
-      batch: { select: { batchNo: true } },
-    },
-    orderBy: { createdAt: "desc" },
-    take: 250,
-  });
+  const where = {
+    movementType: movementType(filters.status),
+    OR: query
+      ? [
+          { product: { name: { contains: query, mode: "insensitive" as const } } },
+          { batch: { batchNo: { contains: query, mode: "insensitive" as const } } },
+          { refType: { contains: query, mode: "insensitive" as const } },
+          { refId: { contains: query, mode: "insensitive" as const } },
+        ]
+      : undefined,
+  };
+
+  const [rows, total] = await Promise.all([
+    prisma.stockMovement.findMany({
+      where,
+      include: {
+        product: { select: { name: true, baseUnitName: true } },
+        batch: { select: { batchNo: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
+    prisma.stockMovement.count({ where }),
+  ]);
 
   const creatorIds = [...new Set(rows.flatMap((row) => row.createdById ? [row.createdById] : []))];
   const creators = creatorIds.length
@@ -194,7 +209,7 @@ export async function getStockMovementList(filters: InventoryFilterInput = {}): 
     : [];
   const creatorById = new Map(creators.map((creator) => [creator.id, creator.name]));
 
-  return rows.map((row) => ({
+  const data = rows.map((row) => ({
     id: row.id,
     occurredAt: row.createdAt.toISOString(),
     productName: row.product.name,
@@ -205,45 +220,55 @@ export async function getStockMovementList(filters: InventoryFilterInput = {}): 
     reference: `${row.refType} · ${row.refId}`,
     createdBy: row.createdById ? creatorById.get(row.createdById) ?? null : null,
   }));
+
+  return { data, total };
 }
 
-export async function getExpiryAlerts(filters: InventoryFilterInput = {}): Promise<ExpiryAlertRecord[]> {
+export async function getExpiryAlerts(filters: InventoryFilterInput = {}): Promise<{ data: ExpiryAlertRecord[]; total: number }> {
+  const { page = 1, pageSize = 10 } = filters;
   const today = startOfToday();
   const threshold = addDays(today, DEFAULT_NEAR_EXPIRY_DAYS);
   const query = filters.search?.trim();
-  const rows = await prisma.batch.findMany({
-    where: {
-      qtyOnHandBase: { gt: 0 },
-      status: batchStatus(filters.status),
-      AND: [
-        {
-          OR: [
-            { status: BatchStatus.QUARANTINED },
-            { expiryDate: { lte: threshold } },
-          ],
-        },
-        ...(query
-          ? [{
-              OR: [
-                { batchNo: { contains: query, mode: "insensitive" as const } },
-                { product: { name: { contains: query, mode: "insensitive" as const } } },
-              ],
-            }]
-          : []),
-      ],
-    },
-    include: { product: { select: { name: true, baseUnitName: true } } },
-    orderBy: [{ expiryDate: "asc" }, { createdAt: "desc" }],
-    take: 250,
-  });
+  
+  const where = {
+    qtyOnHandBase: { gt: 0 },
+    status: batchStatus(filters.status),
+    AND: [
+      {
+        OR: [
+          { status: BatchStatus.QUARANTINED },
+          { expiryDate: { lte: threshold } },
+        ],
+      },
+      ...(query
+        ? [{
+            OR: [
+              { batchNo: { contains: query, mode: "insensitive" as const } },
+              { product: { name: { contains: query, mode: "insensitive" as const } } },
+            ],
+          }]
+        : []),
+    ],
+  };
 
-  return rows.map((row) => {
+  const [rows, total] = await Promise.all([
+    prisma.batch.findMany({
+      where,
+      include: { product: { select: { name: true, baseUnitName: true } } },
+      orderBy: [{ expiryDate: "asc" }, { createdAt: "desc" }],
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
+    prisma.batch.count({ where }),
+  ]);
+
+  const data = rows.map((row) => {
     const daysLeft = daysBetween(today, row.expiryDate);
     const alertState = row.status === BatchStatus.QUARANTINED
-      ? "QUARANTINED"
+      ? "QUARANTINED" as const
       : daysLeft != null && daysLeft < 0
-        ? "EXPIRED"
-        : "NEAR_EXPIRY";
+        ? "EXPIRED" as const
+        : "NEAR_EXPIRY" as const;
     return {
       id: row.id,
       productName: row.product.name,
@@ -255,5 +280,37 @@ export async function getExpiryAlerts(filters: InventoryFilterInput = {}): Promi
       status: row.status,
       alertState,
     };
+  });
+
+  return { data, total };
+}
+
+export async function removeExpiredBatch(batchId: string, actorUserId: string) {
+  return prisma.$transaction(async (tx) => {
+    const batch = await tx.batch.findUnique({ where: { id: batchId }, include: { product: true } });
+    if (!batch) throw new Error("Batch not found.");
+    if (batch.qtyOnHandBase.lte(0)) throw new Error("Batch is already depleted.");
+    
+    // Create stock movement for write off
+    await tx.stockMovement.create({
+      data: {
+        productId: batch.productId,
+        batchId: batch.id,
+        movementType: StockMovementType.WRITE_OFF,
+        qtyBase: batch.qtyOnHandBase.negated(),
+        refType: "WRITE_OFF",
+        refId: "EXPIRY",
+        createdById: actorUserId,
+      }
+    });
+
+    // Update batch to depleted and qty 0
+    await tx.batch.update({
+      where: { id: batchId },
+      data: {
+        qtyOnHandBase: 0,
+        status: BatchStatus.DEPLETED
+      }
+    });
   });
 }

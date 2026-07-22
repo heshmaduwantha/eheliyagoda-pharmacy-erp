@@ -23,9 +23,16 @@ export default async function GrnDetailPage({ params }: { params: Promise<{ id: 
     <div className="grid gap-7">
       <PageHeader
         action={
-          <Link className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600" href="/stock/grn">
-            <ArrowLeft className="size-4" /> Back
-          </Link>
+          <div className="flex gap-2">
+            <Link className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600" href="/stock/grn">
+              <ArrowLeft className="size-4" /> Back
+            </Link>
+            {grn.status === "DRAFT" && (
+              <Link className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600" href={`/stock/grn/${grn.id}/edit`}>
+                Edit draft
+              </Link>
+            )}
+          </div>
         }
         description={`Supplier: ${grn.supplier.name}`}
         title={grn.grnNo}

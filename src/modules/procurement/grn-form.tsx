@@ -2,10 +2,11 @@
 
 import { useActionState, useMemo, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Field, FormAlert, SubmitButton, inputClass } from "@/components/ui/form";
 import { formatMoney } from "@/lib/money";
 import { idleFormState } from "@/lib/forms";
-import { createGrnDraftAction } from "./actions";
+import { createGrnDraftAction, updateGrnDraftAction } from "./actions";
 
 export type GrnFormProduct = {
   id: string;
@@ -27,6 +28,13 @@ type LineRow = {
   sellingPrice: string;
 };
 
+export type GrnFormInitialData = {
+  id: string;
+  supplierId: string;
+  notes: string;
+  lines: LineRow[];
+};
+
 const emptyLine = (): LineRow => ({
   productId: "",
   unitId: "",
@@ -40,9 +48,20 @@ const emptyLine = (): LineRow => ({
 
 const lineTotal = (line: LineRow) => (Number(line.qtyInUnit) || 0) * (Number(line.costPrice) || 0);
 
-export function GrnForm({ suppliers, products }: { suppliers: GrnFormSupplier[]; products: GrnFormProduct[] }) {
-  const [state, formAction] = useActionState(createGrnDraftAction, idleFormState);
-  const [lines, setLines] = useState<LineRow[]>([emptyLine()]);
+export function GrnForm({
+  suppliers,
+  products,
+  initialData,
+}: {
+  suppliers: GrnFormSupplier[];
+  products: GrnFormProduct[];
+  initialData?: GrnFormInitialData;
+}) {
+  const [state, formAction] = useActionState(
+    initialData ? updateGrnDraftAction.bind(null, initialData.id) : createGrnDraftAction,
+    idleFormState
+  );
+  const [lines, setLines] = useState<LineRow[]>(initialData?.lines.length ? initialData.lines : [emptyLine()]);
   const productById = useMemo(() => new Map(products.map((p) => [p.id, p])), [products]);
 
   const grandTotal = lines.reduce((sum, line) => sum + lineTotal(line), 0);
@@ -83,15 +102,17 @@ export function GrnForm({ suppliers, products }: { suppliers: GrnFormSupplier[];
 
       <div className="grid gap-4 sm:grid-cols-2">
         <Field error={state.status === "error" ? state.fieldErrors?.supplierId : undefined} htmlFor="supplierId" label="Supplier">
-          <select className={inputClass} defaultValue="" id="supplierId" name="supplierId" required>
-            <option disabled value="">Select supplier…</option>
-            {suppliers.map((s) => (
-              <option key={s.id} value={s.id}>{s.name}</option>
-            ))}
-          </select>
+          <SearchableSelect
+            id="supplierId"
+            name="supplierId"
+            defaultValue={initialData?.supplierId ?? ""}
+            required
+            placeholder="Select supplier..."
+            options={suppliers.map((s) => ({ value: s.id, label: s.name }))}
+          />
         </Field>
         <Field htmlFor="notes" label="Note">
-          <input className={inputClass} id="notes" name="notes" placeholder="Optional remark" />
+          <input className={inputClass} defaultValue={initialData?.notes ?? ""} id="notes" name="notes" placeholder="Optional remark" />
         </Field>
       </div>
 
@@ -132,13 +153,14 @@ export function GrnForm({ suppliers, products }: { suppliers: GrnFormSupplier[];
                 const isMedicine = product?.productType === "MEDICINE";
                 return (
                   <tr className="border-t border-slate-100" key={index}>
-                    <td className={`${cell} w-[15%]`}>
-                      <select className={inputClass} onChange={(e) => onProductChange(index, e.target.value)} value={line.productId}>
-                        <option disabled value="">Select…</option>
-                        {products.map((p) => (
-                          <option key={p.id} value={p.id}>{p.name}</option>
-                        ))}
-                      </select>
+                    <td className={`${cell} w-[15%] min-w-[200px]`}>
+                      <SearchableSelect
+                        name={`productId_${index}`}
+                        defaultValue={line.productId}
+                        onChange={(val) => onProductChange(index, val)}
+                        placeholder="Search product..."
+                        options={products.map((p) => ({ value: p.id, label: p.name }))}
+                      />
                     </td>
                     <td className={`${cell} w-[9%]`}>
                       <select className={inputClass} onChange={(e) => updateLine(index, { unitId: e.target.value })} value={line.unitId}>

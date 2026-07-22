@@ -1,9 +1,11 @@
 "use client";
 
 import { useActionState, useEffect, useMemo, useRef, useState } from "react";
+import { ChevronDown } from "lucide-react";
 import { recordSupplierPaymentAction } from "@/modules/finance/finance.actions";
 import type { SupplierInvoiceBalanceRow } from "@/modules/finance/supplier-payment.types";
 import { idleFormState } from "@/lib/forms";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Field, FormAlert, SubmitButton, inputClass } from "@/components/ui/form";
 
 const PAYMENT_METHODS = ["CASH", "CARD"] as const;
@@ -47,7 +49,11 @@ export function SupplierPaymentForm({ invoices }: { invoices: SupplierInvoiceBal
   }, [invoices, state]);
 
   if (invoices.length === 0) {
-    return <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-sm text-slate-500">No outstanding supplier invoices available for payment.</div>;
+    return (
+      <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6 text-sm text-slate-500">
+        No outstanding invoices — you&apos;re all paid up!
+      </div>
+    );
   }
 
   const outstanding = Number(selectedInvoice?.outstandingAmount ?? "0");
@@ -57,38 +63,39 @@ export function SupplierPaymentForm({ invoices }: { invoices: SupplierInvoiceBal
 
   return (
     <form action={formAction} className="grid gap-4" ref={formRef}>
-      <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-        <Field htmlFor="supplierInvoiceId" label="Supplier invoice" error={state.status === "error" ? state.fieldErrors?.supplierInvoiceId : undefined}>
-          <select
-            className={inputClass}
-            id="supplierInvoiceId"
-            name="supplierInvoiceId"
-            value={selectedInvoiceId}
-            onChange={(event) => setSelectedInvoiceId(event.target.value)}
-            required
-          >
-            {invoices.map((invoice) => (
-              <option key={invoice.supplierInvoiceId} value={invoice.supplierInvoiceId}>
-                {invoice.invoiceNumber ?? invoice.supplierInvoiceId} · {invoice.supplierName} · Balance {invoice.outstandingAmount}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field htmlFor="paidAt" label="Payment date" error={state.status === "error" ? state.fieldErrors?.paidAt : undefined}>
-          <input className={inputClass} id="paidAt" name="paidAt" onChange={(event) => setPaidAt(event.target.value)} value={paidAt} type="date" required />
-        </Field>
-      </div>
+      {/* Pick invoice */}
+      <Field htmlFor="supplierInvoiceId" label="Pick an invoice" error={state.status === "error" ? state.fieldErrors?.supplierInvoiceId : undefined}>
+        <SearchableSelect
+          id="supplierInvoiceId"
+          name="supplierInvoiceId"
+          defaultValue={selectedInvoiceId}
+          onChange={setSelectedInvoiceId}
+          required
+          placeholder="Select invoice..."
+          options={invoices.map((invoice) => ({
+            value: invoice.supplierInvoiceId,
+            label: `${invoice.supplierName} — ${invoice.invoiceNumber ?? "Invoice"} — You owe ${invoice.outstandingAmount}`,
+          }))}
+        />
+      </Field>
 
-      <div className="rounded-2xl border border-teal-100 bg-teal-50/60 p-4 text-sm text-teal-900">
-        <p className="font-bold">{selectedInvoice?.supplierName}</p>
-        <p className="mt-1 text-teal-800">
-          Invoice {selectedInvoice?.invoiceNumber ?? "—"} · Total {selectedInvoice?.totalAmount} · Paid {selectedInvoice?.paidAmount} · Outstanding {selectedInvoice?.outstandingAmount}
-        </p>
-        {selectedInvoice?.dueDate ? <p className="mt-1 text-xs text-teal-700">Due date: {selectedInvoice.dueDate}</p> : null}
-      </div>
+      {/* Invoice summary */}
+      {selectedInvoice && (
+        <div className="rounded-xl border border-teal-100 bg-teal-50/60 px-4 py-3 text-sm text-teal-900">
+          <p className="font-bold">{selectedInvoice.supplierName}</p>
+          <p className="mt-1 text-teal-800">
+            Invoice {selectedInvoice.invoiceNumber ?? "—"} · Total paid so far: {selectedInvoice.paidAmount} ·{" "}
+            <strong>Still owe: {selectedInvoice.outstandingAmount}</strong>
+          </p>
+          {selectedInvoice.dueDate && (
+            <p className="mt-1 text-xs text-teal-700">Due date: {selectedInvoice.dueDate}</p>
+          )}
+        </div>
+      )}
 
+      {/* Payment amount & method */}
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field htmlFor="amount" label="Amount" error={state.status === "error" ? state.fieldErrors?.amount : undefined}>
+        <Field htmlFor="amount" label="Amount to pay (LKR)" error={state.status === "error" ? state.fieldErrors?.amount : undefined}>
           <input
             className={inputClass}
             id="amount"
@@ -102,7 +109,7 @@ export function SupplierPaymentForm({ invoices }: { invoices: SupplierInvoiceBal
             required
           />
         </Field>
-        <Field htmlFor="paymentMethod" label="Payment method" error={state.status === "error" ? state.fieldErrors?.paymentMethod : undefined}>
+        <Field htmlFor="paymentMethod" label="Paid by" error={state.status === "error" ? state.fieldErrors?.paymentMethod : undefined}>
           <select className={inputClass} defaultValue="CASH" id="paymentMethod" name="paymentMethod" required>
             {PAYMENT_METHODS.map((method) => (
               <option key={method} value={method}>
@@ -113,16 +120,31 @@ export function SupplierPaymentForm({ invoices }: { invoices: SupplierInvoiceBal
         </Field>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Field htmlFor="reference" label="Reference">
-          <input className={inputClass} id="reference" name="reference" placeholder="Bank transfer / receipt no." />
-        </Field>
-        <Field htmlFor="notes" label="Notes">
-          <input className={inputClass} id="notes" name="notes" placeholder="Optional notes" />
-        </Field>
-      </div>
+      {/* More options */}
+      <details className="rounded-xl border border-slate-200 bg-slate-50">
+        <summary className="flex cursor-pointer items-center gap-2 px-4 py-3 text-sm font-semibold text-slate-600 marker:content-none">
+          <ChevronDown className="size-4 text-slate-400" />
+          More options
+          <span className="ml-1 text-xs font-normal text-slate-400">(payment date, reference, notes)</span>
+        </summary>
+        <div className="grid gap-4 border-t border-slate-200 px-4 pb-4 pt-4 sm:grid-cols-2">
+          <Field htmlFor="paidAt" label="Payment date" error={state.status === "error" ? state.fieldErrors?.paidAt : undefined}>
+            <input className={inputClass} id="paidAt" name="paidAt" onChange={(event) => setPaidAt(event.target.value)} value={paidAt} type="date" required />
+          </Field>
+          <Field htmlFor="reference" label="Reference (bank transfer / receipt no.)">
+            <input className={inputClass} id="reference" name="reference" placeholder="Optional" />
+          </Field>
+          <Field htmlFor="notes" label="Notes">
+            <input className={inputClass} id="notes" name="notes" placeholder="Optional" />
+          </Field>
+        </div>
+      </details>
 
-      {overLimit ? <p className="text-sm font-semibold text-red-600">Payment amount cannot exceed the outstanding invoice balance.</p> : null}
+      {overLimit && (
+        <p className="text-sm font-semibold text-red-600">
+          The amount you entered is more than what you owe on this invoice.
+        </p>
+      )}
       <FormAlert state={state} />
       <div>
         <SubmitButton disabled={completeDisabled}>Record payment</SubmitButton>

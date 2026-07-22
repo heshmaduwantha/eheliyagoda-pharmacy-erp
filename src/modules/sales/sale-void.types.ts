@@ -18,6 +18,8 @@ export type SaleVoidListFilters = {
   from?: string;
   to?: string;
   limit?: number;
+  page?: number;
+  pageSize?: number;
 };
 
 export type SaleVoidLineItem = {

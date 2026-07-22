@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { CheckCircle2, HeartPulse, KeyRound, LockKeyhole, ShieldCheck, UserRound } from "lucide-react";
+import { ShieldCheck, UserRound, LockKeyhole, HeartPulse, KeyRound, CheckCircle2 } from "lucide-react";
 import { Brand } from "@/components/ui/brand";
 import { getBootstrapState } from "@/modules/admin/rbac.service";
 import { loginAction } from "@/modules/auth/actions";
@@ -11,5 +11,121 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   if (!bootstrapState.hasUsers) redirect("/setup");
   const { error } = await searchParams;
 
-  return <main className="min-h-screen bg-white lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(520px,.95fr)]"><section className="relative hidden min-h-screen overflow-hidden bg-[linear-gradient(145deg,#064e59_0%,#007a72_55%,#13b994_100%)] p-12 text-white lg:flex lg:flex-col xl:p-16"><div className="absolute inset-0 opacity-20 [background-image:linear-gradient(rgba(255,255,255,.12)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.12)_1px,transparent_1px)] [background-size:42px_42px] [mask-image:linear-gradient(to_bottom,transparent,black_35%,black)]" /><div className="absolute -right-24 top-1/3 size-80 rounded-full bg-teal-300/25 blur-3xl" /><div className="relative z-10"><Brand inverse /></div><div className="relative z-10 my-auto max-w-xl"><span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm font-semibold backdrop-blur"><HeartPulse className="size-4 text-teal-200" />Patient-first care</span><h1 className="mt-8 text-5xl font-black leading-[1.05] tracking-tight xl:text-6xl">Medisquare<br /><span className="text-teal-200">Pharmacy + Clinic</span></h1><p className="mt-6 max-w-lg text-lg leading-8 text-teal-50/80">A simple, secure workspace for your pharmacy team.</p><svg aria-hidden="true" className="mt-12 h-24 w-full overflow-visible text-teal-200 drop-shadow-[0_0_10px_rgba(94,234,212,.8)]" viewBox="0 0 600 100"><path d="M0 58h90l12-15 14 33 18-74 18 96 17-55 16 23 15-8h80l10-18 13 37 15-64 17 77 18-48 14 23 16-9h83l12-16 12 31 17-59 17 70 17-42 14 20 14-7h82" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" /></svg></div><div className="relative z-10 grid grid-cols-3 gap-4 border-t border-white/15 pt-7 text-xs text-teal-50/75"><span className="flex items-center gap-2"><ShieldCheck className="size-5 text-teal-200" />Secure sign-in</span><span className="flex items-center gap-2"><KeyRound className="size-5 text-teal-200" />Staff access</span><span className="flex items-center gap-2"><CheckCircle2 className="size-5 text-teal-200" />Patient-first care</span></div></section><section className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top_right,#effcf8_0,transparent_35%)] px-5 py-10 sm:px-10"><div className="w-full max-w-lg"><div className="mb-10 lg:hidden"><Brand /></div><div className="rounded-[28px] border border-slate-200/80 bg-white p-7 shadow-[0_28px_80px_rgba(15,51,58,.12)] sm:p-10"><div className="mx-auto grid size-16 place-items-center rounded-full bg-teal-50 text-teal-700"><UserRound className="size-8" /></div><div className="mt-6 text-center"><h2 className="text-3xl font-black tracking-tight text-slate-900">Welcome back</h2><p className="mt-2 text-slate-500">Sign in to your staff account</p></div>{error === "invalid" && <p role="alert" className="mt-6 rounded-xl border border-red-100 bg-red-50 p-3 text-center text-sm font-medium text-red-700">Invalid username or password</p>}<form action={loginAction} className="mt-8 grid gap-5"><label className="grid gap-2 text-sm font-bold text-slate-700">Username<span className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 transition focus-within:border-teal-500 focus-within:ring-4 focus-within:ring-teal-500/10"><UserRound className="size-5 text-slate-400" /><input className="min-w-0 flex-1 bg-transparent py-3.5 font-normal outline-none placeholder:text-slate-400" name="username" placeholder="Your username" autoComplete="username" required /></span></label><label className="grid gap-2 text-sm font-bold text-slate-700">Password<span className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 transition focus-within:border-teal-500 focus-within:ring-4 focus-within:ring-teal-500/10"><LockKeyhole className="size-5 text-slate-400" /><input className="min-w-0 flex-1 bg-transparent py-3.5 font-normal outline-none placeholder:text-slate-400" name="password" placeholder="Your password" type="password" autoComplete="current-password" required /></span></label><button className="mt-1 rounded-xl bg-gradient-to-r from-teal-600 to-emerald-500 px-4 py-3.5 font-bold text-white shadow-lg shadow-teal-600/20 transition hover:-translate-y-0.5 hover:shadow-xl" type="submit">Sign in</button></form></div><div className="mt-5 flex items-start gap-3 rounded-2xl bg-teal-50/80 p-4 text-sm text-teal-900"><ShieldCheck className="mt-0.5 size-5 shrink-0 text-teal-600" /><p><strong>Staff sign-in</strong><br /><span className="text-teal-800/70">Use your pharmacy account to continue.</span></p></div></div></section></main>;
+  return (
+    <main className="flex min-h-screen">
+      {/* Left Side (Branding & Info) */}
+      <div className="relative hidden w-1/2 flex-col justify-between overflow-hidden bg-gradient-to-br from-teal-800 to-emerald-600 p-12 lg:flex xl:p-16">
+        {/* Subtle background grid pattern */}
+        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-soft-light"></div>
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff0a_1px,transparent_1px),linear-gradient(to_bottom,#ffffff0a_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)]"></div>
+
+        <div className="relative z-10">
+          <Brand inverse={true} />
+        </div>
+
+        <div className="relative z-10 max-w-xl">
+          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-sm font-medium text-white backdrop-blur-md">
+            <HeartPulse className="size-4" /> Patient-first care
+          </div>
+          <h1 className="text-5xl font-black tracking-tight text-white xl:text-6xl">
+            Medisquare <br /> Pharmacy + Clinic
+          </h1>
+          <p className="mt-6 text-lg font-medium text-teal-50">
+            A simple, secure workspace for your pharmacy team.
+          </p>
+
+          <div className="mt-12 flex h-32 items-center">
+            {/* ECG SVG Graphic */}
+            <svg viewBox="0 0 500 100" className="h-full w-full stroke-emerald-300 drop-shadow-[0_0_8px_rgba(52,211,153,0.8)]" fill="none" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M 0,50 L 100,50 L 120,20 L 140,80 L 150,50 L 250,50 L 270,10 L 300,90 L 320,50 L 400,50 L 420,30 L 440,70 L 450,50 L 500,50" />
+            </svg>
+          </div>
+        </div>
+
+        <div className="relative z-10 flex items-center justify-between border-t border-white/20 pt-8 text-sm font-medium text-teal-50">
+          <div className="flex items-center gap-2"><ShieldCheck className="size-4" /> Secure sign-in</div>
+          <div className="flex items-center gap-2"><KeyRound className="size-4" /> Staff access</div>
+          <div className="flex items-center gap-2"><CheckCircle2 className="size-4" /> Patient-first care</div>
+        </div>
+      </div>
+
+      {/* Right Side (Login Form) */}
+      <div className="flex w-full items-center justify-center bg-slate-50 p-6 lg:w-1/2">
+        <div className="w-full max-w-[440px]">
+          {/* Main Card */}
+          <div className="rounded-[2rem] bg-white p-8 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] ring-1 ring-slate-100 sm:p-12">
+            <div className="flex flex-col items-center text-center">
+              <div className="mb-6 flex size-16 items-center justify-center rounded-full bg-teal-50 text-teal-600">
+                <UserRound className="size-7" />
+              </div>
+              <h2 className="text-2xl font-black tracking-tight text-slate-900">Welcome back</h2>
+              <p className="mt-2 text-sm font-medium text-slate-500">Sign in to your staff account</p>
+            </div>
+
+            {error === "invalid" && (
+              <p role="alert" className="mt-6 rounded-xl bg-red-50 p-4 text-center text-sm font-semibold text-red-700 ring-1 ring-red-200">
+                Invalid username or password
+              </p>
+            )}
+
+            <form action={loginAction} className="mt-8 grid gap-5">
+              <div className="grid gap-2">
+                <label className="text-sm font-bold text-slate-700" htmlFor="username">Username</label>
+                <div className="relative">
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400">
+                    <UserRound className="size-5" />
+                  </div>
+                  <input
+                    id="username"
+                    name="username"
+                    autoComplete="username"
+                    required
+                    placeholder="Your username"
+                    className="w-full rounded-xl border border-slate-200 py-3.5 pl-11 pr-4 text-sm font-medium text-slate-900 outline-none transition-all focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 placeholder:text-slate-400"
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-2">
+                <label className="text-sm font-bold text-slate-700" htmlFor="password">Password</label>
+                <div className="relative">
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400">
+                    <LockKeyhole className="size-5" />
+                  </div>
+                  <input
+                    id="password"
+                    name="password"
+                    type="password"
+                    autoComplete="current-password"
+                    required
+                    placeholder="Your password"
+                    className="w-full rounded-xl border border-slate-200 py-3.5 pl-11 pr-4 text-sm font-medium text-slate-900 outline-none transition-all focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 placeholder:text-slate-400"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                className="mt-4 w-full rounded-xl bg-teal-600 px-4 py-4 text-sm font-bold text-white transition-all hover:bg-teal-700 active:scale-[0.98] shadow-lg shadow-teal-500/25"
+              >
+                Sign in
+              </button>
+            </form>
+          </div>
+
+          {/* Info Banner Below */}
+          <div className="mt-6 flex items-center gap-4 rounded-2xl bg-emerald-50/80 p-5 ring-1 ring-emerald-100">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-white text-emerald-600 shadow-sm ring-1 ring-emerald-100">
+              <ShieldCheck className="size-5" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-emerald-950">Staff sign-in</p>
+              <p className="text-xs font-medium text-emerald-700/80">Use your pharmacy account to continue.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  );
 }
+

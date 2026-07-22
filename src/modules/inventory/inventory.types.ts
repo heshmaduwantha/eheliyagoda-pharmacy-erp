@@ -63,6 +63,8 @@ export type StockSummary = {
 };
 
 export type InventoryFilterInput = {
-  search?: string;
   status?: string;
+  search?: string;
+  page?: number;
+  pageSize?: number;
 };

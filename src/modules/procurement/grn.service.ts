@@ -50,12 +50,32 @@ async function nextDailyNumber(
   return `${prefix}-${String(seq).padStart(4, "0")}`;
 }
 
-export function listGrns() {
-  return prisma.grn.findMany({
-    include: { supplier: { select: { name: true } }, _count: { select: { lines: true } } },
-    orderBy: { createdAt: "desc" },
-    take: 100,
-  });
+export async function listGrns(options: { page?: number; pageSize?: number; search?: string } = {}) {
+  const { page = 1, pageSize = 10, search } = options;
+  const trimmed = search?.trim();
+
+  const where: Prisma.GrnWhereInput = trimmed
+    ? {
+        OR: [
+          { grnNo: { contains: trimmed, mode: "insensitive" } },
+          { supplierInvoiceNo: { contains: trimmed, mode: "insensitive" } },
+          { supplier: { name: { contains: trimmed, mode: "insensitive" } } },
+        ],
+      }
+    : {};
+
+  const [data, total] = await Promise.all([
+    prisma.grn.findMany({
+      where,
+      include: { supplier: { select: { name: true } }, _count: { select: { lines: true } } },
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
+    prisma.grn.count({ where }),
+  ]);
+
+  return { data, total };
 }
 
 export function getGrn(id: string) {
@@ -139,6 +159,71 @@ export async function createGrnDraft(input: CreateGrnInput, actorUserId: string)
     return grn;
   });
 }
+
+/**
+ * Updates an existing DRAFT GRN with new lines and supplier details.
+ */
+export async function updateGrnDraft(grnId: string, input: CreateGrnInput, actorUserId: string) {
+  const unitIds = [...new Set(input.lines.map((l) => l.unitId))];
+  const units = await prisma.productUnit.findMany({ where: { id: { in: unitIds } } });
+  const unitById = new Map(units.map((u) => [u.id, u]));
+
+  const invoiceTotal = input.lines.reduce(
+    (sum, line) => sum.add(new Prisma.Decimal(line.qtyInUnit).mul(line.costPrice)),
+    new Prisma.Decimal(0),
+  );
+
+  return prisma.$transaction(async (tx) => {
+    const existing = await tx.grn.findUnique({ where: { id: grnId }, select: { status: true } });
+    if (!existing) throw new Error("GRN not found.");
+    if (existing.status !== GrnStatus.DRAFT) throw new Error("Only a DRAFT GRN can be updated.");
+
+    // Delete existing lines
+    await tx.grnLine.deleteMany({ where: { grnId } });
+
+    // Update GRN header and insert new lines
+    const grn = await tx.grn.update({
+      where: { id: grnId },
+      data: {
+        supplierId: input.supplierId,
+        notes: input.notes || null,
+        invoiceTotal,
+        lines: {
+          create: input.lines.map((line) => {
+            const unit = unitById.get(line.unitId);
+            if (!unit) throw new Error("Selected unit does not belong to the product.");
+            const qtyBase = new Prisma.Decimal(line.qtyInUnit).mul(unit.factorToBase);
+            return {
+              productId: line.productId,
+              unitId: line.unitId,
+              qtyInUnit: new Prisma.Decimal(line.qtyInUnit),
+              qtyBase,
+              batchNo: line.batchNo || null,
+              expiryDate: line.expiryDate ? new Date(line.expiryDate) : null,
+              mrp: line.mrp != null ? new Prisma.Decimal(line.mrp) : null,
+              costPrice: new Prisma.Decimal(line.costPrice),
+              sellingPrice: new Prisma.Decimal(line.sellingPrice),
+            };
+          }),
+        },
+      },
+    });
+
+    await writeAuditLog(
+      {
+        actorUserId,
+        action: "grn.draft_updated",
+        entityType: "GRN",
+        entityId: grn.id,
+        afterData: { supplierId: grn.supplierId, lineCount: input.lines.length },
+      },
+      tx,
+    );
+
+    return grn;
+  });
+}
+
 
 /**
  * Confirms a GRN: validates the draft, creates a batch + GRN_IN ledger row per

@@ -137,3 +137,53 @@ export async function getDashboardMetrics(): Promise<DashboardMetricsRow> {
   if (!metrics) throw new Error("Dashboard metrics are unavailable.");
   return metrics;
 }
+
+export type AlertCounts = {
+  lowStockCount: number;
+  nearExpiryCount: number;
+  expiredCount: number;
+  overdueCount: number;
+};
+
+/** A very lightweight query specifically for the notification bell in the app shell. */
+export async function getAlertCounts(): Promise<AlertCounts> {
+  const today = startOfDay();
+  const nearExpiryDate = addDays(today, 90);
+
+  const rows = await prisma.$queryRaw<AlertCounts[]>(Prisma.sql`
+    WITH stock_by_product AS (
+      SELECT
+        product.id,
+        product."reorderLevel",
+        COALESCE(SUM(batch."qtyOnHandBase") FILTER (
+          WHERE batch.status = 'ACTIVE' AND batch."qtyOnHandBase" > 0
+        ), 0) AS available_qty
+      FROM "Product" product
+      LEFT JOIN "Batch" batch ON batch."productId" = product.id
+      WHERE product."isActive" = TRUE
+      GROUP BY product.id, product."reorderLevel"
+    ),
+    payables AS (
+      SELECT
+        COUNT(*) FILTER (
+          WHERE invoice.status NOT IN ('PAID', 'CANCELLED')
+            AND invoice."dueDate" < ${today}
+            AND invoice."totalAmount" - invoice."paidAmount" > 0
+        )::int AS overdue_count
+      FROM "SupplierInvoice" invoice
+      WHERE invoice.status <> 'CANCELLED'
+    )
+    SELECT
+      (SELECT COUNT(*)::int FROM stock_by_product
+        WHERE "reorderLevel" > 0 AND available_qty <= "reorderLevel") AS "lowStockCount",
+      (SELECT COUNT(*)::int FROM "Batch"
+        WHERE status = 'ACTIVE' AND "qtyOnHandBase" > 0
+          AND "expiryDate" >= ${today} AND "expiryDate" <= ${nearExpiryDate}) AS "nearExpiryCount",
+      (SELECT COUNT(*)::int FROM "Batch"
+        WHERE "qtyOnHandBase" > 0
+          AND "expiryDate" < ${today}) AS "expiredCount",
+      (SELECT overdue_count FROM payables) AS "overdueCount"
+  `);
+
+  return rows[0] ?? { lowStockCount: 0, nearExpiryCount: 0, expiredCount: 0, overdueCount: 0 };
+}

@@ -6,7 +6,7 @@ import { z } from "zod";
 import { type FormState, toFieldErrors } from "@/lib/forms";
 import { requirePermission } from "@/modules/auth/permissions";
 import { createSupplier } from "./supplier.service";
-import { confirmGrn, createGrnDraft } from "./grn.service";
+import { confirmGrn, createGrnDraft, updateGrnDraft } from "./grn.service";
 
 const createSupplierSchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(200),
@@ -101,6 +101,42 @@ export async function createGrnDraftAction(_prev: FormState, formData: FormData)
   }
 
   revalidatePath("/stock/grn");
+  redirect(`/stock/grn/${grnId}`);
+}
+
+export async function updateGrnDraftAction(grnId: string, _prev: FormState, formData: FormData): Promise<FormState> {
+  const actor = await requirePermission("grn.manage", { onDenied: "throw" });
+
+  let lines: unknown = [];
+  try {
+    lines = JSON.parse(String(formData.get("lines") ?? "[]"));
+  } catch {
+    return { status: "error", message: "Invalid GRN line data." };
+  }
+
+  const parsed = createGrnSchema.safeParse({
+    supplierId: formData.get("supplierId"),
+    notes: formData.get("notes") || undefined,
+    lines,
+  });
+
+  if (!parsed.success) {
+    const flat = parsed.error.flatten();
+    return {
+      status: "error",
+      message: flat.formErrors[0] ?? "Please correct the highlighted fields.",
+      fieldErrors: toFieldErrors(flat.fieldErrors),
+    };
+  }
+
+  try {
+    await updateGrnDraft(grnId, parsed.data, actor.id);
+  } catch (error) {
+    return { status: "error", message: error instanceof Error ? error.message : "Failed to update GRN draft." };
+  }
+
+  revalidatePath("/stock/grn");
+  revalidatePath(`/stock/grn/${grnId}`);
   redirect(`/stock/grn/${grnId}`);
 }
 

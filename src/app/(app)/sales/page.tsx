@@ -1,14 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { AlertTriangle, Search } from "lucide-react";
+import { ShoppingCart } from "lucide-react";
+
 import { SaleVoidButton } from "@/components/sales/SaleVoidButton";
-import { formatMoney, formatQty } from "@/lib/money";
+import { formatMoney } from "@/lib/money";
 import { hasPermission, requirePermission } from "@/modules/auth/permissions";
 import { listSalesForVoidPage } from "@/modules/sales/sale-void.service";
 import type { SaleVoidListStatusFilter } from "@/modules/sales/sale-void.types";
+import { Pagination } from "@/components/ui/pagination";
 
 export const metadata: Metadata = {
-  title: "Sales",
+  title: "Sale history",
 };
 
 function normalizeStatus(value?: string): SaleVoidListStatusFilter {
@@ -22,218 +24,186 @@ function normalizeDateOnly(value?: string) {
   return Number.isNaN(parsed.getTime()) ? undefined : value;
 }
 
+function statusBadge(status: string) {
+  if (status === "COMPLETED") return { label: "Completed", cls: "bg-emerald-50 text-emerald-700 border border-emerald-200" };
+  if (status === "VOIDED") return { label: "Cancelled", cls: "bg-red-50 text-red-700 border border-red-200" };
+  return { label: "Held", cls: "bg-amber-50 text-amber-700 border border-amber-200" };
+}
+
 export default async function SalesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; q?: string; from?: string; to?: string }>;
+  searchParams: Promise<{ status?: string; q?: string; from?: string; to?: string; page?: string }>;
 }) {
   const user = await requirePermission("sale.create");
   const params = await searchParams;
   const status = normalizeStatus(params.status);
   const from = normalizeDateOnly(params.from);
   const to = normalizeDateOnly(params.to);
-  const sales = await listSalesForVoidPage({
+  const currentPage = Math.max(1, parseInt(params.page ?? "1", 10) || 1);
+  const { data: sales, total } = await listSalesForVoidPage({
     status,
     search: params.q?.trim() || undefined,
     from,
     to,
-    limit: 60,
+    page: currentPage,
   });
+  const totalPages = Math.ceil(total / 10);
   const canVoid = hasPermission(user, "sale.void");
 
   return (
-    <div>
-      <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
+    <div className="flex flex-col gap-4 min-w-0">
+      {/* Header */}
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <div>
-          <p className="flex items-center gap-2 text-sm font-bold text-rose-700">
-            <AlertTriangle className="size-4" />
-            Sale operations
+          <p className="flex items-center gap-2 text-sm font-bold text-teal-700">
+            <ShoppingCart className="size-4" />
+            Sales workspace
           </p>
-          <h1 className="mt-1 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">Sales</h1>
-          <p className="mt-2 max-w-2xl text-slate-500">
-            Review completed and voided sales.
+          <h1 className="mt-1 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">
+            Sale history
+          </h1>
+          <p className="mt-2 text-slate-500">
+            Showing <strong>{sales.length}</strong> sale{sales.length === 1 ? "" : "s"} out of {total}
           </p>
         </div>
-
         <Link
-          className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:border-teal-200 hover:text-teal-700"
+          className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-teal-700"
           href="/pos"
         >
-          Go to POS
+          Start a sale →
         </Link>
       </div>
 
-      <form className="mt-6 grid gap-3 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm xl:grid-cols-[1.3fr_.8fr_.8fr_.8fr_auto]">
-        <label className="grid gap-2 text-sm font-bold text-slate-700">
-          <span className="flex items-center gap-2">
-            <Search className="size-4 text-slate-400" />
-            Search sale number, cashier, product
-          </span>
-          <input
-            className="rounded-xl border border-slate-200 px-4 py-3 font-normal outline-none focus:border-teal-400"
-            defaultValue={params.q ?? ""}
-            name="q"
-            placeholder="SALE-20260623-XXXX"
-          />
-        </label>
-
-        <label className="grid gap-2 text-sm font-bold text-slate-700">
-          Status
-          <select
-            className="rounded-xl border border-slate-200 px-4 py-3 font-normal outline-none focus:border-teal-400"
-            defaultValue={status}
-            name="status"
-          >
-            <option value="ALL">All</option>
-            <option value="COMPLETED">Completed</option>
-            <option value="VOIDED">Voided</option>
-            <option value="HELD">Held</option>
-          </select>
-        </label>
-
-        <label className="grid gap-2 text-sm font-bold text-slate-700">
-          From
-          <input
-            className="rounded-xl border border-slate-200 px-4 py-3 font-normal outline-none focus:border-teal-400"
-            defaultValue={from ?? ""}
-            name="from"
-            type="date"
-          />
-        </label>
-
-        <label className="grid gap-2 text-sm font-bold text-slate-700">
-          To
-          <input
-            className="rounded-xl border border-slate-200 px-4 py-3 font-normal outline-none focus:border-teal-400"
-            defaultValue={to ?? ""}
-            name="to"
-            type="date"
-          />
-        </label>
-
-        <div className="flex items-end">
-          <button className="w-full rounded-xl bg-teal-700 px-4 py-3 font-bold text-white" type="submit">
-            Filter
-          </button>
-        </div>
-      </form>
-
-      <div className="mt-6 flex items-center justify-between rounded-2xl border border-teal-100 bg-teal-50 px-4 py-3 text-sm text-teal-800">
-        <span>
-          Showing <strong>{sales.length}</strong> sale{sales.length === 1 ? "" : "s"}
-        </span>
-        <span className="text-xs font-semibold uppercase tracking-wider">
-          {canVoid ? "Void permission available" : "Void permission unavailable"}
-        </span>
-      </div>
-
-      <div className="mt-6 grid gap-4">
-        {sales.length === 0 ? (
-          <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-10 text-center text-slate-500">
-            No sales matched the current filters.
+      {/* Filter */}
+      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <form className="flex flex-col gap-3 sm:flex-row xl:grid xl:grid-cols-[1.3fr_.8fr_.8fr_.8fr_auto]">
+          <label className="grid gap-1.5 text-sm font-medium text-slate-700">
+            Search
+            <input
+              className="rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-teal-400"
+              defaultValue={params.q ?? ""}
+              name="q"
+              placeholder="Sale number, cashier name…"
+            />
+          </label>
+          <label className="grid gap-1.5 text-sm font-medium text-slate-700">
+            Status
+            <select
+              className="rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-teal-400"
+              defaultValue={status}
+              name="status"
+            >
+              <option value="ALL">All</option>
+              <option value="COMPLETED">Completed</option>
+              <option value="VOIDED">Cancelled</option>
+              <option value="HELD">Held</option>
+            </select>
+          </label>
+          <label className="grid gap-1.5 text-sm font-medium text-slate-700">
+            From
+            <input className="rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-teal-400" defaultValue={from ?? ""} name="from" type="date" />
+          </label>
+          <label className="grid gap-1.5 text-sm font-medium text-slate-700">
+            To
+            <input className="rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-teal-400" defaultValue={to ?? ""} name="to" type="date" />
+          </label>
+          <div className="flex items-end">
+            <button className="w-full rounded-lg bg-teal-600 px-4 py-2 text-sm font-bold text-white hover:bg-teal-700" type="submit">
+              Apply
+            </button>
           </div>
-        ) : null}
-
-        {sales.map((sale) => (
-          <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm" key={sale.saleId}>
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-              <div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="text-xl font-black tracking-tight text-slate-900">{sale.saleNumber}</h2>
-                  <span
-                    className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold ${
-                      sale.status === "COMPLETED"
-                        ? "bg-emerald-50 text-emerald-700"
-                        : sale.status === "VOIDED"
-                          ? "bg-rose-50 text-rose-700"
-                          : "bg-amber-50 text-amber-700"
-                    }`}
-                  >
-                    {sale.status}
-                  </span>
-                  {sale.voidRecord ? (
-                    <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
-                      Voided
-                    </span>
-                  ) : null}
-                </div>
-                <p className="mt-2 text-sm text-slate-500">
-                  Cashier {sale.cashierName} ({sale.cashierUsername}) · Activity {sale.activityAt.slice(0, 19).replace("T", " ")}
-                </p>
-                <p className="mt-1 text-sm font-semibold text-slate-700">
-                  Total {formatMoney(sale.total)} · Subtotal {formatMoney(sale.subtotal)} · {sale.lineCount} line{sale.lineCount === 1 ? "" : "s"}
-                </p>
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                {canVoid && sale.status === "COMPLETED" ? (
-                  <SaleVoidButton saleId={sale.saleId} saleNumber={sale.saleNumber} total={sale.total} />
-                ) : null}
-              </div>
-            </div>
-
-            <div className="mt-5 grid gap-4 xl:grid-cols-2">
-              <section className="rounded-2xl bg-slate-50/90 p-4">
-                <p className="text-sm font-black text-slate-800">Sale lines</p>
-                <div className="mt-3 grid gap-3">
-                  {sale.lines.map((line) => (
-                    <div className="rounded-2xl border border-slate-200 bg-white p-3 text-sm" key={line.saleLineId}>
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <p className="font-bold text-slate-800">{line.productName}</p>
-                          <p className="mt-1 text-xs text-slate-500">
-                            {formatQty(line.quantity)} {line.unitName} · Batch {line.batchNumber ?? "—"}
-                            {line.expiryDate ? ` · Exp ${line.expiryDate}` : ""}
-                          </p>
-                        </div>
-                        <strong className="text-slate-900">{formatMoney(line.lineTotal)}</strong>
-                      </div>
-                      <p className="mt-2 text-xs text-slate-500">
-                        {formatMoney(line.unitPrice)} each · {formatQty(line.qtyBase)} base units
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </section>
-
-              <section className="grid gap-4">
-                <div className="rounded-2xl bg-slate-50/90 p-4">
-                  <p className="text-sm font-black text-slate-800">Payments</p>
-                  <div className="mt-3 grid gap-3">
-                    {sale.payments.map((payment) => (
-                      <div className="rounded-2xl border border-slate-200 bg-white p-3 text-sm" key={payment.salePaymentId}>
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="font-bold text-slate-800">{payment.method}</span>
-                          <strong className="text-slate-900">{formatMoney(payment.amount)}</strong>
-                        </div>
-                        <p className="mt-1 text-xs text-slate-500">{payment.cardReference ?? "No card reference"}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {sale.voidRecord ? (
-                  <div className="rounded-2xl border border-rose-100 bg-rose-50 p-4 text-sm text-rose-900">
-                    <p className="font-black">Void record</p>
-                    <p className="mt-2">Reason: {sale.voidRecord.reason}</p>
-                    <p className="mt-1">
-                      Refund {formatMoney(sale.voidRecord.refundAmount)} · Policy {sale.voidRecord.stockPolicy}
-                    </p>
-                    <p className="mt-1">
-                      Voided at {sale.voidRecord.voidedAt.slice(0, 19).replace("T", " ")}
-                      {sale.voidRecord.voidedByName ? ` by ${sale.voidRecord.voidedByName}` : ""}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-500">
-                    No void record for this sale.
-                  </div>
-                )}
-              </section>
-            </div>
-          </article>
-        ))}
+        </form>
       </div>
+
+      {/* Sale list */}
+      <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[700px] border-collapse text-left text-sm text-slate-600">
+            <thead className="bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
+              <tr>
+                <th className="border-b border-slate-200 px-5 py-4 font-bold">Sale No.</th>
+                <th className="border-b border-slate-200 px-5 py-4 font-bold">Date & Cashier</th>
+                <th className="border-b border-slate-200 px-5 py-4 font-bold">Total</th>
+                <th className="border-b border-slate-200 px-5 py-4 font-bold">Status</th>
+                <th className="border-b border-slate-200 px-5 py-4 font-bold">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {sales.length === 0 ? (
+                <tr>
+                  <td className="px-5 py-16 text-center text-slate-400" colSpan={5}>
+                    No sales matched the current filters.
+                  </td>
+                </tr>
+              ) : (
+                sales.map((sale) => {
+                  const badge = statusBadge(sale.status);
+                  return (
+                    <tr className="align-middle hover:bg-slate-50/50" key={sale.saleId}>
+                      <td className="px-5 py-4 font-bold text-slate-900">{sale.saleNumber}</td>
+                      <td className="px-5 py-4 text-slate-600">
+                        {sale.activityAt.slice(0, 10)} <br />
+                        <span className="text-xs text-slate-400">{sale.cashierName}</span>
+                      </td>
+                      <td className="px-5 py-4 font-black text-slate-900">{formatMoney(sale.total)}</td>
+                      <td className="px-5 py-4">
+                        <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-bold ${badge.cls}`}>
+                          {badge.label}
+                        </span>
+                      </td>
+                      <td className="px-5 py-4">
+                        <div className="flex flex-col gap-2">
+                          {canVoid && sale.status === "COMPLETED" && (
+                            <SaleVoidButton saleId={sale.saleId} saleNumber={sale.saleNumber} total={sale.total} />
+                          )}
+                          <details className="group relative">
+                            <summary className="cursor-pointer text-xs font-semibold text-teal-600 hover:underline marker:content-none">
+                              View details
+                            </summary>
+                            <div className="absolute right-0 z-10 mt-2 w-80 rounded-xl border border-slate-200 bg-white p-4 shadow-xl">
+                              <p className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-400">Items sold</p>
+                              <div className="grid gap-2">
+                                {sale.lines.map((line) => (
+                                  <div className="flex items-center justify-between border-b border-slate-50 pb-2 text-xs" key={line.saleLineId}>
+                                    <div>
+                                      <p className="font-semibold text-slate-800">{line.productName}</p>
+                                      <p className="text-slate-400">{line.quantity} × {line.unitName}</p>
+                                    </div>
+                                    <strong className="text-slate-900">{formatMoney(line.lineTotal)}</strong>
+                                  </div>
+                                ))}
+                              </div>
+                              <div className="mt-4">
+                                <p className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-400">Payment</p>
+                                {sale.payments.map((payment) => (
+                                  <div className="flex items-center justify-between text-xs" key={payment.salePaymentId}>
+                                    <span className="font-medium text-slate-700">{payment.method === "CASH" ? "Cash" : "Card"}</span>
+                                    <strong>{formatMoney(payment.amount)}</strong>
+                                  </div>
+                                ))}
+                              </div>
+                              {sale.voidRecord && (
+                                <div className="mt-3 rounded-lg border border-red-100 bg-red-50 p-2 text-xs text-red-800">
+                                  <p className="font-bold">Cancelled</p>
+                                  <p>{sale.voidRecord.reason}</p>
+                                </div>
+                              )}
+                            </div>
+                          </details>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+        {sales.length > 0 && (
+          <Pagination currentPage={currentPage} totalPages={totalPages} baseUrl="/sales" queryParams={{ status, q: params.q, from, to }} />
+        )}
+      </section>
     </div>
   );
 }

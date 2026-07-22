@@ -339,51 +339,61 @@ export async function getBootstrapState(): Promise<BootstrapState> {
   };
 }
 
-export async function listAdminUsers(filters: AdminUserListFilters = {}) {
-  const search = filters.search?.trim();
-  const status = filters.status ?? "all";
-  const users = await prisma.user.findMany({
-    where: {
-      isActive: status === "active" ? true : status === "inactive" ? false : undefined,
-      OR: search
-        ? [
-            { name: { contains: search, mode: "insensitive" } },
-            { username: { contains: search, mode: "insensitive" } },
-            { role: { name: { contains: search, mode: "insensitive" } } },
-            { role: { code: { contains: search, mode: "insensitive" } } },
-            { userRoles: { some: { role: { name: { contains: search, mode: "insensitive" } } } } },
-            { userRoles: { some: { role: { code: { contains: search, mode: "insensitive" } } } } },
-          ]
-        : undefined,
-    },
-    select: {
-      id: true,
-      name: true,
-      username: true,
-      isActive: true,
-      createdAt: true,
-      updatedAt: true,
-      role: {
-        select: {
-          id: true,
-          code: true,
-          name: true,
+export async function listAdminUsers(
+  filters: AdminUserListFilters & { page?: number; pageSize?: number } = {}
+) {
+  const { search, status = "all", page = 1, pageSize = 10 } = filters;
+  const searchTrimmed = search?.trim();
+
+  const where: Prisma.UserWhereInput = {
+    isActive: status === "active" ? true : status === "inactive" ? false : undefined,
+    OR: searchTrimmed
+      ? [
+          { name: { contains: searchTrimmed, mode: "insensitive" } },
+          { username: { contains: searchTrimmed, mode: "insensitive" } },
+          { role: { name: { contains: searchTrimmed, mode: "insensitive" } } },
+          { role: { code: { contains: searchTrimmed, mode: "insensitive" } } },
+          { userRoles: { some: { role: { name: { contains: searchTrimmed, mode: "insensitive" } } } } },
+          { userRoles: { some: { role: { code: { contains: searchTrimmed, mode: "insensitive" } } } } },
+        ]
+      : undefined,
+  };
+
+  const [users, total] = await Promise.all([
+    prisma.user.findMany({
+      where,
+      select: {
+        id: true,
+        name: true,
+        username: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
+        role: {
+          select: {
+            id: true,
+            code: true,
+            name: true,
+          },
         },
-      },
-      userRoles: {
-        select: {
-          role: {
-            select: {
-              id: true,
-              code: true,
-              name: true,
+        userRoles: {
+          select: {
+            role: {
+              select: {
+                id: true,
+                code: true,
+                name: true,
+              },
             },
           },
         },
       },
-    },
-    orderBy: [{ createdAt: "desc" }],
-  });
+      orderBy: [{ createdAt: "desc" }],
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
+    prisma.user.count({ where }),
+  ]);
 
   const rows: AdminUserListRow[] = users.map((user) => {
     const roleMap = new Map<string, { id: string; code: string; name: string }>();
@@ -406,7 +416,7 @@ export async function listAdminUsers(filters: AdminUserListFilters = {}) {
     };
   });
 
-  return rows;
+  return { data: rows, total };
 }
 
 export async function getAdminUser(userId: string, client: DbClient = prisma): Promise<AdminUserDetail | null> {
@@ -456,35 +466,45 @@ export async function getAdminUser(userId: string, client: DbClient = prisma): P
   };
 }
 
-export async function listAdminRoles(filters: AdminRoleListFilters = {}) {
-  const search = filters.search?.trim();
-  const status = filters.status ?? "all";
-  const roles = await prisma.role.findMany({
-    where: {
-      isActive: status === "active" ? true : status === "inactive" ? false : undefined,
-      OR: search
-        ? [
-            { code: { contains: search, mode: "insensitive" } },
-            { name: { contains: search, mode: "insensitive" } },
-            { description: { contains: search, mode: "insensitive" } },
-          ]
-        : undefined,
-    },
-    select: {
-      id: true,
-      code: true,
-      name: true,
-      description: true,
-      isSystem: true,
-      isActive: true,
-      createdAt: true,
-      updatedAt: true,
-      rolePermissions: { select: { permissionId: true } },
-      users: { select: { id: true } },
-      userRoles: { select: { userId: true } },
-    },
-    orderBy: [{ isSystem: "desc" }, { name: "asc" }],
-  });
+export async function listAdminRoles(
+  filters: AdminRoleListFilters & { page?: number; pageSize?: number } = {}
+) {
+  const { search, status = "all", page = 1, pageSize = 10 } = filters;
+  const searchTrimmed = search?.trim();
+
+  const where: Prisma.RoleWhereInput = {
+    isActive: status === "active" ? true : status === "inactive" ? false : undefined,
+    OR: searchTrimmed
+      ? [
+          { code: { contains: searchTrimmed, mode: "insensitive" } },
+          { name: { contains: searchTrimmed, mode: "insensitive" } },
+          { description: { contains: searchTrimmed, mode: "insensitive" } },
+        ]
+      : undefined,
+  };
+
+  const [roles, total] = await Promise.all([
+    prisma.role.findMany({
+      where,
+      select: {
+        id: true,
+        code: true,
+        name: true,
+        description: true,
+        isSystem: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
+        rolePermissions: { select: { permissionId: true } },
+        users: { select: { id: true } },
+        userRoles: { select: { userId: true } },
+      },
+      orderBy: [{ isSystem: "desc" }, { name: "asc" }],
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
+    prisma.role.count({ where }),
+  ]);
 
   const rows: AdminRoleListRow[] = roles.map((role) => {
     const userIds = new Set<string>([
@@ -505,7 +525,7 @@ export async function listAdminRoles(filters: AdminRoleListFilters = {}) {
     };
   });
 
-  return rows;
+  return { data: rows, total };
 }
 
 export async function getAdminRole(roleId: string, client: DbClient = prisma): Promise<AdminRoleDetail | null> {

@@ -1,10 +1,10 @@
-import { Banknote, CircleDollarSign, ReceiptText, Wallet } from "lucide-react";
-import { FinanceSummaryCards } from "@/components/finance/FinanceSummaryCards";
 import { ExpenseForm } from "@/components/finance/ExpenseForm";
+import { Receipt } from "lucide-react";
 import { ExpenseTable } from "@/components/finance/ExpenseTable";
 import { formatMoney } from "@/lib/money";
 import { requirePermission } from "@/modules/auth/permissions";
 import { getExpenseSummary, listExpenses } from "@/modules/finance/expense.service";
+import { Pagination } from "@/components/ui/pagination";
 
 function monthRange() {
   const now = new Date();
@@ -13,78 +13,73 @@ function monthRange() {
   return { from, to };
 }
 
-export default async function ExpensesPage() {
+export default async function ExpensesPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
   const user = await requirePermission("expense.view");
-  const [summary, expenses] = await Promise.all([getExpenseSummary(monthRange()), listExpenses({ limit: 100 })]);
-  const cashTotal = summary.rows.filter((row) => row.paymentMethod === "CASH").reduce((sum, row) => sum + Number(row.totalAmount), 0);
-  const cardTotal = summary.rows.filter((row) => row.paymentMethod === "CARD").reduce((sum, row) => sum + Number(row.totalAmount), 0);
+  const { page } = await searchParams;
+  const currentPage = Math.max(1, parseInt(page ?? "1", 10) || 1);
+  const [summary, { data: expenses, total }] = await Promise.all([
+    getExpenseSummary(monthRange()), 
+    listExpenses({ page: currentPage })
+  ]);
+  const totalPages = Math.ceil(total / 10);
+
+  const totalThisMonth = summary.summary ? formatMoney(summary.summary.totalAmount) : "LKR 0.00";
+  const expenseCount = summary.summary?.expenseCount ?? 0;
 
   return (
-    <div className="grid gap-7">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <div className="flex flex-col gap-4 min-w-0">
+      {/* Header */}
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <div>
-          <p className="text-sm font-bold text-teal-700">Finance</p>
-          <h1 className="mt-1 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">Expenses</h1>
-          <p className="mt-2 max-w-3xl text-slate-500">Record day-to-day pharmacy expenses.</p>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-600 shadow-sm">
-          Month to date
+          <p className="flex items-center gap-2 text-sm font-bold text-teal-700">
+            <Receipt className="size-4" />
+            Finance workspace
+          </p>
+          <h1 className="mt-1 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">
+            Expenses
+          </h1>
+          <p className="mt-2 text-slate-500">
+            Track day-to-day pharmacy costs
+          </p>
         </div>
       </div>
 
-      <FinanceSummaryCards
-        cards={[
-          {
-            label: "Expense total",
-            value: summary.summary ? formatMoney(summary.summary.totalAmount) : "LKR 0.00",
-            hint: summary.summary ? `${summary.summary.expenseCount} recorded expense${summary.summary.expenseCount === 1 ? "" : "s"}` : "No expenses recorded yet",
-            icon: CircleDollarSign,
-            tone: "teal",
-          },
-          {
-            label: "Cash outflow",
-            value: formatMoney(cashTotal.toFixed(2)),
-            hint: "Operational costs paid in cash",
-            icon: Wallet,
-            tone: "blue",
-          },
-          {
-            label: "Card outflow",
-            value: formatMoney(cardTotal.toFixed(2)),
-            hint: "Operational costs paid by card",
-            icon: Banknote,
-            tone: "violet",
-          },
-          {
-            label: "Expense categories",
-            value: String(summary.rows.length),
-            hint: "Grouped by category and payment method",
-            icon: ReceiptText,
-            tone: "amber",
-          },
-        ]}
-      />
-
-      <section className="grid gap-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+      {/* Hero — this month's total */}
+      <div className="flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-4 shadow-sm">
         <div>
-          <h2 className="text-lg font-bold text-slate-800">Add expense</h2>
-          <p className="mt-1 text-sm text-slate-500">Record rent, utilities, salaries, transport, internet, and other operating costs.</p>
+          <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-emerald-700">
+            <span>📉</span> Expenses this month
+          </p>
+          <p className="mt-1 text-sm font-medium text-emerald-600/80">
+            {expenseCount > 0
+              ? `${expenseCount} expense${expenseCount === 1 ? "" : "s"} recorded this month`
+              : "No expenses recorded this month"}
+          </p>
         </div>
+        <div className="text-2xl font-black tracking-tight text-emerald-900">{totalThisMonth}</div>
+      </div>
+
+      {/* Add expense */}
+      <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <h2 className="mb-4 text-base font-bold text-slate-800">Record an expense</h2>
         {user.permissions.includes("expense.create") ? (
           <ExpenseForm />
         ) : (
-          <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-5 text-sm text-slate-500">
-            You have view-only access to expenses. Create permission is not assigned to this user.
+          <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-5 text-sm text-slate-500">
+            You can view expenses but don&apos;t have permission to add new ones.
           </div>
         )}
       </section>
 
-      <section className="grid gap-4">
-        <div>
-          <h2 className="text-lg font-bold text-slate-800">Recorded expenses</h2>
-          <p className="mt-1 text-sm text-slate-500">Review expenses recorded this month.</p>
+      {/* Expense list */}
+      <section className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <div className="p-4 border-b border-slate-100">
+          <h2 className="text-base font-bold text-slate-800">This month&apos;s expenses</h2>
         </div>
         <ExpenseTable expenses={expenses} />
+        {expenses.length > 0 && (
+          <Pagination currentPage={currentPage} totalPages={totalPages} baseUrl="/expenses" queryParams={{}} />
+        )}
       </section>
     </div>
   );

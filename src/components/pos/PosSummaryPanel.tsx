@@ -1,6 +1,6 @@
 "use client";
 
-import { Banknote, CreditCard, Eraser, PauseCircle, ReceiptText, Split } from "lucide-react";
+import { ReceiptText, Eraser } from "lucide-react";
 import { formatLkr } from "@/modules/sales/pos.utils";
 
 export type PosPaymentMode = "cash" | "card" | "split";
@@ -16,6 +16,55 @@ type Props = {
   onClear: () => void;
 };
 
-export function PosSummaryPanel({ subtotal, discount, tax, total, hasLines, onPayment, onHold, onClear }: Props) {
-  return <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_12px_40px_rgba(15,51,58,.07)]"><h2 className="font-black text-slate-900">Invoice summary</h2><div className="mt-4 grid gap-2 text-sm"><div className="flex justify-between text-slate-500"><span>Subtotal</span><span>{formatLkr(subtotal)}</span></div><div className="flex justify-between text-slate-500"><span>Discount</span><span>- {formatLkr(discount)}</span></div><div className="flex justify-between text-slate-500"><span>Tax</span><span>{formatLkr(tax)}</span></div><div className="mt-2 flex items-end justify-between border-t border-slate-100 pt-4"><span className="font-bold text-slate-800">Total</span><strong className="text-2xl font-black text-teal-700">{formatLkr(total)}</strong></div></div><div className="mt-5 grid grid-cols-3 gap-2"><button className="grid place-items-center gap-1 rounded-xl border border-slate-200 px-2 py-3 text-xs font-bold text-slate-600 hover:border-teal-300 hover:bg-teal-50" disabled={!hasLines} onClick={() => onPayment("cash")} type="button"><Banknote className="size-5 text-teal-600" />Cash</button><button className="grid place-items-center gap-1 rounded-xl border border-slate-200 px-2 py-3 text-xs font-bold text-slate-600 hover:border-teal-300 hover:bg-teal-50" disabled={!hasLines} onClick={() => onPayment("card")} type="button"><CreditCard className="size-5 text-teal-600" />Card</button><button className="grid place-items-center gap-1 rounded-xl border border-slate-200 px-2 py-3 text-xs font-bold text-slate-600 hover:border-teal-300 hover:bg-teal-50" disabled={!hasLines} onClick={() => onPayment("split")} type="button"><Split className="size-5 text-teal-600" />Split</button></div><button className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-teal-600 to-emerald-500 px-4 py-3.5 font-black text-white shadow-lg shadow-teal-600/20 disabled:cursor-not-allowed disabled:opacity-40" disabled={!hasLines} onClick={() => onPayment("split")} type="button"><ReceiptText className="size-5" />Complete Sale</button><div className="mt-3 grid grid-cols-2 gap-2"><button className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-bold text-slate-600 hover:bg-amber-50" disabled={!hasLines} onClick={onHold} type="button"><PauseCircle className="size-4" />Hold</button><button className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-bold text-slate-600 hover:bg-red-50 hover:text-red-600" disabled={!hasLines} onClick={onClear} type="button"><Eraser className="size-4" />Clear Cart</button></div></section>;
+export function PosSummaryPanel({ subtotal, discount, tax, total, hasLines, onPayment, onClear }: Props) {
+  return (
+    <section className="rounded-2xl border border-slate-200 bg-white p-5">
+      <h2 className="font-bold text-slate-700">Order total</h2>
+      <div className="mt-4 grid gap-2 text-sm">
+        <div className="flex justify-between text-slate-500">
+          <span>Subtotal</span>
+          <span>{formatLkr(subtotal)}</span>
+        </div>
+        {discount > 0 && (
+          <div className="flex justify-between text-slate-500">
+            <span>Discount</span>
+            <span>− {formatLkr(discount)}</span>
+          </div>
+        )}
+        {tax > 0 && (
+          <div className="flex justify-between text-slate-500">
+            <span>Tax</span>
+            <span>{formatLkr(tax)}</span>
+          </div>
+        )}
+        <div className="mt-2 flex items-end justify-between border-t border-slate-100 pt-3">
+          <span className="text-base font-bold text-slate-800">Total to pay</span>
+          <strong className="text-3xl font-black text-teal-700">{formatLkr(total)}</strong>
+        </div>
+      </div>
+
+      {/* Single primary action */}
+      <button
+        className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-teal-600 px-4 py-4 text-base font-bold text-white transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-40"
+        disabled={!hasLines}
+        onClick={() => onPayment("split")}
+        type="button"
+        id="take-payment-btn"
+      >
+        <ReceiptText className="size-5" />
+        Take payment →
+      </button>
+
+      {/* Quiet secondary action */}
+      <button
+        className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-medium text-slate-500 transition hover:border-slate-300 hover:text-red-600 disabled:opacity-30"
+        disabled={!hasLines}
+        onClick={onClear}
+        type="button"
+      >
+        <Eraser className="size-4" />
+        Clear cart
+      </button>
+    </section>
+  );
 }

@@ -61,8 +61,31 @@ export function RoleForm({ role }: RoleFormProps) {
           {groups.map((group) => (
             <section className="rounded-2xl border border-slate-200 bg-slate-50 p-4" key={group.module}>
               <div className="flex items-center justify-between gap-3">
-                <h4 className="text-sm font-black uppercase tracking-[.16em] text-teal-700">{group.module}</h4>
-                <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-500">{group.permissions.length} permissions</span>
+                <h4 className="text-sm font-bold uppercase tracking-widest text-teal-700">{group.module}</h4>
+                <div className="flex items-center gap-3">
+                  {!isOwnerRole && (
+                    <button
+                      className="inline-flex items-center gap-1 rounded bg-teal-100 font-bold uppercase tracking-wider text-teal-700 transition hover:bg-teal-200"
+                      style={{ fontSize: "9px", padding: "2px 6px" }}
+                      type="button"
+                      onClick={(e) => {
+                        const section = e.currentTarget.closest("section");
+                        const checkboxes = section?.querySelectorAll("input[type='checkbox']");
+                        if (checkboxes) {
+                          const allChecked = Array.from(checkboxes).every((cb) => (cb as HTMLInputElement).checked);
+                          checkboxes.forEach((cb) => {
+                            if (!(cb as HTMLInputElement).disabled) {
+                              (cb as HTMLInputElement).checked = !allChecked;
+                            }
+                          });
+                        }
+                      }}
+                    >
+                      Select all
+                    </button>
+                  )}
+                  <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-500">{group.permissions.length} permissions</span>
+                </div>
               </div>
               <div className="mt-4 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
                 {group.permissions.map((permission) => (
