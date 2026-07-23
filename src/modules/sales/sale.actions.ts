@@ -76,6 +76,7 @@ export async function completeSaleAction(rawInput: unknown) {
       revalidatePath("/admin/audit");
       return { ok: true as const, sale };
     } catch (error) {
+      console.error("[completeSaleAction] error", error);
       if (error instanceof SaleCompletionError) {
         return { ok: false as const, error: { code: error.code, message: error.message, details: error.details ?? null } };
       }
