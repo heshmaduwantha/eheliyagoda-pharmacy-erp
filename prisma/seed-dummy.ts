@@ -147,8 +147,8 @@ async function main() {
         },
       });
       
-      let invoiceStatus = SupplierInvoiceStatus.OPEN;
-      let dueDate = new Date();
+      const invoiceStatus = SupplierInvoiceStatus.OPEN;
+      const dueDate = new Date();
       if (i % 2 === 0) {
         dueDate.setDate(dueDate.getDate() - 10);
       } else {

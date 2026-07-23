@@ -15,7 +15,6 @@ export default async function StockPage() {
     getLatestActiveBatches(20),
   ]);
 
-  const hasAlerts = summary.lowStockCount > 0 || summary.nearExpiryCount > 0 || summary.expiredOrQuarantinedCount > 0;
 
   return (
     <div className="grid gap-6">
