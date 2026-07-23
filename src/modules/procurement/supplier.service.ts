@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { writeAuditLog } from "@/modules/audit/audit.service";
 import { serverOnly } from "@/lib/server-only";
+import { GrnStatus } from "@prisma/client";
 
 serverOnly();
 
@@ -72,5 +73,36 @@ export async function createSupplier(input: CreateSupplierInput, actorUserId: st
     );
 
     return supplier;
+  });
+}
+
+export async function setSupplierActive(supplierId: string, isActive: boolean, actorUserId: string) {
+  return prisma.$transaction(async (tx) => {
+    const supplier = await tx.supplier.findUnique({ where: { id: supplierId } });
+    if (!supplier) throw new Error("Supplier not found.");
+
+    if (supplier.isActive === isActive) return supplier;
+
+    if (!isActive) {
+      const draftGrnCount = await tx.grn.count({ where: { supplierId, status: GrnStatus.DRAFT } });
+      if (draftGrnCount > 0) {
+        throw new Error("This supplier has a draft GRN. Complete or cancel it before deactivating the supplier.");
+      }
+    }
+
+    const updated = await tx.supplier.update({ where: { id: supplierId }, data: { isActive } });
+    await writeAuditLog(
+      {
+        actorUserId,
+        action: isActive ? "supplier.activated" : "supplier.deactivated",
+        entityType: "SUPPLIER",
+        entityId: updated.id,
+        beforeData: { isActive: supplier.isActive },
+        afterData: { isActive: updated.isActive, name: updated.name },
+      },
+      tx,
+    );
+
+    return updated;
   });
 }

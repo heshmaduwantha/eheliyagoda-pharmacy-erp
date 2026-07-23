@@ -38,7 +38,7 @@ export default async function GrnListPage({ searchParams }: { searchParams: Prom
           id="record-delivery-btn"
         >
           <PackagePlus className="size-4" />
-          Record a delivery
+          Add GRN
         </Link>
       </div>
 

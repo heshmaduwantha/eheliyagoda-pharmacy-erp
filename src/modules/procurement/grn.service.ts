@@ -10,7 +10,7 @@ export type GrnLineInput = {
   productId: string;
   unitId: string;
   qtyInUnit: number;
-  batchNo?: string;
+  supplierBatchNo?: string;
   expiryDate?: string;
   mrp?: number;
   costPrice: number;
@@ -31,6 +31,12 @@ function addDays(date: Date, days: number) {
   const value = new Date(date);
   value.setDate(value.getDate() + days);
   return value;
+}
+
+const GRN_TRANSACTION_OPTIONS = { maxWait: 10_000, timeout: 30_000 } as const;
+
+function systemBatchNumber(grnNo: string, lineNumber: number) {
+  return `BATCH-${grnNo}-${String(lineNumber).padStart(2, "0")}`;
 }
 
 /**
@@ -95,8 +101,11 @@ export function getGrn(id: string) {
  */
 export async function createGrnDraft(input: CreateGrnInput, actorUserId: string) {
   const unitIds = [...new Set(input.lines.map((l) => l.unitId))];
+  const productIds = [...new Set(input.lines.map((l) => l.productId))];
   const units = await prisma.productUnit.findMany({ where: { id: { in: unitIds } } });
+  const products = await prisma.product.findMany({ where: { id: { in: productIds } }, select: { id: true } });
   const unitById = new Map(units.map((u) => [u.id, u]));
+  const productIdsFound = new Set(products.map((product) => product.id));
 
   // Invoice total is calculated from the lines (quantity x cost), never typed in.
   const invoiceTotal = input.lines.reduce(
@@ -125,16 +134,19 @@ export async function createGrnDraft(input: CreateGrnInput, actorUserId: string)
         status: GrnStatus.DRAFT,
         receivedById: actorUserId,
         lines: {
-          create: input.lines.map((line) => {
+          create: input.lines.map((line, index) => {
             const unit = unitById.get(line.unitId);
-            if (!unit) throw new Error("Selected unit does not belong to the product.");
+            if (!unit || unit.productId !== line.productId || !productIdsFound.has(line.productId)) {
+              throw new Error("Selected unit does not belong to the product.");
+            }
             const qtyBase = new Prisma.Decimal(line.qtyInUnit).mul(unit.factorToBase);
             return {
               productId: line.productId,
               unitId: line.unitId,
               qtyInUnit: new Prisma.Decimal(line.qtyInUnit),
               qtyBase,
-              batchNo: line.batchNo || null,
+              batchNo: systemBatchNumber(grnNo, index + 1),
+              supplierBatchNo: line.supplierBatchNo?.trim() || null,
               expiryDate: line.expiryDate ? new Date(line.expiryDate) : null,
               mrp: line.mrp != null ? new Prisma.Decimal(line.mrp) : null,
               costPrice: new Prisma.Decimal(line.costPrice),
@@ -157,7 +169,7 @@ export async function createGrnDraft(input: CreateGrnInput, actorUserId: string)
     );
 
     return grn;
-  });
+  }, GRN_TRANSACTION_OPTIONS);
 }
 
 /**
@@ -165,8 +177,11 @@ export async function createGrnDraft(input: CreateGrnInput, actorUserId: string)
  */
 export async function updateGrnDraft(grnId: string, input: CreateGrnInput, actorUserId: string) {
   const unitIds = [...new Set(input.lines.map((l) => l.unitId))];
+  const productIds = [...new Set(input.lines.map((l) => l.productId))];
   const units = await prisma.productUnit.findMany({ where: { id: { in: unitIds } } });
+  const products = await prisma.product.findMany({ where: { id: { in: productIds } }, select: { id: true } });
   const unitById = new Map(units.map((u) => [u.id, u]));
+  const productIdsFound = new Set(products.map((product) => product.id));
 
   const invoiceTotal = input.lines.reduce(
     (sum, line) => sum.add(new Prisma.Decimal(line.qtyInUnit).mul(line.costPrice)),
@@ -174,7 +189,7 @@ export async function updateGrnDraft(grnId: string, input: CreateGrnInput, actor
   );
 
   return prisma.$transaction(async (tx) => {
-    const existing = await tx.grn.findUnique({ where: { id: grnId }, select: { status: true } });
+    const existing = await tx.grn.findUnique({ where: { id: grnId }, select: { status: true, grnNo: true } });
     if (!existing) throw new Error("GRN not found.");
     if (existing.status !== GrnStatus.DRAFT) throw new Error("Only a DRAFT GRN can be updated.");
 
@@ -189,16 +204,19 @@ export async function updateGrnDraft(grnId: string, input: CreateGrnInput, actor
         notes: input.notes || null,
         invoiceTotal,
         lines: {
-          create: input.lines.map((line) => {
+          create: input.lines.map((line, index) => {
             const unit = unitById.get(line.unitId);
-            if (!unit) throw new Error("Selected unit does not belong to the product.");
+            if (!unit || unit.productId !== line.productId || !productIdsFound.has(line.productId)) {
+              throw new Error("Selected unit does not belong to the product.");
+            }
             const qtyBase = new Prisma.Decimal(line.qtyInUnit).mul(unit.factorToBase);
             return {
               productId: line.productId,
               unitId: line.unitId,
               qtyInUnit: new Prisma.Decimal(line.qtyInUnit),
               qtyBase,
-              batchNo: line.batchNo || null,
+              batchNo: systemBatchNumber(existing.grnNo, index + 1),
+              supplierBatchNo: line.supplierBatchNo?.trim() || null,
               expiryDate: line.expiryDate ? new Date(line.expiryDate) : null,
               mrp: line.mrp != null ? new Prisma.Decimal(line.mrp) : null,
               costPrice: new Prisma.Decimal(line.costPrice),
@@ -221,7 +239,7 @@ export async function updateGrnDraft(grnId: string, input: CreateGrnInput, actor
     );
 
     return grn;
-  });
+  }, GRN_TRANSACTION_OPTIONS);
 }
 
 
@@ -269,6 +287,7 @@ export async function confirmGrn(grnId: string, actorUserId: string) {
       productId: line.productId,
       grnLineId: line.id,
       batchNo: line.batchNo,
+      supplierBatchNo: line.supplierBatchNo,
       expiryDate: line.expiryDate,
       mrp: line.mrp,
       costPrice: line.costPrice,
@@ -321,5 +340,5 @@ export async function confirmGrn(grnId: string, actorUserId: string) {
     );
 
     return confirmed;
-  }, { maxWait: 5_000, timeout: 15_000 });
+  }, GRN_TRANSACTION_OPTIONS);
 }

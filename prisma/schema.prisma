@@ -267,6 +267,7 @@ model GrnLine {
   qtyInUnit     Decimal     @db.Decimal(14, 3)
   qtyBase       Decimal     @db.Decimal(14, 3)
   batchNo       String?     @db.VarChar(80)
+  supplierBatchNo String?   @db.VarChar(80)
   expiryDate    DateTime?   @db.Date
   mrp           Decimal?    @db.Decimal(12, 2)
   costPrice     Decimal     @db.Decimal(12, 2)
@@ -323,6 +324,7 @@ model Batch {
   grnLineId      String?         @unique @db.Uuid
   grnLine        GrnLine?        @relation(fields: [grnLineId], references: [id], onDelete: SetNull)
   batchNo        String?         @db.VarChar(80)
+  supplierBatchNo String?        @db.VarChar(80)
   expiryDate     DateTime?       @db.Date
   mrp            Decimal?        @db.Decimal(12, 2)
   costPrice      Decimal         @db.Decimal(12, 2)

@@ -1,6 +1,6 @@
-import { Search, Plus, Package } from "lucide-react";
+import { Search, Plus, Package, ChevronDown } from "lucide-react";
 import Link from "next/link";
-import { formatMoney } from "@/lib/money";
+import { formatMoney, formatQty } from "@/lib/money";
 import { requirePermission } from "@/modules/auth/permissions";
 import { searchProducts } from "@/modules/catalog/catalog.service";
 import { ProductForm } from "@/modules/catalog/product-form";
@@ -89,6 +89,7 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
                     <th className="px-5 py-3 font-semibold text-slate-800">Product Name</th>
                     <th className="px-5 py-3 font-semibold text-slate-800">Generic</th>
                     <th className="px-5 py-3 font-semibold text-slate-800">Type &amp; Form</th>
+                    <th className="px-5 py-3 font-semibold text-slate-800">Sold in &amp; unit pricing</th>
                     <th className="px-5 py-3 font-semibold text-slate-800">Barcode</th>
                     <th className="px-5 py-3 text-right font-semibold text-slate-800">Selling Price</th>
                   </tr>
@@ -104,6 +105,34 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
                       <td className="px-5 py-3.5">
                         {product.productType === "MEDICINE" ? "Medicine" : "General"} 
                         {product.form ? ` · ${product.form}` : ""}
+                      </td>
+                      <td className="px-5 py-3.5">
+                        {product.units.length ? (
+                          <details className="group min-w-60">
+                            <summary className="flex cursor-pointer list-none items-center gap-1.5 marker:content-none">
+                              <div className="flex flex-wrap gap-1.5" title={product.units.map((unit) => unit.unitName).join(", ")}>
+                                {product.units.slice(0, 2).map((unit) => (
+                                  <span className="rounded-full bg-teal-50 px-2 py-0.5 text-xs font-semibold text-teal-700" key={unit.id}>{unit.unitName}</span>
+                                ))}
+                                {product.units.length > 2 ? <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">+{product.units.length - 2}</span> : null}
+                              </div>
+                              <ChevronDown className="size-3.5 shrink-0 text-slate-400 transition group-open:rotate-180" />
+                            </summary>
+                            <div className="mt-2 grid gap-1.5 rounded-lg border border-slate-200 bg-slate-50 p-2.5">
+                              {product.units.map((unit) => {
+                                const unitPrice = product.defaultSellingPrice == null
+                                  ? null
+                                  : Number(product.defaultSellingPrice) * Number(unit.factorToBase);
+                                return (
+                                  <div className="flex items-center justify-between gap-3 text-xs" key={unit.id}>
+                                    <span className="font-semibold text-slate-700">{unit.unitName} <span className="font-normal text-slate-400">· {formatQty(unit.factorToBase)} {product.baseUnitName}</span></span>
+                                    <strong className="whitespace-nowrap text-teal-700">{unitPrice == null ? "Price pending" : `${formatMoney(unitPrice)} each`}</strong>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </details>
+                        ) : <span className="text-slate-400">—</span>}
                       </td>
                       <td className="px-5 py-3.5 font-mono text-xs text-slate-500">
                         {product.barcodes.length > 0 ? product.barcodes[0].barcode : "—"}

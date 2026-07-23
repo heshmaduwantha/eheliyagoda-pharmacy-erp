@@ -4,7 +4,14 @@ export function Brand({ compact = false, inverse = false }: { compact?: boolean;
   return (
     <div className="flex items-center gap-3">
       <div className="relative grid size-11 shrink-0 place-items-center overflow-hidden rounded-2xl bg-white shadow-sm">
-        <Image src="/medical-cross-logo.png" alt="Medicare Logo" fill className="object-contain p-1.5" priority />
+        <Image
+          src="/medical-cross-logo.png"
+          alt="Medicare Logo"
+          width={44}
+          height={44}
+          className="size-11 object-contain p-1.5"
+          priority
+        />
       </div>
       {!compact && (
         <span>

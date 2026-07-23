@@ -9,10 +9,27 @@ export type ProductType = "MEDICINE" | "GENERAL_ITEM";
 export type PrescriptionRule = "NONE" | "PROMPT_SKIPPABLE" | "HARD_REQUIRED_CONTROLLED";
 export type BatchStatus = "ACTIVE" | "QUARANTINED" | "DEPLETED";
 export type StockMovementType = "GRN_IN" | "SALE_OUT" | "RETURN_IN" | "WRITE_OFF" | "ADJUSTMENT";
+export type StockMovementDirection = "IN" | "OUT";
 export type SaleStatus = "HELD" | "COMPLETED" | "VOIDED";
 export type PaymentMethod = "CASH" | "CARD";
 
 export type InventoryBatchStatus = BatchStatus;
+
+export type InventoryUnavailableStock = {
+  quantity: QuantityString;
+  batchCount: number;
+  reason: string;
+};
+
+export type InventoryProductSummaryRecord = {
+  id: UUID;
+  productName: string;
+  primaryBarcode: string | null;
+  baseUnit: string;
+  activeQuantity: QuantityString;
+  activeBatchCount: number;
+  unavailableStock: InventoryUnavailableStock[];
+};
 
 export type InventoryBatchRecord = {
   id: UUID;
@@ -20,6 +37,7 @@ export type InventoryBatchRecord = {
   productName: string;
   primaryBarcode: string | null;
   batchNumber: string | null;
+  supplierLotNumber: string | null;
   expiryDate: ISODate | null;
   mrp: MoneyString | null;
   costPrice: MoneyString;
@@ -34,7 +52,9 @@ export type StockMovementRecord = {
   occurredAt: ISODateTime;
   productName: string;
   batchNumber: string | null;
+  supplierLotNumber: string | null;
   movementType: StockMovementType;
+  direction: StockMovementDirection;
   qtyBase: QuantityString;
   baseUnit: string;
   reference: string;
@@ -47,6 +67,7 @@ export type ExpiryAlertRecord = {
   id: UUID;
   productName: string;
   batchNumber: string | null;
+  supplierLotNumber: string | null;
   expiryDate: ISODate | null;
   daysLeft: number | null;
   qty: QuantityString;
@@ -64,6 +85,7 @@ export type StockSummary = {
 
 export type InventoryFilterInput = {
   status?: string;
+  direction?: string;
   availability?: string;
   timeframe?: string;
   search?: string;

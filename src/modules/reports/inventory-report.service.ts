@@ -6,7 +6,7 @@ import { serverOnly } from "@/lib/server-only";
 serverOnly();
 
 // TODO(settings): Read system_settings.near_expiry_days when the settings model exists.
-export const DEFAULT_NEAR_EXPIRY_DAYS = 90;
+export const DEFAULT_NEAR_EXPIRY_DAYS = 30;
 
 function startOfToday() {
   const value = new Date();

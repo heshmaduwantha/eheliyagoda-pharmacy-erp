@@ -49,12 +49,17 @@ const stockBatchSelect = {
   expiryDate: true,
   qtyOnHandBase: true,
   status: true,
+  sellingPrice: true,
+  mrp: true,
+  costPrice: true,
+  grnLine: { select: { unit: { select: { factorToBase: true } } } },
 } satisfies Prisma.BatchSelect;
 
 type ProductBaseRow = Prisma.ProductGetPayload<{ select: typeof productSelect }>;
 type UnitRow = Prisma.ProductUnitGetPayload<{ select: typeof unitSelect }>;
 type BarcodeRow = Prisma.ProductBarcodeGetPayload<{ select: typeof barcodeSelect }>;
 type StockBatchRow = Prisma.BatchGetPayload<{ select: typeof stockBatchSelect }>;
+type BatchPriceSource = Pick<StockBatchRow, "grnLine">;
 type ProductReadRow = ProductBaseRow & {
   units: UnitRow[];
   barcodes: BarcodeRow[];
@@ -90,9 +95,26 @@ function sellableBatches(product: ProductReadRow) {
     });
 }
 
-function serializeUnit(product: ProductReadRow, unit: ProductReadRow["units"][number]): PosUnitOption {
+function batchPriceForUnit(
+  batch: BatchPriceSource,
+  saleUnitFactor: Prisma.Decimal,
+  price: Prisma.Decimal,
+) {
+  const sourceUnitFactor = batch.grnLine?.unit.factorToBase;
+  return sourceUnitFactor?.gt(0)
+    ? price.div(sourceUnitFactor).mul(saleUnitFactor)
+    : price;
+}
+
+function serializeUnit(
+  product: ProductReadRow,
+  unit: ProductReadRow["units"][number],
+  preferredBatch: StockBatchRow | null,
+): PosUnitOption {
   const barcode = product.barcodes.find((item) => item.unitId === unit.id)?.barcode ?? null;
-  const sellingPrice = product.defaultSellingPrice
+  const sellingPrice = preferredBatch
+    ? batchPriceForUnit(preferredBatch, unit.factorToBase, preferredBatch.sellingPrice).toFixed(2)
+    : product.defaultSellingPrice
     ? product.defaultSellingPrice.mul(unit.factorToBase).toFixed(2)
     : null;
   return {
@@ -109,6 +131,9 @@ function serializeUnit(product: ProductReadRow, unit: ProductReadRow["units"][nu
 
 function serializeProduct(product: ProductReadRow): PosProductSearchResult {
   const batches = sellableBatches(product);
+  // POS always starts from the first sellable FEFO batch. The checkout service
+  // repeats this calculation under row locks before creating the sale.
+  const preferredBatch = batches[0] ?? null;
   const availableQtyBase = batches.reduce(
     (sum, batch) => sum.add(batch.qtyOnHandBase),
     new Prisma.Decimal(0),
@@ -116,7 +141,7 @@ function serializeProduct(product: ProductReadRow): PosProductSearchResult {
   const units = product.units
     .slice()
     .sort((left, right) => left.factorToBase.comparedTo(right.factorToBase))
-    .map((unit) => serializeUnit(product, unit));
+    .map((unit) => serializeUnit(product, unit, preferredBatch));
   const defaultSaleUnit = units.find((unit) => unit.isSaleDefault) ?? units[0] ?? null;
   const primaryBarcode = product.barcodes.find((barcode) => barcode.isPrimary)?.barcode
     ?? product.barcodes[0]?.barcode
@@ -238,14 +263,20 @@ export async function lookupProductByBarcode(barcode: string): Promise<PosBarcod
 }
 
 export async function getProductUnits(productId: string): Promise<PosUnitOption[]> {
-  const [product, units, barcodes] = await Promise.all([
+  const [product, units, barcodes, batches] = await Promise.all([
     prisma.product.findFirst({ where: { id: productId, isActive: true }, select: productSelect }),
     prisma.productUnit.findMany({ where: { productId }, select: unitSelect, orderBy: { factorToBase: "asc" } }),
     prisma.productBarcode.findMany({ where: { productId }, select: barcodeSelect }),
+    prisma.batch.findMany({
+      where: { productId, status: BatchStatus.ACTIVE, qtyOnHandBase: { gt: 0 } },
+      select: stockBatchSelect,
+      orderBy: [{ expiryDate: { sort: "asc", nulls: "last" } }, { createdAt: "asc" }],
+    }),
   ]);
   if (!product) return [];
-  const readRow: ProductReadRow = { ...product, units, barcodes, batches: [] };
-  return units.map((unit) => serializeUnit(readRow, unit));
+  const readRow: ProductReadRow = { ...product, units, barcodes, batches };
+  const preferredBatch = sellableBatches(readRow)[0] ?? null;
+  return units.map((unit) => serializeUnit(readRow, unit, preferredBatch));
 }
 
 export async function getPosBatchPreview(
@@ -284,6 +315,7 @@ export async function getPosBatchPreview(
       mrp: true,
       costPrice: true,
       sellingPrice: true,
+      grnLine: { select: { unit: { select: { factorToBase: true } } } },
     },
     orderBy: [{ expiryDate: { sort: "asc", nulls: "last" } }, { createdAt: "asc" }],
   });
@@ -296,6 +328,7 @@ export async function getPosBatchPreview(
 
   return {
     productId,
+    unitName: unit.unitName,
     requestedQtyBase: requestedQtyBase.toFixed(3),
     totalAvailableQtyBase: totalAvailableQtyBase.toFixed(3),
     canFulfil: totalAvailableQtyBase.gte(requestedQtyBase),
@@ -305,9 +338,9 @@ export async function getPosBatchPreview(
       expiryDate: toDateOnly(batch.expiryDate),
       status: batch.status,
       availableQtyBase: batch.qtyOnHandBase.toFixed(3),
-      mrp: batch.mrp?.toFixed(2) ?? null,
-      costPrice: batch.costPrice.toFixed(2),
-      sellingPrice: batch.sellingPrice.toFixed(2),
+      mrp: batch.mrp ? batchPriceForUnit(batch, unit.factorToBase, batch.mrp).toFixed(2) : null,
+      costPrice: batchPriceForUnit(batch, unit.factorToBase, batch.costPrice).toFixed(2),
+      sellingPrice: batchPriceForUnit(batch, unit.factorToBase, batch.sellingPrice).toFixed(2),
       fefoRank: index + 1,
     })),
     generatedAt: new Date().toISOString(),

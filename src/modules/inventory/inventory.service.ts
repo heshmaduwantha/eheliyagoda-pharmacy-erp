@@ -4,7 +4,9 @@ import type {
   ExpiryAlertRecord,
   InventoryBatchRecord,
   InventoryFilterInput,
+  InventoryProductSummaryRecord,
   StockMovementRecord,
+  StockMovementDirection,
   StockSummary,
 } from "./inventory.types";
 import { serverOnly } from "@/lib/server-only";
@@ -12,7 +14,7 @@ import { serverOnly } from "@/lib/server-only";
 serverOnly();
 
 // TODO(settings): Read system_settings.near_expiry_days when that model is introduced.
-const DEFAULT_NEAR_EXPIRY_DAYS = 90;
+const DEFAULT_NEAR_EXPIRY_DAYS = 30;
 
 function startOfToday() {
   const value = new Date();
@@ -52,11 +54,16 @@ function movementType(value?: string) {
     : undefined;
 }
 
+function movementDirection(value?: string) {
+  return value === "IN" || value === "OUT" ? value : undefined;
+}
+
 function batchSearchWhere(search?: string): Prisma.BatchWhereInput[] | undefined {
   const query = search?.trim();
   if (!query) return undefined;
   return [
     { batchNo: { contains: query, mode: "insensitive" } },
+    { supplierBatchNo: { contains: query, mode: "insensitive" } },
     { product: { name: { contains: query, mode: "insensitive" } } },
     { product: { genericName: { contains: query, mode: "insensitive" } } },
     { product: { barcodes: { some: { barcode: { contains: query } } } } },
@@ -67,6 +74,7 @@ function serializeBatch(batch: {
   id: string;
   productId: string;
   batchNo: string | null;
+  supplierBatchNo: string | null;
   expiryDate: Date | null;
   mrp: Prisma.Decimal | null;
   costPrice: Prisma.Decimal;
@@ -81,6 +89,7 @@ function serializeBatch(batch: {
     productName: batch.product.name,
     primaryBarcode: batch.product.barcodes[0]?.barcode ?? null,
     batchNumber: batch.batchNo,
+    supplierLotNumber: batch.supplierBatchNo,
     expiryDate: toDateOnly(batch.expiryDate),
     mrp: batch.mrp?.toFixed(2) ?? null,
     costPrice: batch.costPrice.toFixed(2),
@@ -190,15 +199,103 @@ export async function getLatestActiveBatches(limit = 4): Promise<InventoryBatchR
   return rows.map(serializeBatch);
 }
 
+function writeOffReason(referenceId: string) {
+  if (referenceId === "EXPIRY") return "Expired";
+  if (referenceId === "DAMAGE") return "Damaged";
+  return "Write-off";
+}
+
+/**
+ * Product-level stock view for the overview page. Active quantities are kept
+ * separate from stock currently unavailable or already removed by a write-off.
+ */
+export async function getStockProductOverview(limit = 20): Promise<InventoryProductSummaryRecord[]> {
+  const today = startOfToday();
+  const products = await prisma.product.findMany({
+    where: {
+      OR: [
+        { batches: { some: {} } },
+        { stockMovements: { some: { movementType: StockMovementType.WRITE_OFF } } },
+      ],
+    },
+    select: {
+      id: true,
+      name: true,
+      baseUnitName: true,
+      barcodes: { where: { isPrimary: true }, select: { barcode: true }, take: 1 },
+      batches: {
+        select: {
+          id: true,
+          status: true,
+          expiryDate: true,
+          qtyOnHandBase: true,
+          stockMovements: {
+            where: { movementType: StockMovementType.WRITE_OFF },
+            select: { qtyBase: true, refId: true },
+          },
+        },
+      },
+    },
+    orderBy: { name: "asc" },
+  });
+
+  return products.map((product) => {
+    let activeQuantity = new Prisma.Decimal(0);
+    let activeBatchCount = 0;
+    const unavailableByReason = new Map<string, { quantity: Prisma.Decimal; batchIds: Set<string> }>();
+    const addUnavailable = (reason: string, quantity: Prisma.Decimal, batchId: string) => {
+      if (quantity.lte(0)) return;
+      const current = unavailableByReason.get(reason) ?? { quantity: new Prisma.Decimal(0), batchIds: new Set<string>() };
+      current.quantity = current.quantity.add(quantity);
+      current.batchIds.add(batchId);
+      unavailableByReason.set(reason, current);
+    };
+
+    for (const batch of product.batches) {
+      const isExpired = batch.expiryDate !== null && batch.expiryDate < today;
+      const isActive = batch.status === BatchStatus.ACTIVE && !isExpired && batch.qtyOnHandBase.gt(0);
+      if (isActive) {
+        activeQuantity = activeQuantity.add(batch.qtyOnHandBase);
+        activeBatchCount += 1;
+      } else if (batch.qtyOnHandBase.gt(0)) {
+        addUnavailable(isExpired ? "Expired" : "Quarantined", batch.qtyOnHandBase, batch.id);
+      }
+
+      for (const movement of batch.stockMovements) {
+        addUnavailable(writeOffReason(movement.refId), movement.qtyBase.abs(), batch.id);
+      }
+    }
+
+    return {
+      id: product.id,
+      productName: product.name,
+      primaryBarcode: product.barcodes[0]?.barcode ?? null,
+      baseUnit: product.baseUnitName,
+      activeQuantity: activeQuantity.toFixed(3),
+      activeBatchCount,
+      unavailableStock: [...unavailableByReason.entries()].map(([reason, summary]) => ({
+        quantity: summary.quantity.toFixed(3),
+        batchCount: summary.batchIds.size,
+        reason,
+      })),
+    };
+  }).filter((product) => Number(product.activeQuantity) > 0 || product.unavailableStock.length > 0)
+    .sort((left, right) => Number(right.activeQuantity) - Number(left.activeQuantity) || left.productName.localeCompare(right.productName))
+    .slice(0, Math.min(Math.max(limit, 1), 100));
+}
+
 export async function getStockMovementList(filters: InventoryFilterInput = {}): Promise<{ data: StockMovementRecord[]; total: number }> {
   const { page = 1, pageSize = 10 } = filters;
   const query = filters.search?.trim();
+  const direction = movementDirection(filters.direction);
   const where = {
     movementType: movementType(filters.status),
+    qtyBase: direction === "IN" ? { gt: 0 } : direction === "OUT" ? { lt: 0 } : undefined,
     OR: query
       ? [
           { product: { name: { contains: query, mode: "insensitive" as const } } },
           { batch: { batchNo: { contains: query, mode: "insensitive" as const } } },
+          { batch: { supplierBatchNo: { contains: query, mode: "insensitive" as const } } },
           { refType: { contains: query, mode: "insensitive" as const } },
           { refId: { contains: query, mode: "insensitive" as const } },
         ]
@@ -210,7 +307,7 @@ export async function getStockMovementList(filters: InventoryFilterInput = {}): 
       where,
       include: {
         product: { select: { name: true, baseUnitName: true } },
-        batch: { select: { batchNo: true } },
+        batch: { select: { batchNo: true, supplierBatchNo: true } },
       },
       orderBy: { createdAt: "desc" },
       skip: (page - 1) * pageSize,
@@ -230,7 +327,9 @@ export async function getStockMovementList(filters: InventoryFilterInput = {}): 
     occurredAt: row.createdAt.toISOString(),
     productName: row.product.name,
     batchNumber: row.batch.batchNo,
+    supplierLotNumber: row.batch.supplierBatchNo,
     movementType: row.movementType,
+    direction: (row.qtyBase.gt(0) ? "IN" : "OUT") as StockMovementDirection,
     qtyBase: row.qtyBase.toFixed(3),
     baseUnit: row.product.baseUnitName,
     reference: `${row.refType} · ${row.refId}`,
@@ -269,6 +368,7 @@ export async function getExpiryAlerts(filters: InventoryFilterInput = {}): Promi
         ? [{
             OR: [
               { batchNo: { contains: query, mode: "insensitive" as const } },
+              { supplierBatchNo: { contains: query, mode: "insensitive" as const } },
               { product: { name: { contains: query, mode: "insensitive" as const } } },
             ],
           }]
@@ -298,6 +398,7 @@ export async function getExpiryAlerts(filters: InventoryFilterInput = {}): Promi
       id: row.id,
       productName: row.product.name,
       batchNumber: row.batchNo,
+      supplierLotNumber: row.supplierBatchNo,
       expiryDate: toDateOnly(row.expiryDate),
       daysLeft,
       qty: row.qtyOnHandBase.toFixed(3),

@@ -1224,7 +1224,7 @@ export async function seedAllPermissionsAndRoles(client: DbClient = prisma) {
     {
       code: "inventory_manager",
       name: "Inventory Manager",
-      description: "Inventory, procurement, and write-off control",
+      description: "Inventory, procurement, and expired-stock control",
       isSystem: true,
       permissionCodes: [
         "inventory.stock.read",

@@ -6,9 +6,10 @@ import { z } from "zod";
 import { type FormState, toFieldErrors } from "@/lib/forms";
 import { requirePermission } from "@/modules/auth/permissions";
 import { createProduct } from "./catalog.service";
+import { UNIT_OPTIONS } from "./unit-options";
 
 const unitSchema = z.object({
-  unitName: z.string().trim().min(1).max(60),
+  unitName: z.enum(UNIT_OPTIONS),
   factorToBase: z.coerce.number().positive(),
   isPurchaseDefault: z.boolean().optional(),
   isSaleDefault: z.boolean().optional(),
@@ -27,7 +28,15 @@ const createProductSchema = z.object({
   isControlled: z.coerce.boolean(),
   defaultSellingPrice: z.coerce.number().nonnegative().optional(),
   reorderLevel: z.coerce.number().nonnegative().optional(),
-  units: z.array(unitSchema).min(1, "At least one unit is required"),
+  units: z.array(unitSchema).min(1, "Select at least one sold-in unit"),
+}).superRefine((input, context) => {
+  const names = new Set<string>();
+  input.units.forEach((unit, index) => {
+    if (names.has(unit.unitName)) {
+      context.addIssue({ code: "custom", path: ["units", index, "unitName"], message: "Duplicate units are not allowed" });
+    }
+    names.add(unit.unitName);
+  });
 });
 
 export async function createProductAction(_prev: FormState, formData: FormData): Promise<FormState> {
@@ -42,15 +51,6 @@ export async function createProductAction(_prev: FormState, formData: FormData):
 
   const baseUnitName = formData.get("baseUnitName")?.toString().trim() || "";
   
-  if (units.length === 0 && baseUnitName) {
-    units.push({
-      unitName: baseUnitName,
-      factorToBase: 1,
-      isSaleDefault: true,
-      isPurchaseDefault: true,
-    });
-  }
-
   const parsed = createProductSchema.safeParse({
     name: formData.get("name"),
     genericName: formData.get("genericName") || undefined,
@@ -70,7 +70,6 @@ export async function createProductAction(_prev: FormState, formData: FormData):
 
   if (!parsed.success) {
     const flat = parsed.error.flatten();
-    import("node:fs").then(fs => fs.writeFileSync("/Users/pavithrameddaduwage/Desktop/ERP/eheliyagoda-pharmacy-erp/zod_error.log", JSON.stringify(flat, null, 2)));
     return {
       status: "error",
       message: "Please check the form for errors.",

@@ -34,7 +34,7 @@ export function BusinessCycleMap() {
         <p className="rounded-2xl border border-emerald-100 bg-emerald-50 p-3 text-emerald-900"><strong>Confirmed GRN:</strong> Stock වැඩි කරයි.</p>
         <p className="rounded-2xl border border-rose-100 bg-rose-50 p-3 text-rose-900"><strong>Completed Sale:</strong> Stock අඩු කරයි.</p>
       </div>
-      <p className="mt-3 flex items-start gap-2 text-xs leading-5 text-slate-500"><AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-500" />Expired stock auto-quarantine/write-off action current UI එකේ නැත; guide එක එය available බව නොපෙන්වයි.</p>
+      <p className="mt-3 flex items-start gap-2 text-xs leading-5 text-slate-500"><AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-500" />Expired Stock removal is a manual action; automatic quarantine is not available in the current UI.</p>
     </section>
   );
 }

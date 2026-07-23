@@ -32,6 +32,7 @@ export default async function EditGrnDraftPage({ params }: { params: Promise<{ i
       unitId: line.unitId,
       qtyInUnit: line.qtyInUnit.toString(),
       batchNo: line.batchNo ?? "",
+      supplierBatchNo: line.supplierBatchNo ?? "",
       expiryDate: line.expiryDate ? line.expiryDate.toISOString().slice(0, 10) : "",
       mrp: line.mrp ? line.mrp.toString() : "",
       costPrice: line.costPrice.toString(),

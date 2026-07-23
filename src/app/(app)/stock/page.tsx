@@ -1,18 +1,18 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AlertTriangle, ArrowRight, Boxes, CalendarClock, ShieldAlert } from "lucide-react";
-import { BatchTable } from "@/components/inventory/BatchTable";
 import { InventoryTabs } from "@/components/inventory/InventoryTabs";
+import { ProductStockOverviewTable } from "@/components/inventory/ProductStockOverviewTable";
 import { requirePermission } from "@/modules/auth/permissions";
-import { getLatestActiveBatches, getStockSummary } from "@/modules/inventory/inventory.service";
+import { getStockProductOverview, getStockSummary } from "@/modules/inventory/inventory.service";
 
 export const metadata: Metadata = { title: "Stock" };
 
 export default async function StockPage() {
   await requirePermission("stock.access");
-  const [summary, recentBatches] = await Promise.all([
+  const [summary, productOverview] = await Promise.all([
     getStockSummary(),
-    getLatestActiveBatches(20),
+    getStockProductOverview(20),
   ]);
 
 
@@ -64,7 +64,7 @@ export default async function StockPage() {
           </div>
           <p className="text-sm font-bold text-slate-500">Near expiry</p>
           <p className="mt-1 text-3xl font-black tracking-tight text-slate-900">{summary.nearExpiryCount}</p>
-          <p className="mt-2 text-xs font-medium text-slate-400">Active batches within 90 days</p>
+          <p className="mt-2 text-xs font-medium text-slate-400">Active batches within 30 days</p>
         </div>
 
         {/* Expired / Quarantined */}
@@ -78,15 +78,18 @@ export default async function StockPage() {
         </div>
       </div>
 
-      {/* Batch list */}
+      {/* Product stock overview */}
       <section>
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-base font-bold text-slate-800">Recent stock</h2>
+          <div>
+            <h2 className="text-base font-bold text-slate-800">Stock overview</h2>
+            <p className="mt-1 text-xs text-slate-500">Total quantity by item. Use Batch register for individual batch details.</p>
+          </div>
           <Link className="flex items-center gap-1 text-sm font-semibold text-teal-700 hover:underline" href="/stock/batches">
             View all batches <ArrowRight className="size-4" />
           </Link>
         </div>
-        <BatchTable rows={recentBatches} />
+        <ProductStockOverviewTable rows={productOverview} />
       </section>
     </div>
   );

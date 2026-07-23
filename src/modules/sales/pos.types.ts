@@ -58,6 +58,7 @@ export type PosBatchCandidate = {
 
 export type PosBatchPreview = {
   productId: UUID;
+  unitName: string;
   requestedQtyBase: QuantityString;
   totalAvailableQtyBase: QuantityString;
   canFulfil: boolean;

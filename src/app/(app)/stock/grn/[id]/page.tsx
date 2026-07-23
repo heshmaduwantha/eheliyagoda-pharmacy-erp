@@ -56,7 +56,8 @@ export default async function GrnDetailPage({ params }: { params: Promise<{ id: 
                 <th className="py-2.5 pr-4">Product</th>
                 <th className="py-2.5 pr-4">Qty</th>
                 <th className="py-2.5 pr-4">Base qty</th>
-                <th className="py-2.5 pr-4">Batch</th>
+                <th className="py-2.5 pr-4">System batch</th>
+                <th className="py-2.5 pr-4">Supplier lot</th>
                 <th className="py-2.5 pr-4">Expiry</th>
                 <th className="py-2.5 pr-4">MRP</th>
                 <th className="py-2.5 pr-4">Cost</th>
@@ -71,6 +72,7 @@ export default async function GrnDetailPage({ params }: { params: Promise<{ id: 
                   <td className="py-3 pr-4 text-slate-600">{formatQty(line.qtyInUnit)} {line.unit.unitName}</td>
                   <td className="py-3 pr-4 text-slate-600">{formatQty(line.qtyBase)}</td>
                   <td className="py-3 pr-4 text-slate-600">{line.batchNo ?? "—"}</td>
+                  <td className="py-3 pr-4 text-slate-600">{line.supplierBatchNo ?? "—"}</td>
                   <td className="py-3 pr-4 text-slate-600">{line.expiryDate ? line.expiryDate.toLocaleDateString() : "—"}</td>
                   <td className="py-3 pr-4 text-slate-600">{line.mrp ? formatMoney(line.mrp) : "—"}</td>
                   <td className="py-3 pr-4 text-slate-600">{formatMoney(line.costPrice)}</td>
@@ -81,7 +83,7 @@ export default async function GrnDetailPage({ params }: { params: Promise<{ id: 
             </tbody>
             <tfoot>
               <tr className="bg-slate-50">
-                <td className="py-3 pr-4 text-right text-sm font-bold text-slate-600" colSpan={8}>Invoice total</td>
+                <td className="py-3 pr-4 text-right text-sm font-bold text-slate-600" colSpan={9}>Invoice total</td>
                 <td className="py-3 pr-4 text-right text-base font-black text-teal-700">{formatMoney(grn.invoiceTotal)}</td>
               </tr>
             </tfoot>

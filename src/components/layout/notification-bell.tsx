@@ -89,7 +89,7 @@ export function NotificationBell({ alerts }: { alerts: AlertCounts }) {
                     <div>
                       <p className="text-sm font-semibold text-slate-800">Near expiry alert</p>
                       <p className="text-xs font-medium text-slate-500">
-                        {alerts.nearExpiryCount} batch{alerts.nearExpiryCount === 1 ? "" : "es"} expiring within 90 days.
+                        {alerts.nearExpiryCount} batch{alerts.nearExpiryCount === 1 ? "" : "es"} expiring within 30 days.
                       </p>
                     </div>
                   </Link>

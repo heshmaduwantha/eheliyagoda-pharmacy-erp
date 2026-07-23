@@ -22,6 +22,7 @@ type LineRow = {
   unitId: string;
   qtyInUnit: string;
   batchNo: string;
+  supplierBatchNo: string;
   expiryDate: string;
   mrp: string;
   costPrice: string;
@@ -40,6 +41,7 @@ const emptyLine = (): LineRow => ({
   unitId: "",
   qtyInUnit: "",
   batchNo: "",
+  supplierBatchNo: "",
   expiryDate: "",
   mrp: "",
   costPrice: "",
@@ -82,7 +84,7 @@ export function GrnForm({
         productId: l.productId,
         unitId: l.unitId,
         qtyInUnit: Number(l.qtyInUnit),
-        batchNo: l.batchNo.trim() || undefined,
+        supplierBatchNo: l.supplierBatchNo.trim() || undefined,
         expiryDate: l.expiryDate || undefined,
         mrp: l.mrp ? Number(l.mrp) : undefined,
         costPrice: Number(l.costPrice || 0),
@@ -138,7 +140,8 @@ export function GrnForm({
                 <th className="px-2 py-2.5">Product</th>
                 <th className="px-2 py-2.5">Unit</th>
                 <th className="px-2 py-2.5">Qty</th>
-                <th className="px-2 py-2.5">Batch</th>
+                <th className="px-2 py-2.5">System batch</th>
+                <th className="px-2 py-2.5">Supplier lot</th>
                 <th className="px-2 py-2.5">Expiry</th>
                 <th className="px-2 py-2.5">MRP</th>
                 <th className="px-2 py-2.5">Cost</th>
@@ -150,7 +153,6 @@ export function GrnForm({
             <tbody>
               {lines.map((line, index) => {
                 const product = productById.get(line.productId);
-                const isMedicine = product?.productType === "MEDICINE";
                 return (
                   <tr className="border-t border-slate-100" key={index}>
                     <td className={`${cell} w-[15%] min-w-[200px]`}>
@@ -171,7 +173,8 @@ export function GrnForm({
                       </select>
                     </td>
                     <td className={`${cell} w-[9%]`}><input className={inputClass} min="0" onChange={(e) => updateLine(index, { qtyInUnit: e.target.value })} step="0.001" type="number" value={line.qtyInUnit} /></td>
-                    <td className={`${cell} w-[11%]`}><input className={inputClass} onChange={(e) => updateLine(index, { batchNo: e.target.value })} placeholder={isMedicine ? "Required" : "—"} value={line.batchNo} /></td>
+                    <td className={`${cell} w-[11%] pt-3 text-xs font-semibold text-teal-700`}>{line.batchNo || "Generated on save"}</td>
+                    <td className={`${cell} w-[11%]`}><input aria-label="Supplier batch or lot number" className={inputClass} onChange={(e) => updateLine(index, { supplierBatchNo: e.target.value })} placeholder="Optional" value={line.supplierBatchNo} /></td>
                     <td className={`${cell} w-[12%]`}><input className={inputClass} onChange={(e) => updateLine(index, { expiryDate: e.target.value })} type="date" value={line.expiryDate} /></td>
                     <td className={`${cell} w-[9%]`}><input className={inputClass} min="0" onChange={(e) => updateLine(index, { mrp: e.target.value })} step="0.01" type="number" value={line.mrp} /></td>
                     <td className={`${cell} w-[9%]`}><input className={inputClass} min="0" onChange={(e) => updateLine(index, { costPrice: e.target.value })} step="0.01" type="number" value={line.costPrice} /></td>
@@ -197,7 +200,7 @@ export function GrnForm({
             </tfoot>
           </table>
         </div>
-        <p className="text-xs text-slate-400">Medicine items need a batch number, expiry date and MRP. The selling price must not be higher than the MRP.</p>
+        <p className="text-xs text-slate-400">A system batch number is always generated and used for stock tracking. Supplier batch/lot is optional, but enter the value printed on the supplier invoice or medicine pack when available. Medicine items still require an expiry date and MRP; selling price cannot exceed MRP.</p>
       </div>
 
       <FormAlert state={state} />

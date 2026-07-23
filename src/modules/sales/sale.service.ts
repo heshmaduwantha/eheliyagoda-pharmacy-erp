@@ -34,6 +34,7 @@ type LockedBatchRow = {
   qtyOnHandBase: Prisma.Decimal;
   status: BatchStatus;
   createdAt: Date;
+  sourceUnitFactor: Prisma.Decimal | null;
 };
 
 type PreparedLine = {
@@ -42,8 +43,7 @@ type PreparedLine = {
   unit: ProductRow["units"][number];
   requestedQty: Prisma.Decimal;
   requestedQtyBase: Prisma.Decimal;
-  currentUnitPrice: Prisma.Decimal;
-  lineGrossTotal: Prisma.Decimal;
+  quotedUnitPrice: Prisma.Decimal;
 };
 
 type PreparedProductGroup = {
@@ -109,11 +109,6 @@ function buildSaleNumber(saleId: string, completedAt: Date) {
   return `SALE-${stamp}-${saleId.slice(0, 8).toUpperCase()}`;
 }
 
-function calculateUnitPrice(product: ProductRow, unit: ProductRow["units"][number]) {
-  if (!product.defaultSellingPrice) return null;
-  return product.defaultSellingPrice.mul(unit.factorToBase);
-}
-
 function isMedicine(product: ProductRow) {
   return product.productType === ProductType.MEDICINE;
 }
@@ -151,9 +146,12 @@ async function lockCandidateBatches(tx: Prisma.TransactionClient, products: Prod
       b."sellingPrice",
       b."qtyOnHandBase",
       b.status,
-      b."createdAt"
+      b."createdAt",
+      source_unit."factorToBase" AS "sourceUnitFactor"
     FROM "Batch" b
     INNER JOIN "Product" p ON p.id = b."productId"
+    LEFT JOIN "GrnLine" source_line ON source_line.id = b."grnLineId"
+    LEFT JOIN "ProductUnit" source_unit ON source_unit.id = source_line."unitId"
     WHERE b."productId" IN (${Prisma.join(productIds.map((id) => Prisma.sql`${id}::uuid`))})
       AND p."isActive" = TRUE
       AND b.status = 'ACTIVE'
@@ -169,7 +167,17 @@ async function lockCandidateBatches(tx: Prisma.TransactionClient, products: Prod
 
 function currentBatchPriceLimit(product: ProductRow, unit: ProductRow["units"][number], batch: LockedBatchRow) {
   if (!isMedicine(product) || batch.mrp == null) return null;
-  return batch.mrp.mul(unit.factorToBase);
+  return batchPriceForUnit(batch, unit, batch.mrp);
+}
+
+function batchPriceForUnit(
+  batch: LockedBatchRow,
+  unit: ProductRow["units"][number],
+  price: Prisma.Decimal,
+) {
+  return batch.sourceUnitFactor?.gt(0)
+    ? price.div(batch.sourceUnitFactor).mul(unit.factorToBase)
+    : price;
 }
 
 function allocateProductGroup(group: PreparedProductGroup) {
@@ -210,8 +218,22 @@ function allocateProductGroup(group: PreparedProductGroup) {
 
       const allocBase = batchRemaining.lt(remainingLineQtyBase) ? batchRemaining : remainingLineQtyBase;
       const allocQty = allocBase.div(line.unit.factorToBase);
-      const unitPrice = line.currentUnitPrice;
+      const unitPrice = batchPriceForUnit(batch, line.unit, batch.sellingPrice);
       const lineTotal = allocQty.mul(unitPrice);
+      if (remainingLineQtyBase.equals(line.requestedQtyBase) && !moneyEquals(unitPrice, line.quotedUnitPrice)) {
+        throw new SaleCompletionError(
+          "SALE_PRICE_CHANGED",
+          `${line.product.name} now uses a different FEFO batch price. Please refresh the cart and try again.`,
+          {
+            productId: line.product.id,
+            productName: line.product.name,
+            batchId: batch.id,
+            batchNumber: batch.batchNo,
+            quotedUnitPrice: line.quotedUnitPrice.toFixed(2),
+            currentUnitPrice: unitPrice.toFixed(2),
+          },
+        );
+      }
       const mrpLimit = currentBatchPriceLimit(line.product, line.unit, batch);
       if (mrpLimit != null && unitPrice.gt(mrpLimit)) {
         throw new SaleCompletionError(
@@ -541,28 +563,13 @@ export async function completeSale(input: SaleCompletionInput, actor: CurrentUse
         throw new SaleCompletionError("VALIDATION_ERROR", "Quoted unit price cannot be negative.");
       }
 
-      const currentUnitPrice = calculateUnitPrice(product, unit) ?? quotedUnitPrice;
-      if (!moneyEquals(currentUnitPrice, quotedUnitPrice)) {
-        throw new SaleCompletionError(
-          "SALE_PRICE_CHANGED",
-          `${product.name} has a different server-side price. Please refresh the cart and try again.`,
-          {
-            productId: product.id,
-            productName: product.name,
-            quotedUnitPrice: quotedUnitPrice.toFixed(2),
-            currentUnitPrice: currentUnitPrice.toFixed(2),
-          },
-        );
-      }
-
       preparedLines.push({
         input: line,
         product,
         unit,
         requestedQty,
         requestedQtyBase: requestedQty.mul(unit.factorToBase),
-        currentUnitPrice,
-        lineGrossTotal: requestedQty.mul(currentUnitPrice),
+        quotedUnitPrice,
       });
     }
 
@@ -576,32 +583,6 @@ export async function completeSale(input: SaleCompletionInput, actor: CurrentUse
     );
     if (prescriptionValidation.requirement.requiresControlledDetails && !hasPermission(actor, "controlled_drugs.sale.create")) {
       throw new SaleCompletionError("FORBIDDEN", "You do not have permission to sell controlled medicines.");
-    }
-
-    const subtotal = preparedLines.reduce((sum, line) => sum.add(line.lineGrossTotal), new Prisma.Decimal(0));
-    if (discountAmount.gt(subtotal)) {
-      throw new SaleCompletionError("VALIDATION_ERROR", "Discount cannot exceed the subtotal.");
-    }
-    const total = subtotal.sub(discountAmount).add(taxAmount);
-    const expectedTotal = decimal(input.expectedTotal, "expectedTotal");
-    if (!moneyEquals(expectedTotal, total)) {
-      throw new SaleCompletionError(
-        "SALE_PRICE_CHANGED",
-        "The server recalculated the cart total. Please refresh the cart and try again.",
-        { expectedTotal: expectedTotal.toFixed(2), total: total.toFixed(2) },
-      );
-    }
-
-    const paymentTotal = input.payments.reduce(
-      (sum, payment) => sum.add(decimal(payment.amount, "payment.amount")),
-      new Prisma.Decimal(0),
-    );
-    if (!moneyEquals(paymentTotal, total)) {
-      throw new SaleCompletionError(
-        "SALE_PAYMENT_TOTAL_MISMATCH",
-        "Payment total must equal the invoice total.",
-        { paymentTotal: paymentTotal.toFixed(2), total: total.toFixed(2) },
-      );
     }
 
     const groupedLines = groupLinesByProduct(input);
@@ -629,6 +610,31 @@ export async function completeSale(input: SaleCompletionInput, actor: CurrentUse
       allocations.push(...allocateProductGroup(group));
     }
     const batchMap = groupBatchesById(preparedGroups);
+    const subtotal = allocations.reduce((sum, allocation) => sum.add(allocation.lineTotal), new Prisma.Decimal(0));
+    if (discountAmount.gt(subtotal)) {
+      throw new SaleCompletionError("VALIDATION_ERROR", "Discount cannot exceed the subtotal.");
+    }
+    const total = subtotal.sub(discountAmount).add(taxAmount);
+    const expectedTotal = decimal(input.expectedTotal, "expectedTotal");
+    if (!moneyEquals(expectedTotal, total)) {
+      throw new SaleCompletionError(
+        "SALE_PRICE_CHANGED",
+        "The server recalculated the cart total from the allocated batch prices. Please refresh the cart and try again.",
+        { expectedTotal: expectedTotal.toFixed(2), total: total.toFixed(2) },
+      );
+    }
+
+    const paymentTotal = input.payments.reduce(
+      (sum, payment) => sum.add(decimal(payment.amount, "payment.amount")),
+      new Prisma.Decimal(0),
+    );
+    if (!moneyEquals(paymentTotal, total)) {
+      throw new SaleCompletionError(
+        "SALE_PAYMENT_TOTAL_MISMATCH",
+        "Payment total must equal the invoice total.",
+        { paymentTotal: paymentTotal.toFixed(2), total: total.toFixed(2) },
+      );
+    }
 
     const saleId = randomUUID();
     const completedAt = new Date();

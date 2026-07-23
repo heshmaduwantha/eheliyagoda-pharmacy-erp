@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { Search, Truck } from "lucide-react";
+import { Search } from "lucide-react";
 import { requirePermission } from "@/modules/auth/permissions";
 import { listSuppliers } from "@/modules/procurement/supplier.service";
 import { SupplierForm } from "@/modules/procurement/supplier-form";
 import { Pagination } from "@/components/ui/pagination";
+import { SupplierStatusToggle } from "@/components/suppliers/supplier-status-toggle";
 
 export default async function SuppliersPage({ searchParams }: { searchParams: Promise<{ q?: string; page?: string }> }) {
   await requirePermission("supplier.manage");
@@ -14,27 +15,7 @@ export default async function SuppliersPage({ searchParams }: { searchParams: Pr
 
   return (
     <div className="flex flex-col gap-4 min-w-0">
-      {/* Header */}
-      <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-        <div>
-          <p className="flex items-center gap-2 text-sm font-bold text-teal-700">
-            <Truck className="size-4" />
-            Supplier workspace
-          </p>
-          <h1 className="mt-1 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">
-            Suppliers
-          </h1>
-          <p className="mt-2 text-slate-500">
-            Manage supplier directory
-          </p>
-        </div>
-        <Link
-          className="inline-flex items-center gap-2 rounded-lg border border-teal-200 bg-white px-4 py-2 text-sm font-semibold text-teal-700 shadow-sm transition hover:bg-teal-50"
-          href="/suppliers/payments"
-        >
-          Pay suppliers →
-        </Link>
-      </div>
+      <h1 className="text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">Suppliers</h1>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <form className="flex w-full max-w-sm items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm">
@@ -46,6 +27,12 @@ export default async function SuppliersPage({ searchParams }: { searchParams: Pr
             placeholder="Search suppliers..."
           />
         </form>
+        <Link
+          className="inline-flex items-center gap-2 rounded-lg border border-teal-200 bg-white px-4 py-2 text-sm font-semibold text-teal-700 shadow-sm transition hover:bg-teal-50"
+          href="/suppliers/payments"
+        >
+          Pay suppliers →
+        </Link>
       </div>
 
       {/* Add supplier — collapsible */}
@@ -71,12 +58,13 @@ export default async function SuppliersPage({ searchParams }: { searchParams: Pr
                 <th className="border-b border-slate-200 px-5 py-4 font-bold">Contact</th>
                 <th className="border-b border-slate-200 px-5 py-4 font-bold">Terms</th>
                 <th className="border-b border-slate-200 px-5 py-4 font-bold">Status</th>
+                <th className="border-b border-slate-200 px-5 py-4 font-bold text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {suppliers.length === 0 ? (
                 <tr>
-                  <td className="px-5 py-16 text-center text-slate-400" colSpan={4}>
+                  <td className="px-5 py-16 text-center text-slate-400" colSpan={5}>
                     No suppliers found.
                   </td>
                 </tr>
@@ -99,6 +87,9 @@ export default async function SuppliersPage({ searchParams }: { searchParams: Pr
                       <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-bold ${supplier.isActive ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-slate-100 text-slate-500 border-slate-200"}`}>
                         {supplier.isActive ? "Active" : "Inactive"}
                       </span>
+                    </td>
+                    <td className="px-5 py-4 text-right">
+                      <SupplierStatusToggle supplierId={supplier.id} supplierName={supplier.name} isActive={supplier.isActive} />
                     </td>
                   </tr>
                 ))

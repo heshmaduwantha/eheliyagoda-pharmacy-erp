@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { type FormState, toFieldErrors } from "@/lib/forms";
 import { requirePermission } from "@/modules/auth/permissions";
-import { createSupplier } from "./supplier.service";
+import { createSupplier, setSupplierActive } from "./supplier.service";
 import { confirmGrn, createGrnDraft, updateGrnDraft } from "./grn.service";
 
 const createSupplierSchema = z.object({
@@ -50,11 +50,20 @@ export async function createSupplierAction(_prev: FormState, formData: FormData)
   }
 }
 
+export async function setSupplierActiveAction(supplierId: string, isActive: boolean) {
+  const actor = await requirePermission("supplier.manage", { onDenied: "throw" });
+  const validSupplierId = z.string().uuid().parse(supplierId);
+  const supplier = await setSupplierActive(validSupplierId, isActive, actor.id);
+  revalidatePath("/suppliers");
+  revalidatePath("/stock/grn/new");
+  return { id: supplier.id, name: supplier.name, isActive: supplier.isActive };
+}
+
 const grnLineSchema = z.object({
   productId: z.string().uuid(),
   unitId: z.string().uuid(),
   qtyInUnit: z.coerce.number().positive(),
-  batchNo: z.string().trim().max(80).optional(),
+  supplierBatchNo: z.string().trim().max(80).optional(),
   expiryDate: z.string().trim().optional(),
   mrp: z.coerce.number().nonnegative().optional(),
   costPrice: z.coerce.number().nonnegative(),
