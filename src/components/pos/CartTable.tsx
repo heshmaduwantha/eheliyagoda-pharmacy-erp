@@ -1,6 +1,6 @@
 "use client";
 
-import { ShoppingBasket } from "lucide-react";
+import { ShoppingCart } from "lucide-react";
 import type { PosCartLine } from "@/modules/sales/pos.types";
 import { CartLine } from "./CartLine";
 
@@ -12,5 +12,31 @@ type Props = {
 };
 
 export function CartTable(props: Props) {
-  return <section><div className="mb-3 flex items-center justify-between"><div><h2 className="font-black text-neutral-text">Current cart</h2><p className="mt-1 text-xs text-neutral-muted">{props.lines.length} line{props.lines.length === 1 ? "" : "s"}</p></div><span className="grid size-10 place-items-center rounded-xl bg-brand-pale text-brand-default"><ShoppingBasket className="size-5" /></span></div><div className="grid max-h-[600px] gap-3 overflow-y-auto pr-1">{props.lines.map((line) => <CartLine key={line.id} line={line} onQuantityChange={props.onQuantityChange} onRemove={props.onRemove} onSelectUnit={props.onSelectUnit} />)}{props.lines.length === 0 && <div className="grid min-h-64 place-items-center rounded-2xl border border-dashed border-neutral-border bg-neutral-surface/60 p-8 text-center"><div><ShoppingBasket className="mx-auto size-10 text-slate-300" /><h3 className="mt-4 font-bold text-neutral-text">Cart is empty</h3><p className="mt-2 text-sm text-neutral-muted">Scan a barcode or choose a product.</p></div></div>}</div></section>;
+  return (
+    <div className="flex flex-col h-full">
+      <div className="mb-4 flex items-center justify-between px-1">
+        <h2 className="font-black text-neutral-text">Current cart</h2>
+        <span className="text-xs font-semibold text-neutral-muted">{props.lines.length} line{props.lines.length === 1 ? "" : "s"}</span>
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-1 flex flex-col gap-3">
+        {props.lines.map((line) => (
+          <CartLine 
+            key={line.id} 
+            line={line} 
+            onQuantityChange={props.onQuantityChange} 
+            onRemove={props.onRemove} 
+            onSelectUnit={props.onSelectUnit} 
+          />
+        ))}
+        {props.lines.length === 0 && (
+          <div className="flex h-full min-h-64 flex-col items-center justify-center text-center">
+            <ShoppingCart className="size-12 text-slate-300" strokeWidth={1.5} />
+            <h3 className="mt-4 text-sm font-semibold text-neutral-muted">Cart is empty</h3>
+            <p className="mt-1 text-[11px] text-neutral-muted/70">Scan a barcode or choose a product.</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }

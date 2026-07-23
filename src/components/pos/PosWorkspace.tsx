@@ -288,32 +288,39 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
         </div>
       ) : null}
 
-      <div className="mt-6 grid items-start gap-6">
-        <ProductSearchPanel
-          isLoading={isSearching}
-          onAddProduct={(product) => {
-            void addProduct(product);
-          }}
-          onQueryChange={setQuery}
-          products={products}
-          query={query}
-        />
-
-        <div className="grid gap-5">
-          <CartTable
-            lines={lines}
-            onQuantityChange={changeQuantity}
-            onRemove={(lineId) => setLines((current) => current.filter((line) => line.id !== lineId))}
-            onSelectUnit={setSelectedLine}
+      <div className="mt-4 flex items-start gap-6 relative">
+        {/* Left main area */}
+        <div className="flex-1 min-w-0">
+          <ProductSearchPanel
+            isLoading={isSearching}
+            onAddProduct={(product) => {
+              void addProduct(product);
+            }}
+            onQueryChange={setQuery}
+            products={products}
+            query={query}
           />
-          <PosSummaryPanel
-            {...totals}
-            hasLines={lines.length > 0}
-            onClear={clearCart}
-            onHold={() => setNotice({ tone: "warning", message: "Held sales are not implemented yet." })}
-            onPayment={openPayment}
-          />
+        </div>
 
+        {/* Right sidebar cart */}
+        <div className="sticky top-20 w-[320px] flex-shrink-0 xl:w-[360px] flex flex-col rounded-2xl bg-neutral-surface shadow-[0_2px_12px_rgba(15,23,42,0.03)] border border-neutral-border/60 overflow-hidden h-[calc(100vh-120px)]">
+          <div className="flex-1 overflow-hidden p-4">
+            <CartTable
+              lines={lines}
+              onQuantityChange={changeQuantity}
+              onRemove={(lineId) => setLines((current) => current.filter((line) => line.id !== lineId))}
+              onSelectUnit={setSelectedLine}
+            />
+          </div>
+          <div className="border-t border-neutral-border p-5">
+            <PosSummaryPanel
+              {...totals}
+              hasLines={lines.length > 0}
+              onClear={clearCart}
+              onHold={() => setNotice({ tone: "warning", message: "Held sales are not implemented yet." })}
+              onPayment={openPayment}
+            />
+          </div>
         </div>
       </div>
 
