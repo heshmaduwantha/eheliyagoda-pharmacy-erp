@@ -30,7 +30,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           <h1 className="text-5xl font-black tracking-tight text-white xl:text-6xl">
             Medisquare <br /> Pharmacy + Clinic
           </h1>
-          <p className="mt-6 text-lg font-medium text-brand-default">
+          <p className="mt-6 text-lg font-medium text-white/90">
             A simple, secure workspace for your pharmacy team.
           </p>
 
@@ -42,7 +42,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           </div>
         </div>
 
-        <div className="relative z-10 flex items-center justify-between border-t border-white/20 pt-8 text-sm font-medium text-brand-default">
+        <div className="relative z-10 flex items-center justify-between border-t border-white/20 pt-8 text-sm font-medium text-white/90">
           <div className="flex items-center gap-2"><ShieldCheck className="size-4" /> Secure sign-in</div>
           <div className="flex items-center gap-2"><KeyRound className="size-4" /> Staff access</div>
           <div className="flex items-center gap-2"><CheckCircle2 className="size-4" /> Patient-first care</div>
