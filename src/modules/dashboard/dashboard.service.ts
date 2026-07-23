@@ -202,11 +202,12 @@ export async function getDashboardWeeklySales() {
 export async function getDashboardTopProducts() {
   const thirtyDaysAgo = addDays(startOfDay(), -30);
   const rows = await prisma.$queryRaw<{ productName: string; unitsSold: number; revenue: string }[]>(Prisma.sql`
-    SELECT "productName", SUM("qtyBase")::int as "unitsSold", SUM("lineTotal")::text as "revenue"
-    FROM "SaleLine"
-    INNER JOIN "Sale" ON "Sale".id = "SaleLine"."saleId"
-    WHERE "Sale".status = 'COMPLETED' AND "Sale"."completedAt" >= ${thirtyDaysAgo}
-    GROUP BY "productName"
+    SELECT p.name as "productName", SUM(sl."qtyBase")::int as "unitsSold", SUM(sl."lineTotal")::text as "revenue"
+    FROM "SaleLine" sl
+    INNER JOIN "Sale" s ON s.id = sl."saleId"
+    INNER JOIN "Product" p ON p.id = sl."productId"
+    WHERE s.status = 'COMPLETED' AND s."completedAt" >= ${thirtyDaysAgo}
+    GROUP BY p.id, p.name
     ORDER BY "unitsSold" DESC
     LIMIT 4
   `);
