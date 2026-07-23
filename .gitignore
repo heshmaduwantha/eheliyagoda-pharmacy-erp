@@ -7,3 +7,6 @@ coverage
 .DS_Store
 .idea/
 /UI SAMPLE/
+
+# Local Netlify folder
+.netlify
