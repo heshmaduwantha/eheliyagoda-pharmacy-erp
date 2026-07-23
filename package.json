@@ -19,11 +19,10 @@
     "seed": "tsx --env-file=.env prisma/seed.ts"
   },
   "dependencies": {
-    "@jsreport/jsreport-handlebars": "^4.1.1",
     "@prisma/client": "^6.19.3",
     "bcryptjs": "^3.0.3",
+    "handlebars": "^4.7.9",
     "jose": "^6.2.3",
-    "jsreport-core": "^2.10.1",
     "lucide-react": "^1.21.0",
     "next": "^15.3.4",
     "react": "^19.1.0",
