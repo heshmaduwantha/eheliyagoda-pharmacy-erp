@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, useLayoutEffect } from "react";
+import { createPortal } from "react-dom";
 import { ChevronDown, Check, Search } from "lucide-react";
 
 export type SearchableSelectOption = {
@@ -33,17 +34,49 @@ export function SearchableSelect({
   const [search, setSearch] = useState("");
   const [selectedValue, setSelectedValue] = useState(defaultValue);
   const containerRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const [rect, setRect] = useState<{ top: number; left: number; width: number } | null>(null);
+
+  const updatePosition = () => {
+    if (containerRef.current) {
+      const bounds = containerRef.current.getBoundingClientRect();
+      setRect({
+        top: bounds.bottom,
+        left: bounds.left,
+        width: bounds.width,
+      });
+    }
+  };
+
+  useLayoutEffect(() => {
+    if (isOpen) {
+      updatePosition();
+      window.addEventListener("scroll", updatePosition, true);
+      window.addEventListener("resize", updatePosition);
+    }
+    return () => {
+      window.removeEventListener("scroll", updatePosition, true);
+      window.removeEventListener("resize", updatePosition);
+    };
+  }, [isOpen]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
+      const target = event.target as Node;
+      if (
+        containerRef.current?.contains(target) ||
+        dropdownRef.current?.contains(target)
+      ) {
+        return;
       }
+      setIsOpen(false);
     }
-    document.addEventListener("mousedown", handleClickOutside);
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  }, [isOpen]);
 
   useEffect(() => {
     if (isOpen) {
@@ -77,6 +110,62 @@ export function SearchableSelect({
     if (onChange) onChange(val);
   };
 
+  const menu = isOpen && rect ? (
+    <div
+      ref={dropdownRef}
+      style={{
+        position: "fixed",
+        top: rect.top + 4,
+        left: rect.left,
+        width: rect.width,
+        zIndex: 9999,
+      }}
+      className="max-h-60 overflow-hidden flex flex-col rounded-lg border border-slate-200 bg-white shadow-xl"
+    >
+      <div className="bg-slate-50 px-3 py-2 border-b border-slate-100 flex items-center gap-2">
+        <Search className="size-4 text-slate-400 shrink-0" />
+        <input
+          ref={searchInputRef}
+          type="text"
+          className="w-full outline-none text-sm bg-transparent placeholder:text-slate-400"
+          placeholder="Search..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && filteredOptions.length > 0) {
+              e.preventDefault();
+              handleSelect(filteredOptions[0].value);
+            }
+          }}
+        />
+      </div>
+      
+      <div className="flex-1 overflow-y-auto p-1">
+        {filteredOptions.length === 0 ? (
+          <div className="py-3 text-center text-sm text-slate-500">
+            No results found.
+          </div>
+        ) : (
+          filteredOptions.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => handleSelect(opt.value)}
+              className={`w-full flex items-center justify-between rounded-md px-2 py-1.5 text-sm transition-colors text-left ${
+                selectedValue === opt.value
+                  ? "bg-teal-50 text-teal-700 font-semibold"
+                  : "text-slate-700 hover:bg-slate-100"
+              }`}
+            >
+              <span className="truncate">{opt.label}</span>
+              {selectedValue === opt.value && <Check className="size-4 shrink-0 text-teal-600" />}
+            </button>
+          ))
+        )}
+      </div>
+    </div>
+  ) : null;
+
   return (
     <div className="relative w-full" ref={containerRef}>
       <input type="hidden" name={name} value={selectedValue} required={required} />
@@ -94,51 +183,7 @@ export function SearchableSelect({
         <ChevronDown className={`size-4 shrink-0 text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`} />
       </button>
 
-      {isOpen && (
-        <div className="absolute z-50 mt-1 max-h-60 w-full overflow-hidden flex flex-col rounded-lg border border-slate-200 bg-white shadow-lg">
-          <div className="bg-slate-50 px-3 py-2 border-b border-slate-100 flex items-center gap-2">
-            <Search className="size-4 text-slate-400 shrink-0" />
-            <input
-              ref={searchInputRef}
-              type="text"
-              className="w-full outline-none text-sm bg-transparent placeholder:text-slate-400"
-              placeholder="Search..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && filteredOptions.length > 0) {
-                  e.preventDefault();
-                  handleSelect(filteredOptions[0].value);
-                }
-              }}
-            />
-          </div>
-          
-          <div className="flex-1 overflow-y-auto p-1">
-            {filteredOptions.length === 0 ? (
-              <div className="py-3 text-center text-sm text-slate-500">
-                No results found.
-              </div>
-            ) : (
-              filteredOptions.map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => handleSelect(opt.value)}
-                  className={`w-full flex items-center justify-between rounded-md px-2 py-1.5 text-sm transition-colors text-left ${
-                    selectedValue === opt.value
-                      ? "bg-teal-50 text-teal-700 font-semibold"
-                      : "text-slate-700 hover:bg-slate-100"
-                  }`}
-                >
-                  <span className="truncate">{opt.label}</span>
-                  {selectedValue === opt.value && <Check className="size-4 shrink-0 text-teal-600" />}
-                </button>
-              ))
-            )}
-          </div>
-        </div>
-      )}
+      {isOpen && typeof document !== "undefined" && createPortal(menu, document.body)}
     </div>
   );
 }

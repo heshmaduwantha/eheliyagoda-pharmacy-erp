@@ -6,6 +6,7 @@ import { Brand } from "@/components/ui/brand";
 import type { CurrentUser } from "@/modules/auth/session";
 import { NotificationBell } from "./notification-bell";
 import type { AlertCounts } from "@/modules/dashboard/dashboard.service";
+import { Breadcrumbs } from "./breadcrumbs";
 
 export function AppShell({ children, user, alerts }: Readonly<{ children: React.ReactNode; user: CurrentUser; alerts: AlertCounts }>) {
   const initials = user.name.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase();
@@ -52,6 +53,7 @@ export function AppShell({ children, user, alerts }: Readonly<{ children: React.
           </div>
         </header>
         <main className="mx-auto flex-1 min-w-0 w-full max-w-[1480px] px-2 py-4 pb-12 sm:px-4 lg:px-6 lg:py-4">
+          <Breadcrumbs />
           {children}
         </main>
 

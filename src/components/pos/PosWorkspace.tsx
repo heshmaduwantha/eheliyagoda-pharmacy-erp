@@ -295,7 +295,7 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
         </div>
       ) : null}
 
-      <div className="mt-6 grid items-start gap-6 xl:grid-cols-[minmax(320px,.78fr)_minmax(560px,1.22fr)]">
+      <div className="mt-6 grid items-start gap-6">
         <ProductSearchPanel
           isLoading={isSearching}
           onAddProduct={(product) => {

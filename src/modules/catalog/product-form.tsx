@@ -33,6 +33,7 @@ export function ProductForm() {
       formRef.current?.reset();
       setIsControlled(false);
       setUnits([{ ...emptyUnit(), factorToBase: "1", isSaleDefault: true }]);
+      document.getElementById("add-product-section")?.removeAttribute("open");
     }
   }, [state]);
 

@@ -9,7 +9,7 @@ import { Pagination } from "@/components/ui/pagination";
 
 export const metadata: Metadata = { title: "Inventory Batches" };
 
-export default async function BatchesPage({ searchParams }: { searchParams: Promise<{ search?: string; status?: string; page?: string }> }) {
+export default async function BatchesPage({ searchParams }: { searchParams: Promise<{ search?: string; status?: string; availability?: string; timeframe?: string; page?: string }> }) {
   await requirePermission("stock.access");
   const filters = await searchParams;
   const currentPage = Math.max(1, parseInt(filters.page ?? "1", 10) || 1);
@@ -36,7 +36,9 @@ export default async function BatchesPage({ searchParams }: { searchParams: Prom
         <InventoryFilters 
           action="/stock/batches" 
           search={filters.search} 
-          status={filters.status} 
+          status={filters.status}
+          availability={filters.availability}
+          timeframe={filters.timeframe}
           statusOptions={[
             { value: "ACTIVE", label: "Active" }, 
             { value: "QUARANTINED", label: "Quarantined" }, 
@@ -48,7 +50,17 @@ export default async function BatchesPage({ searchParams }: { searchParams: Prom
         <BatchTable rows={rows} />
         {rows.length > 0 && (
           <div className="mt-4">
-            <Pagination currentPage={currentPage} totalPages={totalPages} baseUrl="/stock/batches" queryParams={{ search: filters.search, status: filters.status }} />
+            <Pagination 
+              currentPage={currentPage} 
+              totalPages={totalPages} 
+              baseUrl="/stock/batches" 
+              queryParams={{ 
+                search: filters.search, 
+                status: filters.status,
+                availability: filters.availability,
+                timeframe: filters.timeframe
+              }} 
+            />
           </div>
         )}
       </div>

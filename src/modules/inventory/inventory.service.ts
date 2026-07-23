@@ -145,8 +145,24 @@ export async function getStockSummary(): Promise<StockSummary> {
 
 export async function getBatchList(filters: InventoryFilterInput = {}): Promise<{ data: InventoryBatchRecord[]; total: number }> {
   const { page = 1, pageSize = 10 } = filters;
-  const where = {
+  
+  let qtyWhere: Prisma.DecimalFilter | undefined = undefined;
+  if (filters.availability === "IN_STOCK") qtyWhere = { gt: 0 };
+  else if (filters.availability === "OUT_OF_STOCK") qtyWhere = { equals: 0 };
+
+  let expiryWhere: Prisma.DateTimeFilter | undefined = undefined;
+  if (filters.timeframe === "NEAR_EXPIRY") {
+    const today = startOfToday();
+    const threshold = addDays(today, DEFAULT_NEAR_EXPIRY_DAYS);
+    expiryWhere = { gte: today, lte: threshold };
+  } else if (filters.timeframe === "EXPIRED") {
+    expiryWhere = { lt: startOfToday() };
+  }
+
+  const where: Prisma.BatchWhereInput = {
     status: batchStatus(filters.status),
+    qtyOnHandBase: qtyWhere,
+    expiryDate: expiryWhere,
     OR: batchSearchWhere(filters.search),
   };
 
@@ -230,16 +246,25 @@ export async function getExpiryAlerts(filters: InventoryFilterInput = {}): Promi
   const threshold = addDays(today, DEFAULT_NEAR_EXPIRY_DAYS);
   const query = filters.search?.trim();
   
-  const where = {
+  let timeCondition: Prisma.BatchWhereInput | undefined;
+  if (filters.timeframe === "NEAR_EXPIRY") {
+    timeCondition = { expiryDate: { gte: today, lte: threshold } };
+  } else if (filters.timeframe === "EXPIRED") {
+    timeCondition = { expiryDate: { lt: today } };
+  } else {
+    timeCondition = {
+      OR: [
+        { status: BatchStatus.QUARANTINED },
+        { expiryDate: { lte: threshold } },
+      ],
+    };
+  }
+
+  const where: Prisma.BatchWhereInput = {
     qtyOnHandBase: { gt: 0 },
     status: batchStatus(filters.status),
     AND: [
-      {
-        OR: [
-          { status: BatchStatus.QUARANTINED },
-          { expiryDate: { lte: threshold } },
-        ],
-      },
+      timeCondition,
       ...(query
         ? [{
             OR: [
