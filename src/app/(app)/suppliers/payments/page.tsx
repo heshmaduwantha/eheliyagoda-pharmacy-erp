@@ -40,16 +40,16 @@ export default async function SupplierPaymentsPage({ searchParams }: { searchPar
       </div>
 
       {/* Hero — you owe */}
-      <div className="flex items-center justify-between rounded-xl border border-status-success-bg bg-status-success-bg px-5 py-4 shadow-sm">
+      <div className="flex items-center justify-between rounded-xl border border-brand-default/10 bg-brand-pale px-5 py-4 shadow-sm">
         <div>
-          <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-status-success-text">
+          <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-brand-hover">
             <span>💸</span> You currently owe
           </p>
-          <p className="mt-1 text-sm font-medium text-status-success-text/80">
+          <p className="mt-1 text-sm font-medium text-brand-hover/80">
             Across {payables.summary?.invoiceCount ?? 0} outstanding invoice{(payables.summary?.invoiceCount ?? 0) === 1 ? "" : "s"}
           </p>
         </div>
-        <div className="text-2xl font-black tracking-tight text-status-success-text">{outstandingTotal}</div>
+        <div className="text-2xl font-black tracking-tight text-brand-hover">{outstandingTotal}</div>
       </div>
 
       {/* Overdue alert */}

@@ -38,18 +38,18 @@ export default async function ExpensesPage({ searchParams }: { searchParams: Pro
       </div>
 
       {/* Hero — this month's total */}
-      <div className="flex items-center justify-between rounded-xl border border-status-success-bg bg-status-success-bg px-5 py-4 shadow-sm">
+      <div className="flex items-center justify-between rounded-xl border border-brand-default/10 bg-brand-pale px-5 py-4 shadow-sm">
         <div>
-          <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-status-success-text">
+          <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-brand-hover">
             <span>📉</span> Expenses this month
           </p>
-          <p className="mt-1 text-sm font-medium text-status-success-text/80">
+          <p className="mt-1 text-sm font-medium text-brand-hover/80">
             {expenseCount > 0
               ? `${expenseCount} expense${expenseCount === 1 ? "" : "s"} recorded this month`
               : "No expenses recorded this month"}
           </p>
         </div>
-        <div className="text-2xl font-black tracking-tight text-status-success-text">{totalThisMonth}</div>
+        <div className="text-2xl font-black tracking-tight text-brand-hover">{totalThisMonth}</div>
       </div>
 
       {/* Add expense */}

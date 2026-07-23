@@ -45,22 +45,22 @@ html {
 
 @layer base {
   table {
-    @apply w-full border-collapse text-left text-sm text-neutral-muted !important;
+    @apply !w-full !border-collapse !text-left !text-sm !text-neutral-muted;
   }
   thead {
-    @apply bg-brand-pale text-xs uppercase tracking-wider text-brand-hover !important;
+    @apply !bg-brand-pale !text-xs !uppercase !tracking-wider !text-brand-hover;
   }
   th {
-    @apply border-b border-brand-default/20 px-5 py-3 font-black !important;
+    @apply !border-b !border-brand-default/20 !px-5 !py-3 !font-black;
   }
   td {
-    @apply px-5 py-3 !important;
+    @apply !px-5 !py-3;
   }
   tr {
-    @apply border-b border-neutral-border/50 transition-colors !important;
+    @apply !border-b !border-neutral-border/50 !transition-colors;
   }
   tbody tr:hover {
-    @apply bg-brand-pale/30 !important;
+    @apply !bg-brand-pale/30;
   }
 }
 

@@ -14,7 +14,7 @@ export function AppShell({ children, user, alerts }: Readonly<{ children: React.
   return (
     <div className="min-h-screen bg-neutral-bg">
       {/* Desktop sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col overflow-hidden bg-neutral-surface border-r border-neutral-border px-4 pt-6 pb-6 shadow-xl lg:flex">
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col overflow-hidden bg-brand-pale border-r border-brand-default/10 px-4 pt-6 pb-6 shadow-xl lg:flex">
         <div className="px-2">
           <Link href="/dashboard">
             <Brand />
