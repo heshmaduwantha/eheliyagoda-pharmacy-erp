@@ -6,9 +6,9 @@ import { listGrns } from "@/modules/procurement/grn.service";
 import { Pagination } from "@/components/ui/pagination";
 
 const statusConfig: Record<string, { label: string; cls: string }> = {
-  DRAFT: { label: "Draft", cls: "bg-status-warning-bg text-status-warning-text border-status-warning-bg" },
-  CONFIRMED: { label: "Confirmed", cls: "bg-status-success-bg text-status-success-text border-green-200" },
-  CANCELLED: { label: "Cancelled", cls: "bg-slate-100 text-neutral-muted border-neutral-border" },
+  DRAFT: { label: "Draft", cls: "bg-status-warning-bg text-status-warning-text" },
+  CONFIRMED: { label: "Confirmed", cls: "bg-status-success-bg text-status-success-text" },
+  CANCELLED: { label: "Cancelled", cls: "bg-slate-100 text-neutral-muted" },
 };
 
 export default async function GrnListPage({ searchParams }: { searchParams: Promise<{ q?: string; page?: string }> }) {
@@ -28,7 +28,7 @@ export default async function GrnListPage({ searchParams }: { searchParams: Prom
           </h1>
         </div>
         <Link
-          className="inline-flex items-center gap-2 rounded-lg bg-brand-default px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-brand-default"
+          className="inline-flex items-center gap-2 rounded-lg bg-brand-default px-4 py-2 text-sm font-bold text-white transition hover:bg-brand-default"
           href="/stock/grn/new"
           id="record-delivery-btn"
         >
@@ -37,7 +37,7 @@ export default async function GrnListPage({ searchParams }: { searchParams: Prom
         </Link>
       </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <form className="flex w-full max-w-sm items-center gap-2 rounded-xl border border-neutral-border bg-neutral-surface px-3 py-2 shadow-sm">
           <Search className="size-4 text-neutral-muted" />
           <input
@@ -52,15 +52,15 @@ export default async function GrnListPage({ searchParams }: { searchParams: Prom
       {/* Delivery list */}
       <section className="overflow-hidden rounded-xl border border-neutral-border bg-neutral-surface shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[800px] border-collapse text-left text-sm text-neutral-muted">
-            <thead className="bg-neutral-bg text-xs uppercase tracking-wider text-neutral-muted">
+          <table className="w-full min-w-[800px] text-left text-sm text-neutral-muted">
+            <thead className="bg-neutral-bg border-b border-neutral-border">
               <tr>
-                <th className="border-b border-neutral-border px-5 py-4 font-bold">GRN Number</th>
-                <th className="border-b border-neutral-border px-5 py-4 font-bold">Supplier</th>
-                <th className="border-b border-neutral-border px-5 py-4 font-bold">Date</th>
-                <th className="border-b border-neutral-border px-5 py-4 font-bold">Status</th>
-                <th className="border-b border-neutral-border px-5 py-4 font-bold text-right">Total Cost</th>
-                <th className="border-b border-neutral-border px-5 py-4 font-bold" />
+                <th className="px-5 py-3 font-semibold text-neutral-text">GRN Number</th>
+                <th className="px-5 py-3 font-semibold text-neutral-text">Supplier</th>
+                <th className="px-5 py-3 font-semibold text-neutral-text">Date</th>
+                <th className="px-5 py-3 font-semibold text-neutral-text">Status</th>
+                <th className="px-5 py-3 font-semibold text-neutral-text text-right">Total Cost</th>
+                <th className="px-5 py-3" />
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -74,20 +74,20 @@ export default async function GrnListPage({ searchParams }: { searchParams: Prom
                 grns.map((grn) => {
                   const status = statusConfig[grn.status] ?? { label: grn.status, cls: "bg-slate-100 text-neutral-muted" };
                   return (
-                    <tr className="align-middle hover:bg-neutral-bg/50" key={grn.id}>
-                      <td className="px-5 py-4">
-                        <strong className="block text-neutral-text">{grn.grnNo}</strong>
+                    <tr className="transition hover:bg-neutral-bg bg-neutral-surface" key={grn.id}>
+                      <td className="px-5 py-3.5">
+                        <strong className="block text-neutral-text font-bold">{grn.grnNo}</strong>
                         <span className="text-xs text-neutral-muted">{grn._count.lines} item{grn._count.lines === 1 ? "" : "s"}</span>
                       </td>
-                      <td className="px-5 py-4 font-semibold text-neutral-text">{grn.supplier.name}</td>
-                      <td className="px-5 py-4 text-neutral-muted">{grn.createdAt.toLocaleDateString()}</td>
-                      <td className="px-5 py-4">
-                        <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-bold ${status.cls}`}>
+                      <td className="px-5 py-3.5 font-semibold text-neutral-text">{grn.supplier.name}</td>
+                      <td className="px-5 py-3.5 text-neutral-muted">{grn.createdAt.toLocaleDateString()}</td>
+                      <td className="px-5 py-3.5">
+                        <span className={`inline-flex rounded-full px-2.5 py-0.5 text-[10px] tracking-wider uppercase font-bold ${status.cls}`}>
                           {status.label}
                         </span>
                       </td>
-                      <td className="px-5 py-4 text-right font-bold text-neutral-text">{formatMoney(grn.invoiceTotal)}</td>
-                      <td className="px-5 py-4 text-right">
+                      <td className="px-5 py-3.5 text-right font-bold text-neutral-text">{formatMoney(grn.invoiceTotal)}</td>
+                      <td className="px-5 py-3.5 text-right">
                         <Link className="rounded-lg border border-neutral-border bg-neutral-surface px-3 py-2 text-sm font-semibold text-neutral-text hover:bg-neutral-bg" href={`/stock/grn/${grn.id}`}>
                           View
                         </Link>

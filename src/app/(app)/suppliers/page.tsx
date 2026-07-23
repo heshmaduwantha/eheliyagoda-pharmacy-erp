@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Search } from "lucide-react";
+import { Search, Plus } from "lucide-react";
 import { requirePermission } from "@/modules/auth/permissions";
 import { listSuppliers } from "@/modules/procurement/supplier.service";
 import { SupplierForm } from "@/modules/procurement/supplier-form";
@@ -41,6 +41,7 @@ export default async function SuppliersPage({ searchParams }: { searchParams: Pr
       <details className="rounded-xl border border-brand-default/20 bg-neutral-surface shadow-sm" id="add-supplier-section">
         <summary className="flex cursor-pointer items-center gap-2 px-5 py-4 marker:content-none">
           <span className="flex items-center gap-2 rounded-lg bg-brand-default px-4 py-2 text-sm font-bold text-white transition hover:bg-brand-default">
+            <Plus className="size-4" />
             Add a supplier
           </span>
           <span className="text-sm text-neutral-muted">Click to expand</span>
@@ -53,14 +54,14 @@ export default async function SuppliersPage({ searchParams }: { searchParams: Pr
       {/* Supplier list */}
       <section className="overflow-hidden rounded-xl border border-neutral-border bg-neutral-surface shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[600px] border-collapse text-left text-sm text-neutral-muted">
-            <thead className="bg-neutral-bg text-xs uppercase tracking-wider text-neutral-muted">
+          <table className="w-full min-w-[600px] text-left text-sm text-neutral-muted">
+            <thead className="bg-neutral-bg border-b border-neutral-border">
               <tr>
-                <th className="border-b border-neutral-border px-5 py-4 font-bold">Supplier</th>
-                <th className="border-b border-neutral-border px-5 py-4 font-bold">Contact</th>
-                <th className="border-b border-neutral-border px-5 py-4 font-bold">Terms</th>
-                <th className="border-b border-neutral-border px-5 py-4 font-bold">Status</th>
-                <th className="border-b border-neutral-border px-5 py-4 font-bold text-right">Actions</th>
+                <th className="px-5 py-3 font-semibold text-neutral-text">Supplier</th>
+                <th className="px-5 py-3 font-semibold text-neutral-text">Contact</th>
+                <th className="px-5 py-3 font-semibold text-neutral-text">Terms</th>
+                <th className="px-5 py-3 font-semibold text-neutral-text">Status</th>
+                <th className="px-5 py-3 font-semibold text-neutral-text text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -72,25 +73,25 @@ export default async function SuppliersPage({ searchParams }: { searchParams: Pr
                 </tr>
               ) : (
                 suppliers.map((supplier) => (
-                  <tr className="align-middle hover:bg-neutral-bg/50" key={supplier.id}>
-                    <td className="px-5 py-4">
-                      <strong className="block text-neutral-text">{supplier.name}</strong>
+                  <tr className="transition hover:bg-neutral-bg bg-neutral-surface" key={supplier.id}>
+                    <td className="px-5 py-3.5">
+                      <strong className="block text-neutral-text font-bold">{supplier.name}</strong>
                     </td>
-                    <td className="px-5 py-4 text-neutral-muted">
+                    <td className="px-5 py-3.5 text-neutral-muted">
                       <div className="flex flex-col gap-0.5">
                         <span>{supplier.phone ?? "No phone"}</span>
                         {supplier.contactPerson && <span className="text-xs text-neutral-muted">{supplier.contactPerson}</span>}
                       </div>
                     </td>
-                    <td className="px-5 py-4 text-neutral-muted">
+                    <td className="px-5 py-3.5 text-neutral-muted">
                       {supplier.creditTermDays === 0 ? "Pay immediately" : `${supplier.creditTermDays} days`}
                     </td>
-                    <td className="px-5 py-4">
-                      <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-bold ${supplier.isActive ? "bg-status-success-bg text-status-success-text border-status-success-bg" : "bg-slate-100 text-neutral-muted border-neutral-border"}`}>
+                    <td className="px-5 py-3.5">
+                      <span className={`inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-bold tracking-wider uppercase ${supplier.isActive ? "bg-status-success-bg text-status-success-text" : "bg-slate-100 text-neutral-muted"}`}>
                         {supplier.isActive ? "Active" : "Inactive"}
                       </span>
                     </td>
-                    <td className="px-5 py-4 text-right">
+                    <td className="px-5 py-3.5 text-right">
                       <SupplierStatusToggle supplierId={supplier.id} supplierName={supplier.name} isActive={supplier.isActive} />
                     </td>
                   </tr>

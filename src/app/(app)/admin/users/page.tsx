@@ -36,37 +36,41 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
             Users
           </h1>
         </div>
-        <Link className="inline-flex items-center gap-2 rounded-lg bg-brand-default px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-brand-default" href="/admin/users/new">
+        <Link className="inline-flex items-center gap-2 rounded-lg bg-brand-default px-4 py-2 text-sm font-bold text-white transition hover:bg-brand-default" href="/admin/users/new">
           <Plus className="size-4" />
           New user
         </Link>
       </div>
 
-      <form className="grid gap-3 rounded-xl border border-neutral-border bg-neutral-surface p-3 shadow-sm md:grid-cols-[1fr_220px_auto]">
-        <label className="flex items-center gap-2 rounded-lg border border-neutral-border bg-neutral-bg px-3">
-          <Search className="size-4 text-neutral-muted" />
-          <input className="min-w-0 flex-1 bg-transparent py-2 text-sm outline-none" defaultValue={params.search} name="search" placeholder="Search name, username, or role…" />
-        </label>
-        <select className="rounded-lg border border-neutral-border px-3 py-2 text-sm outline-none focus:border-brand-default" defaultValue={status} name="status">
-          <option value="all">All users</option>
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
-        </select>
+      <form className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2">
+           <select className="rounded-full border border-neutral-border bg-neutral-surface px-4 py-1.5 text-sm font-semibold outline-none focus:border-brand-default" defaultValue={status} name="status">
+             <option value="all">All users</option>
+             <option value="active">Active</option>
+             <option value="inactive">Inactive</option>
+           </select>
+        </div>
+        <div className="flex w-full max-w-sm items-center gap-2 rounded-xl border border-neutral-border bg-neutral-surface px-3 py-2 shadow-sm">
+          <Search className="size-4 shrink-0 text-neutral-muted" />
+          <input className="w-full bg-transparent text-sm outline-none" defaultValue={params.search} name="search" placeholder="Search name, username, or role…" />
+        </div>
+        <AutoSubmit />
+      </form>
         <AutoSubmit />
       </form>
 
       <section className="overflow-hidden rounded-xl border border-neutral-border bg-neutral-surface shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1100px] border-collapse text-left text-sm text-neutral-muted">
-            <thead className="bg-neutral-bg text-xs uppercase tracking-wider text-neutral-muted">
+          <table className="w-full min-w-[1100px] text-left text-sm text-neutral-muted">
+            <thead className="bg-neutral-bg border-b border-neutral-border">
               <tr>
-                <th className="border-b border-neutral-border px-5 py-4 font-bold">Name</th>
-                <th className="border-b border-neutral-border px-5 py-4 font-bold">Username</th>
-                <th className="border-b border-neutral-border px-5 py-4 font-bold">Roles</th>
-                <th className="border-b border-neutral-border px-5 py-4 font-bold">Status</th>
-                <th className="border-b border-neutral-border px-5 py-4 font-bold">Created</th>
-                <th className="border-b border-neutral-border px-5 py-4 font-bold">Updated</th>
-                <th className="border-b border-neutral-border px-5 py-4 font-bold" />
+                <th className="px-5 py-3 font-semibold text-neutral-text">Name</th>
+                <th className="px-5 py-3 font-semibold text-neutral-text">Username</th>
+                <th className="px-5 py-3 font-semibold text-neutral-text">Roles</th>
+                <th className="px-5 py-3 font-semibold text-neutral-text">Status</th>
+                <th className="px-5 py-3 font-semibold text-neutral-text">Created</th>
+                <th className="px-5 py-3 font-semibold text-neutral-text">Updated</th>
+                <th className="px-5 py-3" />
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -78,27 +82,27 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
                 </tr>
               ) : (
                 users.map((user) => (
-                  <tr className="align-top hover:bg-neutral-bg/50" key={user.id}>
-                    <td className="px-5 py-4">
-                      <strong className="block text-neutral-text">{user.name}</strong>
+                  <tr className="transition hover:bg-neutral-bg bg-neutral-surface" key={user.id}>
+                    <td className="px-5 py-3.5">
+                      <strong className="block text-neutral-text font-bold">{user.name}</strong>
                       <span className="text-xs text-neutral-muted">Primary: {user.primaryRoleName}</span>
                     </td>
-                    <td className="px-5 py-4 font-mono text-xs text-neutral-muted">{user.username}</td>
-                    <td className="px-5 py-4">
+                    <td className="px-5 py-3.5 font-mono text-xs text-neutral-muted">{user.username}</td>
+                    <td className="px-5 py-3.5">
                       <div className="flex flex-wrap gap-2">
                         {user.roleNames.map((roleName) => (
-                          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-neutral-text" key={`${user.id}-${roleName}`}>
+                          <span className="rounded-full bg-brand-pale px-2 py-0.5 text-xs font-semibold text-brand-default" key={`${user.id}-${roleName}`}>
                             {roleName}
                           </span>
                         ))}
                       </div>
                     </td>
-                    <td className="px-5 py-4">
-                      <span className={`rounded-full px-3 py-1 text-xs font-bold ${user.isActive ? "bg-status-success-bg text-status-success-text" : "bg-status-danger-bg text-status-danger-text"}`}>{user.isActive ? "Active" : "Inactive"}</span>
+                    <td className="px-5 py-3.5">
+                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${user.isActive ? "bg-status-success-bg text-status-success-text" : "bg-status-danger-bg text-status-danger-text"}`}>{user.isActive ? "Active" : "Inactive"}</span>
                     </td>
-                    <td className="px-5 py-4 text-neutral-muted">{user.createdAt.slice(0, 10)}</td>
-                    <td className="px-5 py-4 text-neutral-muted">{user.updatedAt.slice(0, 10)}</td>
-                    <td className="px-5 py-4 text-right">
+                    <td className="px-5 py-3.5 text-neutral-muted">{user.createdAt.slice(0, 10)}</td>
+                    <td className="px-5 py-3.5 text-neutral-muted">{user.updatedAt.slice(0, 10)}</td>
+                    <td className="px-5 py-3.5 text-right">
                       <div className="flex justify-end gap-2">
                         <Link className="rounded-lg border border-neutral-border bg-neutral-surface px-3 py-2 text-sm font-semibold text-neutral-text hover:bg-neutral-bg" href={`/admin/users/${user.id}`}>
                           Edit

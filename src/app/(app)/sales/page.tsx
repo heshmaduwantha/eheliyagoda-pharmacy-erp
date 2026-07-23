@@ -62,7 +62,7 @@ export default async function SalesPage({
           </h1>
         </div>
         <Link
-          className="inline-flex items-center gap-2 rounded-lg bg-brand-default px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-brand-default"
+          className="inline-flex items-center gap-2 rounded-lg bg-brand-default px-4 py-2 text-sm font-bold text-white transition hover:bg-brand-default"
           href="/pos"
         >
           Start a sale →
@@ -70,53 +70,44 @@ export default async function SalesPage({
       </div>
 
       {/* Filter */}
-      <div className="rounded-xl border border-neutral-border bg-neutral-surface p-4 shadow-sm">
-        <form className="flex flex-col gap-3 sm:flex-row xl:grid xl:grid-cols-[1.3fr_.8fr_.8fr_.8fr_auto]">
-          <label className="grid gap-1.5 text-sm font-medium text-neutral-text">
-            Search
-            <input
-              className="rounded-lg border border-neutral-border px-3 py-2 text-sm outline-none focus:border-brand-default"
-              defaultValue={params.q ?? ""}
-              name="q"
-              placeholder="Sale number, cashier name…"
-            />
-          </label>
-          <label className="grid gap-1.5 text-sm font-medium text-neutral-text">
-            Status
-            <select
-              className="rounded-lg border border-neutral-border px-3 py-2 text-sm outline-none focus:border-brand-default"
-              defaultValue={status}
-              name="status"
-            >
-              <option value="ALL">All</option>
-              <option value="COMPLETED">Completed</option>
-              <option value="VOIDED">Cancelled</option>
-              <option value="HELD">Held</option>
-            </select>
-          </label>
-          <label className="grid gap-1.5 text-sm font-medium text-neutral-text">
-            From
-            <input className="rounded-lg border border-neutral-border px-3 py-2 text-sm outline-none focus:border-brand-default" defaultValue={from ?? ""} name="from" type="date" />
-          </label>
-          <label className="grid gap-1.5 text-sm font-medium text-neutral-text">
-            To
-            <input className="rounded-lg border border-neutral-border px-3 py-2 text-sm outline-none focus:border-brand-default" defaultValue={to ?? ""} name="to" type="date" />
-          </label>
-          <AutoSubmit />
-        </form>
-      </div>
+      <form className="mb-4 flex flex-wrap items-center gap-3">
+        <div className="flex w-full max-w-xs items-center gap-2 rounded-xl border border-neutral-border bg-neutral-surface px-3 py-2 shadow-sm">
+          <input
+            className="w-full bg-transparent text-sm outline-none"
+            defaultValue={params.q ?? ""}
+            name="q"
+            placeholder="Sale number, cashier name…"
+          />
+        </div>
+        <select
+          className="rounded-full border border-neutral-border bg-neutral-surface px-4 py-1.5 text-sm font-semibold outline-none focus:border-brand-default"
+          defaultValue={status}
+          name="status"
+        >
+          <option value="ALL">All Status</option>
+          <option value="COMPLETED">Completed</option>
+          <option value="VOIDED">Cancelled</option>
+          <option value="HELD">Held</option>
+        </select>
+        <div className="flex items-center gap-2">
+          <input className="rounded-full border border-neutral-border bg-neutral-surface px-4 py-1.5 text-sm font-semibold outline-none focus:border-brand-default" defaultValue={from ?? ""} name="from" type="date" title="From Date" />
+          <span className="text-neutral-muted text-sm">to</span>
+          <input className="rounded-full border border-neutral-border bg-neutral-surface px-4 py-1.5 text-sm font-semibold outline-none focus:border-brand-default" defaultValue={to ?? ""} name="to" type="date" title="To Date" />
+        </div>
+        <AutoSubmit />
+      </form>
 
       {/* Sale list */}
       <section className="overflow-hidden rounded-xl border border-neutral-border bg-neutral-surface shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[700px] border-collapse text-left text-sm text-neutral-muted">
-            <thead className="bg-neutral-bg text-xs uppercase tracking-wider text-neutral-muted">
+          <table className="w-full min-w-[700px] text-left text-sm text-neutral-muted">
+            <thead className="bg-neutral-bg border-b border-neutral-border">
               <tr>
-                <th className="border-b border-neutral-border px-5 py-4 font-bold">Sale No.</th>
-                <th className="border-b border-neutral-border px-5 py-4 font-bold">Date & Cashier</th>
-                <th className="border-b border-neutral-border px-5 py-4 font-bold">Total</th>
-                <th className="border-b border-neutral-border px-5 py-4 font-bold">Status</th>
-                <th className="border-b border-neutral-border px-5 py-4 font-bold">Action</th>
+                <th className="px-5 py-3 font-semibold text-neutral-text">Sale No.</th>
+                <th className="px-5 py-3 font-semibold text-neutral-text">Date & Cashier</th>
+                <th className="px-5 py-3 font-semibold text-neutral-text">Total</th>
+                <th className="px-5 py-3 font-semibold text-neutral-text">Status</th>
+                <th className="px-5 py-3 font-semibold text-neutral-text">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -130,19 +121,19 @@ export default async function SalesPage({
                 sales.map((sale) => {
                   const badge = statusBadge(sale.status);
                   return (
-                    <tr className="align-middle hover:bg-neutral-bg/50" key={sale.saleId}>
-                      <td className="px-5 py-4 font-bold text-neutral-text">{sale.saleNumber}</td>
-                      <td className="px-5 py-4 text-neutral-muted">
+                    <tr className="transition hover:bg-neutral-bg bg-neutral-surface" key={sale.saleId}>
+                      <td className="px-5 py-3.5 font-bold text-neutral-text">{sale.saleNumber}</td>
+                      <td className="px-5 py-3.5 text-neutral-muted">
                         {sale.activityAt.slice(0, 10)} <br />
                         <span className="text-xs text-neutral-muted">{sale.cashierName}</span>
                       </td>
-                      <td className="px-5 py-4 font-black text-neutral-text">{formatMoney(sale.total)}</td>
-                      <td className="px-5 py-4">
-                        <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-bold ${badge.cls}`}>
+                      <td className="px-5 py-3.5 font-black text-neutral-text">{formatMoney(sale.total)}</td>
+                      <td className="px-5 py-3.5">
+                        <span className={`inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-bold tracking-wider uppercase ${badge.cls}`}>
                           {badge.label}
                         </span>
                       </td>
-                      <td className="px-5 py-4">
+                      <td className="px-5 py-3.5">
                         <div className="flex flex-col gap-2">
                           {canVoid && sale.status === "COMPLETED" && (
                             <SaleVoidButton saleId={sale.saleId} saleNumber={sale.saleNumber} total={sale.total} />

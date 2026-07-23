@@ -38,7 +38,7 @@ export default async function GrnDetailPage({ params }: { params: Promise<{ id: 
         title={grn.grnNo}
       />
 
-      <section className="grid gap-4 rounded-3xl border border-neutral-border bg-neutral-surface p-5 shadow-sm sm:grid-cols-4 sm:p-6">
+      <section className="grid gap-4 rounded-xl border border-neutral-border bg-neutral-surface p-5 shadow-sm sm:grid-cols-4 sm:p-6">
         <Detail label="Status">
           <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${statusStyle[grn.status]}`}>{grn.status}</span>
         </Detail>
@@ -47,51 +47,53 @@ export default async function GrnDetailPage({ params }: { params: Promise<{ id: 
         <Detail label="Received at">{grn.receivedAt ? grn.receivedAt.toLocaleString() : "—"}</Detail>
       </section>
 
-      <section className="rounded-3xl border border-neutral-border bg-neutral-surface p-5 shadow-sm sm:p-6">
-        <h2 className="mb-4 text-lg font-bold text-neutral-text">Lines ({grn.lines.length})</h2>
+      <section className="overflow-hidden rounded-xl border border-neutral-border bg-neutral-surface shadow-sm">
+        <div className="border-b border-neutral-border bg-neutral-bg px-5 py-4">
+          <h2 className="text-sm font-black uppercase tracking-[.18em] text-brand-default">Lines ({grn.lines.length})</h2>
+        </div>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[820px] text-sm">
-            <thead>
-              <tr className="border-b border-neutral-border text-left text-xs font-bold uppercase tracking-wide text-neutral-muted">
-                <th className="py-2.5 pr-4">Product</th>
-                <th className="py-2.5 pr-4">Qty</th>
-                <th className="py-2.5 pr-4">Base qty</th>
-                <th className="py-2.5 pr-4">System batch</th>
-                <th className="py-2.5 pr-4">Supplier lot</th>
-                <th className="py-2.5 pr-4">Expiry</th>
-                <th className="py-2.5 pr-4">MRP</th>
-                <th className="py-2.5 pr-4">Cost</th>
-                <th className="py-2.5 pr-4">Price</th>
-                <th className="py-2.5 pr-4 text-right">Total</th>
+          <table className="w-full min-w-[820px] text-left text-sm text-neutral-muted">
+            <thead className="bg-neutral-bg border-b border-neutral-border">
+              <tr>
+                <th className="px-5 py-3 font-semibold text-neutral-text">Product</th>
+                <th className="px-5 py-3 font-semibold text-neutral-text">Qty</th>
+                <th className="px-5 py-3 font-semibold text-neutral-text">Base qty</th>
+                <th className="px-5 py-3 font-semibold text-neutral-text">System batch</th>
+                <th className="px-5 py-3 font-semibold text-neutral-text">Supplier lot</th>
+                <th className="px-5 py-3 font-semibold text-neutral-text">Expiry</th>
+                <th className="px-5 py-3 font-semibold text-neutral-text">MRP</th>
+                <th className="px-5 py-3 font-semibold text-neutral-text">Cost</th>
+                <th className="px-5 py-3 font-semibold text-neutral-text">Price</th>
+                <th className="px-5 py-3 font-semibold text-neutral-text text-right">Total</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-slate-100">
               {grn.lines.map((line) => (
-                <tr className="border-b border-neutral-border" key={line.id}>
-                  <td className="py-3 pr-4 font-semibold text-neutral-text">{line.product.name}</td>
-                  <td className="py-3 pr-4 text-neutral-muted">{formatQty(line.qtyInUnit)} {line.unit.unitName}</td>
-                  <td className="py-3 pr-4 text-neutral-muted">{formatQty(line.qtyBase)}</td>
-                  <td className="py-3 pr-4 text-neutral-muted">{line.batchNo ?? "—"}</td>
-                  <td className="py-3 pr-4 text-neutral-muted">{line.supplierBatchNo ?? "—"}</td>
-                  <td className="py-3 pr-4 text-neutral-muted">{line.expiryDate ? line.expiryDate.toLocaleDateString() : "—"}</td>
-                  <td className="py-3 pr-4 text-neutral-muted">{line.mrp ? formatMoney(line.mrp) : "—"}</td>
-                  <td className="py-3 pr-4 text-neutral-muted">{formatMoney(line.costPrice)}</td>
-                  <td className="py-3 pr-4 text-neutral-muted">{formatMoney(line.sellingPrice)}</td>
-                  <td className="py-3 pr-4 text-right font-semibold text-neutral-text">{formatMoney(Number(line.qtyInUnit) * Number(line.costPrice))}</td>
+                <tr className="transition hover:bg-neutral-bg bg-neutral-surface" key={line.id}>
+                  <td className="px-5 py-3.5 font-bold text-neutral-text">{line.product.name}</td>
+                  <td className="px-5 py-3.5 text-neutral-muted">{formatQty(line.qtyInUnit)} {line.unit.unitName}</td>
+                  <td className="px-5 py-3.5 text-neutral-muted">{formatQty(line.qtyBase)}</td>
+                  <td className="px-5 py-3.5 text-neutral-muted">{line.batchNo ?? "—"}</td>
+                  <td className="px-5 py-3.5 text-neutral-muted">{line.supplierBatchNo ?? "—"}</td>
+                  <td className="px-5 py-3.5 text-neutral-muted">{line.expiryDate ? line.expiryDate.toLocaleDateString() : "—"}</td>
+                  <td className="px-5 py-3.5 text-neutral-muted">{line.mrp ? formatMoney(line.mrp) : "—"}</td>
+                  <td className="px-5 py-3.5 text-neutral-muted">{formatMoney(line.costPrice)}</td>
+                  <td className="px-5 py-3.5 text-neutral-muted">{formatMoney(line.sellingPrice)}</td>
+                  <td className="px-5 py-3.5 text-right font-semibold text-neutral-text">{formatMoney(Number(line.qtyInUnit) * Number(line.costPrice))}</td>
                 </tr>
               ))}
             </tbody>
             <tfoot>
               <tr className="bg-neutral-bg">
-                <td className="py-3 pr-4 text-right text-sm font-bold text-neutral-muted" colSpan={9}>Invoice total</td>
-                <td className="py-3 pr-4 text-right text-base font-black text-brand-default">{formatMoney(grn.invoiceTotal)}</td>
+                <td className="px-5 py-3.5 text-right text-sm font-bold text-neutral-muted" colSpan={9}>Invoice total</td>
+                <td className="px-5 py-3.5 text-right text-base font-black text-brand-default">{formatMoney(grn.invoiceTotal)}</td>
               </tr>
             </tfoot>
           </table>
         </div>
       </section>
 
-      <section className="rounded-3xl border border-neutral-border bg-neutral-surface p-5 shadow-sm sm:p-6">
+      <section className="rounded-xl border border-neutral-border bg-neutral-surface p-5 shadow-sm sm:p-6">
         {grn.status === "DRAFT" ? (
           <ConfirmGrnButton grnId={grn.id} />
         ) : grn.status === "CONFIRMED" ? (
