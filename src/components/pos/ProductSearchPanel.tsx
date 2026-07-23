@@ -15,25 +15,14 @@ type Props = {
 export function ProductSearchPanel({ products, query, onQueryChange, onAddProduct, isLoading = false }: Props) {
   return (
     <section className="flex flex-col gap-6">
-      {/* Search bar */}
-      <label className="flex items-center gap-3 rounded-2xl bg-neutral-surface px-4 py-1.5 shadow-[0_2px_8px_rgba(15,23,42,0.04)] focus-within:ring-2 focus-within:ring-brand-default">
-        <Search className="size-5 shrink-0 text-neutral-muted" />
-        <input
-          className="min-w-0 flex-1 bg-transparent py-3 text-sm outline-none"
-          onChange={(e) => onQueryChange(e.target.value)}
-          placeholder="Scan barcode, or search by name..."
-          value={query}
-        />
-      </label>
-
       {/* Header Text */}
       <p className="text-sm font-semibold text-neutral-muted">
         {isLoading ? "Searching…" : `${products.length} product${products.length === 1 ? "" : "s"} - most searched first`}
       </p>
 
       {/* Product tile grid */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-        {products.map((product) => {
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-3">
+        {products.slice(0, 6).map((product) => {
           const unit = product.units.find((u) => u.id === product.defaultSaleUnitId) ?? product.units[0];
           const stockStatus = !product.hasActiveStock
             ? { label: "Out of stock", cls: "bg-status-danger-bg text-status-danger-text" }

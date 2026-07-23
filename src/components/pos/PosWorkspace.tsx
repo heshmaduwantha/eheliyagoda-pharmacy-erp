@@ -1,7 +1,7 @@
 "use client";
 
 import { useDeferredValue, useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { CircleAlert, CircleCheck, ShoppingCart } from "lucide-react";
+import { CircleAlert, CircleCheck, Search } from "lucide-react";
 import { completeSaleAction } from "@/modules/sales/sale.actions";
 import {
   getPosBatchPreviewAction,
@@ -258,11 +258,22 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
 
   return (
     <div className="flex flex-col h-[calc(100vh-80px)] overflow-hidden">
-      <div className="flex flex-col gap-4 shrink-0">
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between shrink-0">
         <div>
           <h1 className="text-3xl font-black tracking-tight text-neutral-text sm:text-4xl">
             Point of Sale
           </h1>
+        </div>
+        <div className="w-full max-w-xl">
+          <label className="flex items-center gap-3 rounded-2xl bg-neutral-surface px-4 py-1.5 shadow-[0_2px_8px_rgba(15,23,42,0.04)] focus-within:ring-2 focus-within:ring-brand-default border border-neutral-border/50">
+            <Search className="size-5 shrink-0 text-neutral-muted" />
+            <input
+              className="min-w-0 flex-1 bg-transparent py-3 text-sm outline-none"
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Scan barcode, or search by name..."
+              value={query}
+            />
+          </label>
         </div>
       </div>
 
