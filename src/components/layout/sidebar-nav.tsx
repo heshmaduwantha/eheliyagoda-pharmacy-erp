@@ -76,7 +76,7 @@ export function SidebarNav({ permissions, mobile = false }: { permissions: strin
             return (
               <Link
                 className={`group flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-semibold transition ${
-                  active ? "bg-brand-pale text-brand-hover shadow-sm" : "text-neutral-muted hover:bg-neutral-bg hover:text-brand-hover"
+                  active ? "bg-white text-brand-default shadow-sm" : "text-neutral-muted hover:bg-neutral-bg hover:text-brand-hover"
                 }`}
                 href={href}
                 key={href}

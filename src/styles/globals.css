@@ -16,14 +16,14 @@
   --color-brand-hover: #0A3D8F;
   --color-brand-pale: #EAF2FF;
 
-  --color-status-success-bg: #E1F5EE;
-  --color-status-success-text: #085041;
-  --color-status-warning-bg: #FAEEDA;
-  --color-status-warning-text: #633806;
-  --color-status-orange-bg: #FDE9CC;
-  --color-status-orange-text: #8A4B0A;
-  --color-status-danger-bg: #FCEBEB;
-  --color-status-danger-text: #791F1F;
+  --color-status-success-bg: #DCFCE7;
+  --color-status-success-text: #166534;
+  --color-status-warning-bg: #FEF9C3;
+  --color-status-warning-text: #854D0E;
+  --color-status-orange-bg: #FFEDD5;
+  --color-status-orange-text: #9A3412;
+  --color-status-danger-bg: #FEE2E2;
+  --color-status-danger-text: #991B1B;
 
   --color-neutral-bg: #F6F8F7;
   --color-neutral-surface: #FFFFFF;
