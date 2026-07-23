@@ -257,7 +257,7 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-80px)] overflow-hidden">
+    <div className="flex flex-col h-[calc(100vh-170px)] overflow-hidden">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between shrink-0">
         <div>
           <h1 className="text-3xl font-black tracking-tight text-neutral-text sm:text-4xl">
