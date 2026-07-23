@@ -18,16 +18,9 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
       {/* Header */}
       <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <div>
-          <p className="flex items-center gap-2 text-sm font-bold text-teal-700">
-            <Package className="size-4" />
-            Catalog workspace
-          </p>
-          <h1 className="mt-1 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">
+          <h1 className="text-3xl font-black tracking-tight text-neutral-text sm:text-4xl">
             Products
           </h1>
-          <p className="mt-2 text-slate-500">
-            {total} product{total === 1 ? "" : "s"} in catalogue
-          </p>
         </div>
       </div>
 

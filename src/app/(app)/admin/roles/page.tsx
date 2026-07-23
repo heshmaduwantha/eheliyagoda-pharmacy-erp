@@ -24,12 +24,7 @@ export default async function AdminRolesPage({ searchParams }: { searchParams: P
     <div className="grid gap-6">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <div>
-          <p className="flex items-center gap-2 text-sm font-bold text-teal-700">
-            <ShieldCheck className="size-4" />
-            Administration
-          </p>
-          <h1 className="mt-1 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">Roles</h1>
-          <p className="mt-2 text-slate-500">Create and tune role permission bundles with system-role safeguards.</p>
+          <h1 className="text-3xl font-black tracking-tight text-neutral-text sm:text-4xl">Roles</h1>
         </div>
         <Link className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-teal-700" href="/admin/roles/new">
           <Plus className="size-4" />

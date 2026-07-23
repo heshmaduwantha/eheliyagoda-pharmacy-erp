@@ -15,7 +15,7 @@ export default async function SuppliersPage({ searchParams }: { searchParams: Pr
 
   return (
     <div className="flex flex-col gap-4 min-w-0">
-      <h1 className="text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">Suppliers</h1>
+      <h1 className="text-3xl font-black tracking-tight text-neutral-text sm:text-4xl">Suppliers</h1>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <form className="flex w-full max-w-sm items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm">

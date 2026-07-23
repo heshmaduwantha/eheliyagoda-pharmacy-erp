@@ -20,19 +20,19 @@ export function Breadcrumbs() {
   });
 
   return (
-    <nav className="mb-1 flex items-center text-sm font-bold text-teal-700" aria-label="Breadcrumb">
-      <Link href="/dashboard" className="flex items-center hover:text-teal-800 transition">
+    <nav className="mb-3 mt-4 flex items-center text-sm font-bold text-brand-default" aria-label="Breadcrumb">
+      <Link href="/dashboard" className="flex items-center hover:text-brand-hover transition">
         <Home className="size-4" />
       </Link>
       {breadcrumbs.map((crumb) => (
         <div key={crumb.href} className="flex items-center">
-          <ChevronRight className="size-4 mx-1.5 text-teal-600/50 shrink-0" />
+          <ChevronRight className="size-4 mx-1.5 text-brand-default/50 shrink-0" />
           {crumb.isLast ? (
             <span aria-current="page">
               {crumb.label}
             </span>
           ) : (
-            <Link href={crumb.href} className="hover:text-teal-800 transition">
+            <Link href={crumb.href} className="hover:text-brand-hover transition">
               {crumb.label}
             </Link>
           )}

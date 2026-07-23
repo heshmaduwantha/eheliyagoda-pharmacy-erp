@@ -24,16 +24,9 @@ async function renderDashboardPage() {
       {/* Header */}
       <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <div>
-          <p className="flex items-center gap-2 text-sm font-bold text-teal-700">
-            <LayoutDashboard className="size-4" />
-            Main workspace
-          </p>
-          <h1 className="mt-1 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">
+          <h1 className="text-3xl font-black tracking-tight text-neutral-text sm:text-4xl">
             Dashboard
           </h1>
-          <p className="mt-2 text-slate-500">
-            Today&apos;s pharmacy overview.
-          </p>
         </div>
         <div className="inline-flex items-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-[0_8px_30px_rgba(15,51,58,.04)]">
           {dateStr}

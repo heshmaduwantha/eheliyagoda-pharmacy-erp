@@ -15,12 +15,7 @@ export default async function AdminPermissionsPage() {
     <div className="grid gap-6">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <div>
-          <p className="flex items-center gap-2 text-sm font-bold text-teal-700">
-            <ShieldCheck className="size-4" />
-            Administration
-          </p>
-          <h1 className="mt-1 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">Permissions</h1>
-          <p className="mt-2 text-slate-500">Read-only registry backed by the seeded permission catalog.</p>
+          <h1 className="text-3xl font-black tracking-tight text-neutral-text sm:text-4xl">Permissions</h1>
         </div>
         <div className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 shadow-[0_8px_30px_rgba(15,51,58,.04)]">
           <Sparkles className="size-4 text-teal-600" />

@@ -15,8 +15,7 @@ export default async function AdminUsersNewPage() {
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm font-bold uppercase tracking-[.18em] text-teal-700">Administration</p>
-          <h1 className="mt-1 text-3xl font-black tracking-tight text-slate-900">Create user</h1>
-          <p className="mt-2 text-slate-500">Create a staff account, assign roles, and set an initial password.</p>
+          <h1 className="text-3xl font-black tracking-tight text-neutral-text">Create user</h1>
         </div>
         <Link className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 shadow-sm" href="/admin/users">
           <ArrowLeft className="size-4" />

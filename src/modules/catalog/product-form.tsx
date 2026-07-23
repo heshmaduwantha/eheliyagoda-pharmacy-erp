@@ -18,14 +18,27 @@ const emptyUnitDetails = (): UnitDetails => ({ factorToBase: "", isPurchaseDefau
 function SoldInMultiSelect({ selectedUnits, onChange }: { selectedUnits: UnitOption[]; onChange: (units: UnitOption[]) => void }) {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const containerRef = useRef<HTMLDivElement>(null);
   const visibleOptions = UNIT_OPTIONS.filter((unit) => unit.toLowerCase().includes(query.trim().toLowerCase()));
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isOpen]);
 
   const toggleUnit = (unit: UnitOption) => {
     onChange(selectedUnits.includes(unit) ? selectedUnits.filter((value) => value !== unit) : [...selectedUnits, unit]);
   };
 
   return (
-    <div className="relative">
+    <div className="relative" ref={containerRef}>
       <div className="flex min-h-11 flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 focus-within:border-teal-400">
         {selectedUnits.map((unit) => (
           <span className="inline-flex items-center gap-1 rounded-full bg-teal-50 px-2.5 py-1 text-xs font-semibold text-teal-700" key={unit}>

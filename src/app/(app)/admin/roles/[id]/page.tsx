@@ -15,12 +15,7 @@ export default async function AdminRoleDetailPage({ params }: { params: Promise<
     <div className="grid gap-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="flex items-center gap-2 text-sm font-bold text-teal-700">
-            <ShieldCheck className="size-4" />
-            Role profile
-          </p>
-          <h1 className="mt-1 text-3xl font-black tracking-tight text-slate-900">{role.name}</h1>
-          <p className="mt-2 text-slate-500">{role.code} · {role.userCount} users</p>
+          <h1 className="text-3xl font-black tracking-tight text-neutral-text">{role.name}</h1>
         </div>
         <Link className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 shadow-sm" href="/admin/roles">
           <ArrowLeft className="size-4" />

@@ -20,11 +20,7 @@ export default async function ExpiryAlertsPage({ searchParams }: { searchParams:
     <div>
       <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <div>
-          <p className="flex items-center gap-2 text-sm font-bold text-teal-700">
-            <CalendarClock className="size-4" />Inventory workspace
-          </p>
-          <h1 className="mt-1 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">Expiry alerts</h1>
-          <p className="mt-2 text-slate-500">Expired, quarantined, and near-expiry batches calculated from live batch dates.</p>
+          <h1 className="text-3xl font-black tracking-tight text-neutral-text sm:text-4xl">Expiry alerts</h1>
         </div>
         <InventoryTabs active="/stock/expiry" />
       </div>
