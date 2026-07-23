@@ -133,20 +133,30 @@ export function ProductForm() {
       <input name="units" type="hidden" value={unitsPayload} />
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field error={state.status === "error" ? state.fieldErrors?.name : undefined} htmlFor="name" label="Product name">
-          <input className={inputClass} id="name" name="name" placeholder="Panadol 500mg" required />
-        </Field>
-        <Field error={state.status === "error" ? state.fieldErrors?.baseUnitName : undefined} htmlFor="baseUnitName" hint="The one unit used for stock calculations." label="Base unit">
-          <input className={inputClass} id="baseUnitName" name="baseUnitName" onChange={(event) => setBaseUnitName(event.target.value)} placeholder="e.g. Tablet" required value={baseUnitName} />
-        </Field>
-        <div className="grid gap-1">
+        {/* Row 1: Product Name | Base Unit */}
+        <div className="flex flex-col gap-1">
+          <Field error={state.status === "error" ? state.fieldErrors?.name : undefined} htmlFor="name" label="Product name">
+            <input className={inputClass} id="name" name="name" placeholder="Panadol 500mg" required />
+          </Field>
+        </div>
+        <div className="flex flex-col gap-1">
+          <Field error={state.status === "error" ? state.fieldErrors?.baseUnitName : undefined} htmlFor="baseUnitName" hint="The one unit used for stock calculations." label="Base unit">
+            <input className={inputClass} id="baseUnitName" name="baseUnitName" onChange={(event) => setBaseUnitName(event.target.value)} placeholder="e.g. Tablet" required value={baseUnitName} />
+          </Field>
+        </div>
+        {/* Row 2: Sold In | Selling Price — both stretch to match each other */}
+        <div className="flex flex-col gap-1">
           <span className="text-xs font-semibold uppercase tracking-wide text-neutral-muted">Sold in</span>
           <SoldInMultiSelect onChange={updateSelectedUnits} selectedUnits={selectedUnits} />
-          {state.status === "error" && state.fieldErrors?.units ? <span className="text-xs font-semibold text-status-danger-text">{state.fieldErrors.units}</span> : <span className="text-xs text-neutral-muted">Select every unit customers can buy. Add the exact conversion for each selection below.</span>}
+          {state.status === "error" && state.fieldErrors?.units
+            ? <span className="text-xs font-semibold text-status-danger-text">{state.fieldErrors.units}</span>
+            : <span className="text-xs text-neutral-muted">Select every unit customers can buy. Add the exact conversion for each selection below.</span>}
         </div>
-        <Field htmlFor="defaultSellingPrice" label="Selling price (LKR)">
-          <input className={inputClass} id="defaultSellingPrice" min="0" name="defaultSellingPrice" step="0.01" type="number" placeholder="0.00" />
-        </Field>
+        <div className="flex flex-col gap-1">
+          <Field htmlFor="defaultSellingPrice" label="Selling price (LKR)">
+            <input className={`${inputClass} h-11`} id="defaultSellingPrice" min="0" name="defaultSellingPrice" step="0.01" type="number" placeholder="0.00" />
+          </Field>
+        </div>
       </div>
 
       {selectedUnits.length > 0 ? <section className="rounded-xl border border-neutral-border bg-neutral-bg p-4">
