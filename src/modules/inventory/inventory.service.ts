@@ -295,7 +295,6 @@ export async function getStockMovementList(filters: InventoryFilterInput = {}): 
       ? [
           { product: { name: { contains: query, mode: "insensitive" as const } } },
           { batch: { batchNo: { contains: query, mode: "insensitive" as const } } },
-          { batch: { supplierBatchNo: { contains: query, mode: "insensitive" as const } } },
           { refType: { contains: query, mode: "insensitive" as const } },
           { refId: { contains: query, mode: "insensitive" as const } },
         ]
@@ -307,7 +306,7 @@ export async function getStockMovementList(filters: InventoryFilterInput = {}): 
       where,
       include: {
         product: { select: { name: true, baseUnitName: true } },
-        batch: { select: { batchNo: true, supplierBatchNo: true } },
+        batch: { select: { batchNo: true } },
       },
       orderBy: { createdAt: "desc" },
       skip: (page - 1) * pageSize,
