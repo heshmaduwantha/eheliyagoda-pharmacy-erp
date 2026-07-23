@@ -27,10 +27,32 @@ model User {
   expenses                      Expense[]  @relation("ExpenseCreatedBy")
   supplierPayments              SupplierPayment[] @relation("SupplierPaymentCreatedBy")
   capturedPrescriptions         Prescription[] @relation("PrescriptionCapturedBy")
+  trainingProgress              TrainingProgress[]
   createdAt                     DateTime   @default(now())
   updatedAt                     DateTime   @updatedAt
 
   @@index([roleId])
+}
+
+enum TrainingStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+model TrainingProgress {
+  id          String         @id @default(uuid()) @db.Uuid
+  userId      String         @db.Uuid
+  lessonKey   String         @db.VarChar(120)
+  status      TrainingStatus @default(NOT_STARTED)
+  completedAt DateTime?
+  lastStep    Int            @default(0)
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@unique([userId, lessonKey])
+  @@index([userId, status])
 }
 
 model Role {

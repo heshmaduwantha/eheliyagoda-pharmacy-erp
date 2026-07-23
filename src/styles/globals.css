@@ -1,5 +1,17 @@
 @import "tailwindcss";
 
+@media print {
+  @page { margin: 14mm; }
+  aside.fixed.inset-y-0,
+  header.sticky.top-0,
+  nav.fixed.inset-x-3,
+  .print\:hidden { display: none !important; }
+  body { background: white !important; color: #0f172a !important; }
+  main { max-width: none !important; padding: 0 !important; }
+  .training-lesson { max-width: none !important; }
+  .training-lesson section, .training-lesson li { break-inside: avoid; box-shadow: none !important; }
+}
+
 :root {
   color-scheme: light;
   --brand-deep: #064e59;

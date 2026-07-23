@@ -6,6 +6,10 @@ import {
   ProductType,
   StockMovementType,
   SupplierInvoiceStatus,
+  ExpenseCategory,
+  PaymentMethod,
+  SaleStatus,
+  SaleVoidStockPolicy,
 } from "@prisma/client";
 import { hash } from "bcryptjs";
 import { env } from "../src/lib/env";
@@ -115,6 +119,18 @@ async function main() {
   const ownerPassword = requiredSeedValue("SEED_OWNER_PASSWORD");
   const pharmacistUsername = requiredSeedValue("SEED_PHARMACIST_USERNAME");
   const pharmacistPassword = requiredSeedValue("SEED_PHARMACIST_PASSWORD");
+
+  if (process.env.UAT_RESET === "CONFIRM_TRUNCATE_ALL") {
+    await prisma.$executeRawUnsafe(`
+      TRUNCATE TABLE
+        "PrescriptionSaleLine", "Prescription", "Patient", "SaleVoid",
+        "SalePayment", "SaleLine", "Sale", "SupplierPayment", "Expense",
+        "StockMovement", "Batch", "SupplierInvoice", "GrnLine", "Grn",
+        "ProductBarcode", "ProductUnit", "Product", "Supplier", "AuditLog",
+        "UserRole", "RolePermission", "User", "Permission", "Role"
+      RESTART IDENTITY CASCADE
+    `);
+  }
 
   await seedAllPermissionsAndRoles(prisma);
 
@@ -243,7 +259,7 @@ async function main() {
     },
   ];
 
-  const seededProducts = [];
+  const seededProducts: Awaited<ReturnType<typeof upsertDevProduct>>[] = [];
   for (const product of devProducts) seededProducts.push(await upsertDevProduct(product));
 
   // Create the development stock ledger only once. Re-running the seed never resets
@@ -338,6 +354,115 @@ async function main() {
         },
       });
     });
+  }
+
+  if (process.env.UAT_RESET === "CONFIRM_TRUNCATE_ALL") {
+    const baseUnit = (index: number) => seededProducts[index].units.find((unit) => unit.factorToBase.eq(1))!;
+    const batchFor = async (index: number) => {
+      const batch = await prisma.batch.findFirst({ where: { productId: seededProducts[index].product.id } });
+      if (!batch) throw new Error(`Missing UAT batch for product index ${index}.`);
+      return batch;
+    };
+    const paracetamolBatch = await batchFor(0);
+    const amoxicillinBatch = await batchFor(1);
+    const diazepamBatch = await batchFor(2);
+    const maskBatch = await batchFor(3);
+    const now = new Date();
+    const daysAgo = (days: number) => new Date(now.getTime() - days * 86_400_000);
+
+    const secondSupplier = await prisma.supplier.create({
+      data: {
+        name: "State Pharmaceuticals Corporation",
+        contactPerson: "UAT Accounts Desk",
+        phone: "0112320356",
+        email: "uat-spc@example.test",
+        address: "Colombo 10, Sri Lanka",
+        creditTermDays: 45,
+      },
+    });
+    const paidInvoice = await prisma.supplierInvoice.create({
+      data: {
+        supplierId: secondSupplier.id,
+        invoiceNo: "SPC-UAT-1001",
+        totalAmount: new Prisma.Decimal("45000.00"),
+        paidAmount: new Prisma.Decimal("45000.00"),
+        status: SupplierInvoiceStatus.PAID,
+        dueDate: daysAgo(-20),
+      },
+    });
+    const openInvoice = await prisma.supplierInvoice.findFirstOrThrow({ where: { invoiceNo: "INV-SEED-0001" } });
+    await prisma.supplierPayment.createMany({
+      data: [
+        { paymentNumber: "PAY-UAT-0001", supplierInvoiceId: paidInvoice.id, supplierId: secondSupplier.id, amount: new Prisma.Decimal("45000.00"), paymentMethod: PaymentMethod.CARD, reference: "BANK-UAT-45000", paidAt: daysAgo(2), notes: "Fully paid supplier invoice", createdById: ownerUser.id },
+        { paymentNumber: "PAY-UAT-0002", supplierInvoiceId: openInvoice.id, supplierId: supplier.id, amount: new Prisma.Decimal("10000.00"), paymentMethod: PaymentMethod.CASH, paidAt: daysAgo(1), notes: "Part payment for UAT", createdById: ownerUser.id },
+      ],
+    });
+    await prisma.supplierInvoice.update({ where: { id: openInvoice.id }, data: { paidAmount: new Prisma.Decimal("10000.00"), status: SupplierInvoiceStatus.PARTIALLY_PAID } });
+
+    await prisma.expense.createMany({
+      data: [
+        { expenseNumber: "EXP-UAT-0001", date: daysAgo(5), category: ExpenseCategory.RENT, description: "Monthly premises rent", amount: new Prisma.Decimal("85000.00"), paymentMethod: PaymentMethod.CARD, reference: "BANK-RENT-UAT", createdById: ownerUser.id },
+        { expenseNumber: "EXP-UAT-0002", date: daysAgo(3), category: ExpenseCategory.ELECTRICITY, description: "Electricity bill", amount: new Prisma.Decimal("18450.00"), paymentMethod: PaymentMethod.CASH, createdById: ownerUser.id },
+        { expenseNumber: "EXP-UAT-0003", date: daysAgo(1), category: ExpenseCategory.INTERNET, description: "Business fibre connection", amount: new Prisma.Decimal("7490.00"), paymentMethod: PaymentMethod.CARD, reference: "CARD-UAT-7490", createdById: ownerUser.id },
+      ],
+    });
+
+    const createSale = async (input: {
+      saleNumber: string; status: SaleStatus; createdAt: Date; productIndex: number; batch: typeof paracetamolBatch;
+      qty: string; unitPrice: string; payment?: PaymentMethod; notes: string;
+    }) => {
+      const item = seededProducts[input.productIndex];
+      const qty = new Prisma.Decimal(input.qty);
+      const unitPrice = new Prisma.Decimal(input.unitPrice);
+      const total = qty.mul(unitPrice);
+      return prisma.sale.create({
+        data: {
+          saleNumber: input.saleNumber,
+          status: input.status,
+          cashierId: ownerUser.id,
+          subtotal: total,
+          total,
+          notes: input.notes,
+          createdAt: input.createdAt,
+          completedAt: input.status === SaleStatus.COMPLETED ? input.createdAt : null,
+          lines: { create: [{
+            productId: item.product.id, batchId: input.batch.id, unitId: baseUnit(input.productIndex).id,
+            qty, qtyBase: qty, unitPrice, lineTotal: total, costPriceAtSale: input.batch.costPrice,
+            mrpAtSale: input.batch.mrp, productNameSnapshot: item.product.name,
+            batchNoSnapshot: input.batch.batchNo, expiryDateSnapshot: input.batch.expiryDate,
+          }] },
+          ...(input.payment ? { payments: { create: [{ method: input.payment, amount: total, ...(input.payment === PaymentMethod.CARD ? { cardReference: `CARD-${input.saleNumber}` } : {}) }] } } : {}),
+        },
+        include: { lines: true },
+      });
+    };
+
+    const cashSale = await createSale({ saleNumber: "SALE-UAT-0001", status: SaleStatus.COMPLETED, createdAt: daysAgo(3), productIndex: 0, batch: paracetamolBatch, qty: "20", unitPrice: "10.00", payment: PaymentMethod.CASH, notes: "Completed cash sale" });
+    const antibioticSale = await createSale({ saleNumber: "SALE-UAT-0002", status: SaleStatus.COMPLETED, createdAt: daysAgo(2), productIndex: 1, batch: amoxicillinBatch, qty: "10", unitPrice: "28.00", payment: PaymentMethod.CARD, notes: "Prescription medicine card sale" });
+    await createSale({ saleNumber: "SALE-UAT-0003", status: SaleStatus.HELD, createdAt: daysAgo(1), productIndex: 3, batch: maskBatch, qty: "4", unitPrice: "25.00", notes: "Held sale for workflow demonstration" });
+    const voidSale = await createSale({ saleNumber: "SALE-UAT-0004", status: SaleStatus.VOIDED, createdAt: daysAgo(1), productIndex: 0, batch: paracetamolBatch, qty: "5", unitPrice: "10.00", payment: PaymentMethod.CASH, notes: "Voided sale demonstration" });
+    await prisma.sale.update({ where: { id: voidSale.id }, data: { voidedAt: daysAgo(1) } });
+    await prisma.saleVoid.create({ data: { saleId: voidSale.id, reason: "Customer requested cancellation before collection", refundAmount: new Prisma.Decimal("50.00"), refundMethod: PaymentMethod.CASH, stockPolicy: SaleVoidStockPolicy.RETURN_TO_ACTIVE, voidedById: ownerUser.id, voidedAt: daysAgo(1) } });
+
+    const patient = await prisma.patient.create({ data: { name: "Nimal Perera", phone: "0771234567", nic: "901234567V", patientReference: "PAT-UAT-0001", age: 36 } });
+    const prescription = await prisma.prescription.create({ data: { saleId: antibioticSale.id, patientId: patient.id, prescriberName: "Dr. S. Fernando", prescriberRef: "SLMC-UAT-45821", imageKey: "uat/prescriptions/sample-prescription.jpg", capturedById: ownerUser.id, capturedAt: daysAgo(2) } });
+    await prisma.prescriptionSaleLine.create({ data: { prescriptionId: prescription.id, saleLineId: antibioticSale.lines[0].id, productId: seededProducts[1].product.id, batchId: amoxicillinBatch.id, qtyBase: new Prisma.Decimal("10") } });
+
+    const stockRows = [
+      { sale: cashSale, index: 0, batch: paracetamolBatch, qty: "-20" },
+      { sale: antibioticSale, index: 1, batch: amoxicillinBatch, qty: "-10" },
+    ];
+    for (const row of stockRows) {
+      await prisma.stockMovement.create({ data: { productId: seededProducts[row.index].product.id, batchId: row.batch.id, movementType: StockMovementType.SALE_OUT, qtyBase: new Prisma.Decimal(row.qty), refType: "SALE", refId: row.sale.id, note: `UAT ${row.sale.saleNumber}`, createdById: ownerUser.id, createdAt: row.sale.createdAt } });
+      await prisma.batch.update({ where: { id: row.batch.id }, data: { qtyOnHandBase: { decrement: new Prisma.Decimal(row.qty).abs() } } });
+    }
+    await prisma.stockMovement.create({ data: { productId: seededProducts[2].product.id, batchId: diazepamBatch.id, movementType: StockMovementType.WRITE_OFF, qtyBase: new Prisma.Decimal("-5"), refType: "UAT_WRITE_OFF", refId: "WO-UAT-0001", note: "Damaged pack write-off demonstration", createdById: ownerUser.id } });
+    await prisma.batch.update({ where: { id: diazepamBatch.id }, data: { qtyOnHandBase: { decrement: new Prisma.Decimal("5") } } });
+    await prisma.auditLog.createMany({ data: [
+      { actorUserId: ownerUser.id, action: "uat.reset_completed", entityType: "SYSTEM", afterData: { dataset: "UAT", users: [ownerUsername, pharmacistUsername] } },
+      { actorUserId: ownerUser.id, action: "sale.completed", entityType: "SALE", entityId: cashSale.id, afterData: { saleNumber: cashSale.saleNumber } },
+      { actorUserId: ownerUser.id, action: "sale.voided", entityType: "SALE", entityId: voidSale.id, afterData: { saleNumber: voidSale.saleNumber } },
+    ] });
   }
 }
 
