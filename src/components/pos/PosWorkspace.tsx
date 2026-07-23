@@ -296,9 +296,9 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
         </div>
       ) : null}
 
-      <div className="mt-4 flex flex-1 items-start gap-6 relative overflow-hidden pb-4">
+      <div className="mt-4 flex flex-1 items-stretch gap-6 relative overflow-hidden pb-4">
         {/* Left main area */}
-        <div className="flex-1 min-w-0 h-full overflow-y-auto pr-2">
+        <div className="flex-1 min-w-0 overflow-y-auto pr-2">
           <ProductSearchPanel
             isLoading={isSearching}
             onAddProduct={(product) => {
@@ -311,7 +311,7 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
         </div>
 
         {/* Right sidebar cart */}
-        <div className="w-[280px] flex-shrink-0 xl:w-[320px] flex flex-col rounded-2xl bg-neutral-surface shadow-[0_2px_12px_rgba(15,23,42,0.03)] border border-neutral-border/60 overflow-hidden h-full">
+        <div className="w-[280px] flex-shrink-0 xl:w-[320px] flex flex-col rounded-2xl bg-neutral-surface shadow-[0_2px_12px_rgba(15,23,42,0.03)] border border-neutral-border/60 overflow-hidden">
           <div className="flex-1 overflow-hidden p-4">
             <CartTable
               lines={lines}
