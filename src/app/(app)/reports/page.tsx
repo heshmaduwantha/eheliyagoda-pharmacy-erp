@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { ShieldAlert, LineChart } from "lucide-react";
+import { ShieldAlert } from "lucide-react";
 import { CashCardSummary } from "@/components/reports/CashCardSummary";
 import { ControlledDrugRegisterTable } from "@/components/reports/ControlledDrugRegisterTable";
 import { ReportFilter } from "@/components/reports/ReportFilter";

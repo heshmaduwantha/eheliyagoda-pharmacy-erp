@@ -22,7 +22,7 @@ import {
   updateCartLineUnit,
 } from "@/modules/sales/pos.utils";
 import type { SaleReceipt } from "@/modules/sales/sale.types";
-import { BarcodeInput } from "./BarcodeInput";
+
 import { CartTable } from "./CartTable";
 import { ControlledDrugModal } from "./ControlledDrugModal";
 import { PaymentModal } from "./PaymentModal";
@@ -113,19 +113,6 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
     );
     setNotice({ tone: "success", message: `${product.name} added to the cart.` });
     await refreshBatchPreview(nextLine);
-  };
-
-  const handleBarcodeScan = async (barcode: string) => {
-    try {
-      const result = await lookupProductByBarcodeAction(barcode);
-      if (!result) {
-        setNotice({ tone: "warning", message: `No active product found for barcode ${barcode}.` });
-        return;
-      }
-      await addProduct(result.product, result.matchedUnit);
-    } catch {
-      setNotice({ tone: "warning", message: "Barcode lookup is temporarily unavailable." });
-    }
   };
 
   const changeQuantity = (lineId: string, quantity: number) => {

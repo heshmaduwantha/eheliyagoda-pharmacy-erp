@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ShoppingCart } from "lucide-react";
 
 import { SaleVoidButton } from "@/components/sales/SaleVoidButton";
 import { formatMoney } from "@/lib/money";

@@ -1,4 +1,4 @@
-import { ScrollText, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { AuditLogTable } from "@/components/audit/AuditLogTable";
 import { requirePermission } from "@/modules/auth/permissions";
 import { listAuditLogs } from "@/modules/audit/audit-query.service";

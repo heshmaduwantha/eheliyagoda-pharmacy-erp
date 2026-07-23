@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import type { PosProductSearchResult } from "@/modules/sales/pos.types";
 import { formatLkr } from "@/modules/sales/pos.utils";
 
@@ -12,7 +12,7 @@ type Props = {
   isLoading?: boolean;
 };
 
-export function ProductSearchPanel({ products, query, onQueryChange, onAddProduct, isLoading = false }: Props) {
+export function ProductSearchPanel({ products, onAddProduct, isLoading = false }: Props) {
   return (
     <section className="flex flex-col gap-6">
       {/* Header Text */}

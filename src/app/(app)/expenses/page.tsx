@@ -1,5 +1,4 @@
 import { ExpenseForm } from "@/components/finance/ExpenseForm";
-import { Receipt } from "lucide-react";
 import { ExpenseTable } from "@/components/finance/ExpenseTable";
 import { formatMoney } from "@/lib/money";
 import { requirePermission } from "@/modules/auth/permissions";

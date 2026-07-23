@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { ArrowLeftRight } from "lucide-react";
 import { InventoryFilters } from "@/components/inventory/InventoryFilters";
 import { InventoryTabs } from "@/components/inventory/InventoryTabs";
 import { StockMovementTable } from "@/components/inventory/StockMovementTable";

@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Boxes } from "lucide-react";
 import { BatchTable } from "@/components/inventory/BatchTable";
 import { InventoryFilters } from "@/components/inventory/InventoryFilters";
 import { InventoryTabs } from "@/components/inventory/InventoryTabs";

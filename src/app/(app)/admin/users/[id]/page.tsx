@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, ShieldCheck } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { UserForm } from "@/modules/admin/user-form";
 import { getAdminUser, listAdminRoles } from "@/modules/admin/rbac.service";
 import { requirePermission } from "@/modules/auth/permissions";

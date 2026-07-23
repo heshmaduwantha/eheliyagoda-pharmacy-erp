@@ -1,4 +1,4 @@
-import { AlertTriangle, Truck } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { SupplierPaymentForm } from "@/components/finance/SupplierPaymentForm";
 import { SupplierPaymentTable } from "@/components/finance/SupplierPaymentTable";
 import { formatMoney } from "@/lib/money";

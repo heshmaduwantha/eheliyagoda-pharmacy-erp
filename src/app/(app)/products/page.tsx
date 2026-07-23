@@ -1,4 +1,4 @@
-import { Search, Plus, Package, ChevronDown } from "lucide-react";
+import { Search, Plus, ChevronDown } from "lucide-react";
 import Link from "next/link";
 import { formatMoney, formatQty } from "@/lib/money";
 import { requirePermission } from "@/modules/auth/permissions";

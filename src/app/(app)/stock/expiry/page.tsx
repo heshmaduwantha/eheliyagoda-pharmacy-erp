@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { CalendarClock } from "lucide-react";
 import { ExpiryAlertTable } from "@/components/inventory/ExpiryAlertTable";
 import { InventoryFilters } from "@/components/inventory/InventoryFilters";
 import { InventoryTabs } from "@/components/inventory/InventoryTabs";

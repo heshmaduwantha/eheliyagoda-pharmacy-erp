@@ -1,4 +1,4 @@
-import { ShieldCheck, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { requirePermission } from "@/modules/auth/permissions";
 import { listAdminPermissions } from "@/modules/admin/rbac.service";
 
