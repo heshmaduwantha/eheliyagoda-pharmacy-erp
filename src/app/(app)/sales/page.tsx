@@ -25,9 +25,9 @@ function normalizeDateOnly(value?: string) {
 }
 
 function statusBadge(status: string) {
-  if (status === "COMPLETED") return { label: "Completed", cls: "bg-emerald-50 text-emerald-700 border border-emerald-200" };
-  if (status === "VOIDED") return { label: "Cancelled", cls: "bg-red-50 text-red-700 border border-red-200" };
-  return { label: "Held", cls: "bg-amber-50 text-amber-700 border border-amber-200" };
+  if (status === "COMPLETED") return { label: "Completed", cls: "bg-status-success-bg text-status-success-text border border-status-success-bg" };
+  if (status === "VOIDED") return { label: "Cancelled", cls: "bg-status-danger-bg text-status-danger-text border border-red-200" };
+  return { label: "Held", cls: "bg-status-warning-bg text-status-warning-text border border-status-warning-bg" };
 }
 
 export default async function SalesPage({
@@ -61,7 +61,7 @@ export default async function SalesPage({
           </h1>
         </div>
         <Link
-          className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-teal-700"
+          className="inline-flex items-center gap-2 rounded-lg bg-brand-default px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-brand-default"
           href="/pos"
         >
           Start a sale →
@@ -69,21 +69,21 @@ export default async function SalesPage({
       </div>
 
       {/* Filter */}
-      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="rounded-xl border border-neutral-border bg-neutral-surface p-4 shadow-sm">
         <form className="flex flex-col gap-3 sm:flex-row xl:grid xl:grid-cols-[1.3fr_.8fr_.8fr_.8fr_auto]">
-          <label className="grid gap-1.5 text-sm font-medium text-slate-700">
+          <label className="grid gap-1.5 text-sm font-medium text-neutral-text">
             Search
             <input
-              className="rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-teal-400"
+              className="rounded-lg border border-neutral-border px-3 py-2 text-sm outline-none focus:border-brand-default"
               defaultValue={params.q ?? ""}
               name="q"
               placeholder="Sale number, cashier name…"
             />
           </label>
-          <label className="grid gap-1.5 text-sm font-medium text-slate-700">
+          <label className="grid gap-1.5 text-sm font-medium text-neutral-text">
             Status
             <select
-              className="rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-teal-400"
+              className="rounded-lg border border-neutral-border px-3 py-2 text-sm outline-none focus:border-brand-default"
               defaultValue={status}
               name="status"
             >
@@ -93,16 +93,16 @@ export default async function SalesPage({
               <option value="HELD">Held</option>
             </select>
           </label>
-          <label className="grid gap-1.5 text-sm font-medium text-slate-700">
+          <label className="grid gap-1.5 text-sm font-medium text-neutral-text">
             From
-            <input className="rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-teal-400" defaultValue={from ?? ""} name="from" type="date" />
+            <input className="rounded-lg border border-neutral-border px-3 py-2 text-sm outline-none focus:border-brand-default" defaultValue={from ?? ""} name="from" type="date" />
           </label>
-          <label className="grid gap-1.5 text-sm font-medium text-slate-700">
+          <label className="grid gap-1.5 text-sm font-medium text-neutral-text">
             To
-            <input className="rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-teal-400" defaultValue={to ?? ""} name="to" type="date" />
+            <input className="rounded-lg border border-neutral-border px-3 py-2 text-sm outline-none focus:border-brand-default" defaultValue={to ?? ""} name="to" type="date" />
           </label>
           <div className="flex items-end">
-            <button className="w-full rounded-lg bg-teal-600 px-4 py-2 text-sm font-bold text-white hover:bg-teal-700" type="submit">
+            <button className="w-full rounded-lg bg-brand-default px-4 py-2 text-sm font-bold text-white hover:bg-brand-default" type="submit">
               Apply
             </button>
           </div>
@@ -110,22 +110,22 @@ export default async function SalesPage({
       </div>
 
       {/* Sale list */}
-      <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+      <section className="overflow-hidden rounded-xl border border-neutral-border bg-neutral-surface shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[700px] border-collapse text-left text-sm text-slate-600">
-            <thead className="bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
+          <table className="w-full min-w-[700px] border-collapse text-left text-sm text-neutral-muted">
+            <thead className="bg-neutral-bg text-xs uppercase tracking-wider text-neutral-muted">
               <tr>
-                <th className="border-b border-slate-200 px-5 py-4 font-bold">Sale No.</th>
-                <th className="border-b border-slate-200 px-5 py-4 font-bold">Date & Cashier</th>
-                <th className="border-b border-slate-200 px-5 py-4 font-bold">Total</th>
-                <th className="border-b border-slate-200 px-5 py-4 font-bold">Status</th>
-                <th className="border-b border-slate-200 px-5 py-4 font-bold">Action</th>
+                <th className="border-b border-neutral-border px-5 py-4 font-bold">Sale No.</th>
+                <th className="border-b border-neutral-border px-5 py-4 font-bold">Date & Cashier</th>
+                <th className="border-b border-neutral-border px-5 py-4 font-bold">Total</th>
+                <th className="border-b border-neutral-border px-5 py-4 font-bold">Status</th>
+                <th className="border-b border-neutral-border px-5 py-4 font-bold">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {sales.length === 0 ? (
                 <tr>
-                  <td className="px-5 py-16 text-center text-slate-400" colSpan={5}>
+                  <td className="px-5 py-16 text-center text-neutral-muted" colSpan={5}>
                     No sales matched the current filters.
                   </td>
                 </tr>
@@ -133,13 +133,13 @@ export default async function SalesPage({
                 sales.map((sale) => {
                   const badge = statusBadge(sale.status);
                   return (
-                    <tr className="align-middle hover:bg-slate-50/50" key={sale.saleId}>
-                      <td className="px-5 py-4 font-bold text-slate-900">{sale.saleNumber}</td>
-                      <td className="px-5 py-4 text-slate-600">
+                    <tr className="align-middle hover:bg-neutral-bg/50" key={sale.saleId}>
+                      <td className="px-5 py-4 font-bold text-neutral-text">{sale.saleNumber}</td>
+                      <td className="px-5 py-4 text-neutral-muted">
                         {sale.activityAt.slice(0, 10)} <br />
-                        <span className="text-xs text-slate-400">{sale.cashierName}</span>
+                        <span className="text-xs text-neutral-muted">{sale.cashierName}</span>
                       </td>
-                      <td className="px-5 py-4 font-black text-slate-900">{formatMoney(sale.total)}</td>
+                      <td className="px-5 py-4 font-black text-neutral-text">{formatMoney(sale.total)}</td>
                       <td className="px-5 py-4">
                         <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-bold ${badge.cls}`}>
                           {badge.label}
@@ -151,33 +151,33 @@ export default async function SalesPage({
                             <SaleVoidButton saleId={sale.saleId} saleNumber={sale.saleNumber} total={sale.total} />
                           )}
                           <details className="group relative">
-                            <summary className="cursor-pointer text-xs font-semibold text-teal-600 hover:underline marker:content-none">
+                            <summary className="cursor-pointer text-xs font-semibold text-brand-default hover:underline marker:content-none">
                               View details
                             </summary>
-                            <div className="absolute right-0 z-10 mt-2 w-80 rounded-xl border border-slate-200 bg-white p-4 shadow-xl">
-                              <p className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-400">Items sold</p>
+                            <div className="absolute right-0 z-10 mt-2 w-80 rounded-xl border border-neutral-border bg-neutral-surface p-4 shadow-xl">
+                              <p className="mb-2 text-xs font-bold uppercase tracking-wider text-neutral-muted">Items sold</p>
                               <div className="grid gap-2">
                                 {sale.lines.map((line) => (
                                   <div className="flex items-center justify-between border-b border-slate-50 pb-2 text-xs" key={line.saleLineId}>
                                     <div>
-                                      <p className="font-semibold text-slate-800">{line.productName}</p>
-                                      <p className="text-slate-400">{line.quantity} × {line.unitName}</p>
+                                      <p className="font-semibold text-neutral-text">{line.productName}</p>
+                                      <p className="text-neutral-muted">{line.quantity} × {line.unitName}</p>
                                     </div>
-                                    <strong className="text-slate-900">{formatMoney(line.lineTotal)}</strong>
+                                    <strong className="text-neutral-text">{formatMoney(line.lineTotal)}</strong>
                                   </div>
                                 ))}
                               </div>
                               <div className="mt-4">
-                                <p className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-400">Payment</p>
+                                <p className="mb-2 text-xs font-bold uppercase tracking-wider text-neutral-muted">Payment</p>
                                 {sale.payments.map((payment) => (
                                   <div className="flex items-center justify-between text-xs" key={payment.salePaymentId}>
-                                    <span className="font-medium text-slate-700">{payment.method === "CASH" ? "Cash" : "Card"}</span>
+                                    <span className="font-medium text-neutral-text">{payment.method === "CASH" ? "Cash" : "Card"}</span>
                                     <strong>{formatMoney(payment.amount)}</strong>
                                   </div>
                                 ))}
                               </div>
                               {sale.voidRecord && (
-                                <div className="mt-3 rounded-lg border border-red-100 bg-red-50 p-2 text-xs text-red-800">
+                                <div className="mt-3 rounded-lg border border-red-100 bg-status-danger-bg p-2 text-xs text-status-danger-text">
                                   <p className="font-bold">Cancelled</p>
                                   <p>{sale.voidRecord.reason}</p>
                                 </div>

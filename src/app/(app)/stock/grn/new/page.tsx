@@ -17,16 +17,16 @@ export default async function NewGrnPage() {
           <h1 className="text-2xl font-bold text-neutral-text">Record a delivery</h1>
         </div>
         <Link
-          className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:border-slate-300"
+          className="inline-flex items-center gap-2 rounded-xl border border-neutral-border bg-neutral-surface px-4 py-2.5 text-sm font-semibold text-neutral-muted transition hover:border-neutral-border"
           href="/stock/grn"
         >
           <ArrowLeft className="size-4" /> Back
         </Link>
       </div>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+      <section className="rounded-2xl border border-neutral-border bg-neutral-surface p-5 shadow-sm sm:p-6">
         {suppliers.length === 0 || products.length === 0 ? (
-          <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
+          <p className="rounded-xl border border-status-warning-bg bg-status-warning-bg px-4 py-3 text-sm font-semibold text-status-warning-text">
             You need at least one supplier and one product before recording a delivery.
           </p>
         ) : (

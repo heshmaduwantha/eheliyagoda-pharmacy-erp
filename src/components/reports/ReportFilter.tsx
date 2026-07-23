@@ -18,10 +18,10 @@ const reportOptions: { value: ReportType; label: string }[] = [
 export function ReportFilter({ type, range }: { type: ReportType; range: ReportDateRange }) {
   return (
     <form className="grid gap-3 lg:grid-cols-[minmax(220px,1fr)_180px_180px_auto] lg:items-end">
-      <label className="grid gap-1.5 text-sm font-medium text-slate-700">
+      <label className="grid gap-1.5 text-sm font-medium text-neutral-text">
         Report type
         <select
-          className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-teal-500"
+          className="rounded-xl border border-neutral-border bg-neutral-surface px-3 py-2.5 text-sm outline-none focus:border-brand-default"
           defaultValue={type}
           name="type"
         >
@@ -30,26 +30,26 @@ export function ReportFilter({ type, range }: { type: ReportType; range: ReportD
           ))}
         </select>
       </label>
-      <label className="grid gap-1.5 text-sm font-medium text-slate-700">
+      <label className="grid gap-1.5 text-sm font-medium text-neutral-text">
         From
         <input
-          className="rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-teal-500"
+          className="rounded-xl border border-neutral-border px-3 py-2.5 text-sm outline-none focus:border-brand-default"
           defaultValue={range.from}
           name="from"
           type="date"
         />
       </label>
-      <label className="grid gap-1.5 text-sm font-medium text-slate-700">
+      <label className="grid gap-1.5 text-sm font-medium text-neutral-text">
         To
         <input
-          className="rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-teal-500"
+          className="rounded-xl border border-neutral-border px-3 py-2.5 text-sm outline-none focus:border-brand-default"
           defaultValue={range.to}
           name="to"
           type="date"
         />
       </label>
       <button
-        className="rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-teal-700"
+        className="rounded-xl bg-brand-default px-5 py-2.5 text-sm font-bold text-white transition hover:bg-brand-default"
         type="submit"
       >
         Apply

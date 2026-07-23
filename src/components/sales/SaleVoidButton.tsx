@@ -57,7 +57,7 @@ export function SaleVoidButton({ saleId, saleNumber, total }: Props) {
   return (
     <>
         <button
-          className="inline-flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-bold text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex items-center gap-2 rounded-xl border border-status-danger-bg bg-status-danger-bg px-3 py-2 text-sm font-bold text-status-danger-text transition hover:bg-status-danger-bg disabled:cursor-not-allowed disabled:opacity-50"
         onClick={() => {
           setNotice(null);
           setOpen(true);
@@ -70,18 +70,18 @@ export function SaleVoidButton({ saleId, saleNumber, total }: Props) {
 
       {open ? (
         <div className="fixed inset-0 z-[80] grid place-items-center bg-slate-950/45 p-4 backdrop-blur-sm">
-          <section aria-modal="true" className="w-full max-w-2xl rounded-3xl bg-white p-6 shadow-2xl sm:p-7" role="dialog">
+          <section aria-modal="true" className="w-full max-w-2xl rounded-3xl bg-neutral-surface p-6 shadow-2xl sm:p-7" role="dialog">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-xs font-bold uppercase tracking-wider text-rose-700">Sale void</p>
-                <h2 className="mt-1 text-2xl font-black text-slate-900">{saleNumber}</h2>
-                <p className="mt-2 text-sm leading-6 text-slate-500">
+                <p className="text-xs font-bold uppercase tracking-wider text-status-danger-text">Sale void</p>
+                <h2 className="mt-1 text-2xl font-black text-neutral-text">{saleNumber}</h2>
+                <p className="mt-2 text-sm leading-6 text-neutral-muted">
                   Full void only in this phase. Customer-returned medicines should not be returned to sellable stock.
                 </p>
               </div>
               <button
                 aria-label="Close"
-                className="grid size-9 place-items-center rounded-full text-slate-400 hover:bg-slate-100"
+                className="grid size-9 place-items-center rounded-full text-neutral-muted hover:bg-slate-100"
                 disabled={isPending}
                 onClick={() => setOpen(false)}
                 type="button"
@@ -91,10 +91,10 @@ export function SaleVoidButton({ saleId, saleNumber, total }: Props) {
             </div>
 
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
-              <label className="grid gap-2 text-sm font-bold text-slate-700 sm:col-span-2">
+              <label className="grid gap-2 text-sm font-bold text-neutral-text sm:col-span-2">
                 Void reason
                 <textarea
-                  className="min-h-28 rounded-xl border border-slate-200 px-4 py-3 font-normal outline-none focus:border-rose-400"
+                  className="min-h-28 rounded-xl border border-neutral-border px-4 py-3 font-normal outline-none focus:border-rose-400"
                   maxLength={500}
                   onChange={(event) => setReason(event.target.value)}
                   placeholder="Explain why the completed sale is being voided"
@@ -102,20 +102,20 @@ export function SaleVoidButton({ saleId, saleNumber, total }: Props) {
                 />
               </label>
 
-              <label className="grid gap-2 text-sm font-bold text-slate-700">
+              <label className="grid gap-2 text-sm font-bold text-neutral-text">
                 Refund amount
                 <input
-                  className="rounded-xl border border-slate-200 px-4 py-3 font-normal outline-none"
+                  className="rounded-xl border border-neutral-border px-4 py-3 font-normal outline-none"
                   readOnly
                   value={formatMoney(total)}
                 />
-                <span className="text-xs font-medium text-slate-500">Full voids always refund the full sale total.</span>
+                <span className="text-xs font-medium text-neutral-muted">Full voids always refund the full sale total.</span>
               </label>
 
-              <label className="grid gap-2 text-sm font-bold text-slate-700">
+              <label className="grid gap-2 text-sm font-bold text-neutral-text">
                 Refund method
                 <select
-                  className="rounded-xl border border-slate-200 px-4 py-3 font-normal outline-none focus:border-rose-400"
+                  className="rounded-xl border border-neutral-border px-4 py-3 font-normal outline-none focus:border-rose-400"
                   onChange={(event) => setRefundMethod(event.target.value as "" | "CASH" | "CARD")}
                   value={refundMethod}
                 >
@@ -125,20 +125,20 @@ export function SaleVoidButton({ saleId, saleNumber, total }: Props) {
                 </select>
               </label>
 
-              <label className="grid gap-2 text-sm font-bold text-slate-700 sm:col-span-2">
+              <label className="grid gap-2 text-sm font-bold text-neutral-text sm:col-span-2">
                 Refund reference
                 <input
-                  className="rounded-xl border border-slate-200 px-4 py-3 font-normal outline-none focus:border-rose-400"
+                  className="rounded-xl border border-neutral-border px-4 py-3 font-normal outline-none focus:border-rose-400"
                   onChange={(event) => setRefundReference(event.target.value)}
                   placeholder="Optional refund / reversal reference"
                   value={refundReference}
                 />
               </label>
 
-              <label className="grid gap-2 text-sm font-bold text-slate-700 sm:col-span-2">
+              <label className="grid gap-2 text-sm font-bold text-neutral-text sm:col-span-2">
                 Stock policy
                 <select
-                  className="rounded-xl border border-slate-200 px-4 py-3 font-normal outline-none focus:border-rose-400"
+                  className="rounded-xl border border-neutral-border px-4 py-3 font-normal outline-none focus:border-rose-400"
                   onChange={(event) => setStockPolicy(event.target.value as "NO_STOCK_RETURN" | "RETURN_TO_ACTIVE")}
                   value={stockPolicy}
                 >
@@ -148,7 +148,7 @@ export function SaleVoidButton({ saleId, saleNumber, total }: Props) {
               </label>
             </div>
 
-            <div className="mt-4 rounded-2xl border border-amber-100 bg-amber-50 p-4 text-sm leading-6 text-amber-900">
+            <div className="mt-4 rounded-2xl border border-status-warning-bg bg-status-warning-bg p-4 text-sm leading-6 text-status-warning-text">
               <div className="flex items-start gap-2">
                 <CircleAlert className="mt-0.5 size-4 shrink-0" />
                 <p>
@@ -159,14 +159,14 @@ export function SaleVoidButton({ saleId, saleNumber, total }: Props) {
             </div>
 
             {notice ? (
-              <div className="mt-4 rounded-2xl border border-rose-100 bg-rose-50 p-4 text-sm font-medium text-rose-800">
+              <div className="mt-4 rounded-2xl border border-status-danger-bg bg-status-danger-bg p-4 text-sm font-medium text-status-danger-text">
                 {notice}
               </div>
             ) : null}
 
             <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
               <button
-                className="rounded-xl border border-slate-200 px-4 py-3 font-bold text-slate-600"
+                className="rounded-xl border border-neutral-border px-4 py-3 font-bold text-neutral-muted"
                 disabled={isPending}
                 onClick={() => setOpen(false)}
                 type="button"

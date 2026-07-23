@@ -120,14 +120,14 @@ export function SearchableSelect({
         width: rect.width,
         zIndex: 9999,
       }}
-      className="max-h-60 overflow-hidden flex flex-col rounded-lg border border-slate-200 bg-white shadow-xl"
+      className="max-h-60 overflow-hidden flex flex-col rounded-lg border border-neutral-border bg-neutral-surface shadow-xl"
     >
-      <div className="bg-slate-50 px-3 py-2 border-b border-slate-100 flex items-center gap-2">
-        <Search className="size-4 text-slate-400 shrink-0" />
+      <div className="bg-neutral-bg px-3 py-2 border-b border-neutral-border flex items-center gap-2">
+        <Search className="size-4 text-neutral-muted shrink-0" />
         <input
           ref={searchInputRef}
           type="text"
-          className="w-full outline-none text-sm bg-transparent placeholder:text-slate-400"
+          className="w-full outline-none text-sm bg-transparent placeholder:text-neutral-muted"
           placeholder="Search..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -142,7 +142,7 @@ export function SearchableSelect({
       
       <div className="flex-1 overflow-y-auto p-1">
         {filteredOptions.length === 0 ? (
-          <div className="py-3 text-center text-sm text-slate-500">
+          <div className="py-3 text-center text-sm text-neutral-muted">
             No results found.
           </div>
         ) : (
@@ -153,12 +153,12 @@ export function SearchableSelect({
               onClick={() => handleSelect(opt.value)}
               className={`w-full flex items-center justify-between rounded-md px-2 py-1.5 text-sm transition-colors text-left ${
                 selectedValue === opt.value
-                  ? "bg-teal-50 text-teal-700 font-semibold"
-                  : "text-slate-700 hover:bg-slate-100"
+                  ? "bg-brand-pale text-brand-default font-semibold"
+                  : "text-neutral-text hover:bg-slate-100"
               }`}
             >
               <span className="truncate">{opt.label}</span>
-              {selectedValue === opt.value && <Check className="size-4 shrink-0 text-teal-600" />}
+              {selectedValue === opt.value && <Check className="size-4 shrink-0 text-brand-default" />}
             </button>
           ))
         )}
@@ -175,12 +175,12 @@ export function SearchableSelect({
         id={id}
         disabled={disabled}
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none transition focus:border-teal-500 focus:ring-1 focus:ring-teal-500 disabled:opacity-60"
+        className="w-full flex items-center justify-between rounded-lg border border-neutral-border bg-neutral-surface px-3 py-2 text-sm text-neutral-text shadow-sm outline-none transition focus:border-brand-default focus:ring-1 focus:ring-brand-default/50 disabled:opacity-60"
       >
-        <span className={`truncate ${!selectedOption ? "text-slate-400" : ""}`}>
+        <span className={`truncate ${!selectedOption ? "text-neutral-muted" : ""}`}>
           {selectedOption ? selectedOption.label : placeholder}
         </span>
-        <ChevronDown className={`size-4 shrink-0 text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+        <ChevronDown className={`size-4 shrink-0 text-neutral-muted transition-transform ${isOpen ? "rotate-180" : ""}`} />
       </button>
 
       {isOpen && typeof document !== "undefined" && createPortal(menu, document.body)}

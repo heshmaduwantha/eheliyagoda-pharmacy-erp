@@ -120,7 +120,7 @@ export function GrnForm({
 
       <div className="grid gap-3">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-bold text-slate-700">Items</h3>
+          <h3 className="text-sm font-bold text-neutral-text">Items</h3>
           <button
             className="inline-flex items-center gap-1.5 rounded-lg border border-brand-default bg-brand-pale px-3 py-1.5 text-xs font-bold text-brand-hover"
             onClick={() => setLines((rows) => [...rows, emptyLine()])}
@@ -130,7 +130,7 @@ export function GrnForm({
           </button>
         </div>
         {state.status === "error" && state.fieldErrors?.lines && (
-          <p className="text-xs font-semibold text-red-600">{state.fieldErrors.lines}</p>
+          <p className="text-xs font-semibold text-status-danger-text">{state.fieldErrors.lines}</p>
         )}
 
         <div className="overflow-x-auto rounded-2xl border border-neutral-border">
@@ -198,7 +198,7 @@ export function GrnForm({
             </tfoot>
           </table>
         </div>
-        <p className="text-xs text-slate-400">A system batch number is always generated and used for stock tracking. Supplier batch/lot is optional, but enter the value printed on the supplier invoice or medicine pack when available. Medicine items still require an expiry date and MRP; selling price cannot exceed MRP.</p>
+        <p className="text-xs text-neutral-muted">A system batch number is always generated and used for stock tracking. Supplier batch/lot is optional, but enter the value printed on the supplier invoice or medicine pack when available. Medicine items still require an expiry date and MRP; selling price cannot exceed MRP.</p>
       </div>
 
       <FormAlert state={state} />

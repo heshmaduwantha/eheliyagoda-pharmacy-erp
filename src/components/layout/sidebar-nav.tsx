@@ -36,13 +36,13 @@ export function SidebarNav({ permissions, mobile = false }: { permissions: strin
 
   if (mobile) {
     return (
-      <nav className="fixed inset-x-3 bottom-3 z-50 flex justify-around rounded-2xl border border-slate-200 bg-white/95 p-2 shadow-[0_14px_45px_rgba(15,23,42,.18)] backdrop-blur lg:hidden">
+      <nav className="fixed inset-x-3 bottom-3 z-50 flex justify-around rounded-2xl border border-neutral-border bg-neutral-surface/95 p-2 shadow-[0_14px_45px_rgba(15,23,42,.18)] backdrop-blur lg:hidden">
         {available.slice(0, 5).map(({ label, href, icon: Icon }) => {
           const active = activeHref === href;
           return (
             <Link
               aria-label={label}
-              className={`grid min-w-14 place-items-center gap-1 rounded-xl px-2 py-1.5 text-[10px] font-semibold ${active ? "bg-teal-50 text-teal-700" : "text-slate-500"}`}
+              className={`grid min-w-14 place-items-center gap-1 rounded-xl px-2 py-1.5 text-[10px] font-semibold ${active ? "bg-brand-pale text-brand-default" : "text-neutral-muted"}`}
               href={href}
               key={href}
             >
@@ -67,7 +67,7 @@ export function SidebarNav({ permissions, mobile = false }: { permissions: strin
       {Object.entries(groups).map(([groupName, groupItems]) => (
         <div key={groupName} className="grid gap-0.5">
           {groupName !== "Main" && (
-            <p className="mb-0.5 ml-3 text-[10px] font-bold uppercase tracking-widest text-teal-100/40">
+            <p className="mb-0.5 ml-3 text-[10px] font-bold uppercase tracking-widest text-brand-default/40">
               {groupName}
             </p>
           )}
@@ -76,7 +76,7 @@ export function SidebarNav({ permissions, mobile = false }: { permissions: strin
             return (
               <Link
                 className={`group flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition ${
-                  active ? "bg-teal-600 text-white shadow-sm" : "text-teal-50/80 hover:bg-white/10 hover:text-white"
+                  active ? "bg-brand-pale text-brand-hover shadow-sm" : "text-neutral-text hover:bg-neutral-bg hover:text-brand-hover"
                 }`}
                 href={href}
                 key={href}

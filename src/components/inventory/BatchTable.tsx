@@ -9,9 +9,9 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { toast } from "sonner";
 
 const statusStyle: Record<InventoryBatchStatus, string> = {
-  ACTIVE: "bg-emerald-50 text-emerald-700",
-  QUARANTINED: "bg-red-50 text-red-700",
-  DEPLETED: "bg-slate-100 text-slate-500",
+  ACTIVE: "bg-status-success-bg text-status-success-text",
+  QUARANTINED: "bg-status-danger-bg text-status-danger-text",
+  DEPLETED: "bg-slate-100 text-neutral-muted",
 };
 
 export function BatchTable({ rows }: { rows: InventoryBatchRecord[] }) {
@@ -37,13 +37,13 @@ export function BatchTable({ rows }: { rows: InventoryBatchRecord[] }) {
   };
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_8px_30px_rgba(15,51,58,.05)]">
+    <section className="overflow-hidden rounded-2xl border border-neutral-border bg-neutral-surface shadow-[0_8px_30px_rgba(15,51,58,.05)]">
       <div className="overflow-x-auto">
         <table className="w-full min-w-[1200px] border-collapse text-left text-sm">
-          <thead className="bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
+          <thead className="bg-neutral-bg text-xs uppercase tracking-wider text-neutral-muted">
             <tr>
               {["Product", "System Batch", "Supplier Lot", "Expiry Date", "MRP", "Cost Price", "Selling Price", "Qty On Hand Base", "Status", "Actions"].map((heading) => (
-                <th className="border-b border-slate-200 px-5 py-4 font-bold" key={heading}>
+                <th className="border-b border-neutral-border px-5 py-4 font-bold" key={heading}>
                   {heading}
                 </th>
               ))}
@@ -58,39 +58,39 @@ export function BatchTable({ rows }: { rows: InventoryBatchRecord[] }) {
                 daysLeft = (expDate.getTime() - todayMs) / (1000 * 60 * 60 * 24);
               }
 
-              let dateColorClass = "text-slate-600";
+              let dateColorClass = "text-neutral-muted";
               const isExpired = daysLeft !== null && daysLeft < 0;
               const isNearExpiry = daysLeft !== null && daysLeft >= 0 && daysLeft <= 30;
 
               if (batch.status === "ACTIVE" || batch.status === "QUARANTINED") {
                 if (isExpired) {
-                  dateColorClass = "font-bold text-red-600";
+                  dateColorClass = "font-bold text-status-danger-text";
                 } else if (isNearExpiry) {
-                  dateColorClass = "font-bold text-amber-600";
+                  dateColorClass = "font-bold text-status-warning-text";
                 }
               }
 
               const canRemove = isExpired && batch.status !== "DEPLETED" && Number(batch.qtyOnHandBase) > 0;
 
               return (
-                <tr className="hover:bg-teal-50/30" key={batch.id}>
+                <tr className="hover:bg-brand-pale/30" key={batch.id}>
                   <td className="px-5 py-4">
-                    <strong className="block text-slate-800">{batch.productName}</strong>
-                    <span className="mt-1 block text-xs text-slate-400">
+                    <strong className="block text-neutral-text">{batch.productName}</strong>
+                    <span className="mt-1 block text-xs text-neutral-muted">
                       {batch.primaryBarcode ? `Barcode: ${batch.primaryBarcode}` : batch.baseUnit}
                     </span>
                   </td>
-                  <td className="px-5 py-4 font-semibold text-slate-700">{batch.batchNumber ?? "—"}</td>
-                  <td className="px-5 py-4 font-semibold text-slate-600">{batch.supplierLotNumber ?? "—"}</td>
+                  <td className="px-5 py-4 font-semibold text-neutral-text">{batch.batchNumber ?? "—"}</td>
+                  <td className="px-5 py-4 font-semibold text-neutral-muted">{batch.supplierLotNumber ?? "—"}</td>
                   <td className={`px-5 py-4 ${dateColorClass}`}>
                     {formatInventoryDate(batch.expiryDate)}
                   </td>
-                  <td className="px-5 py-4 text-slate-600">{formatInventoryMoney(batch.mrp)}</td>
-                  <td className="px-5 py-4 text-slate-600">{formatInventoryMoney(batch.costPrice)}</td>
-                  <td className="px-5 py-4 font-semibold text-slate-700">{formatInventoryMoney(batch.sellingPrice)}</td>
+                  <td className="px-5 py-4 text-neutral-muted">{formatInventoryMoney(batch.mrp)}</td>
+                  <td className="px-5 py-4 text-neutral-muted">{formatInventoryMoney(batch.costPrice)}</td>
+                  <td className="px-5 py-4 font-semibold text-neutral-text">{formatInventoryMoney(batch.sellingPrice)}</td>
                   <td className="px-5 py-4">
-                    <strong className="text-slate-800">{formatInventoryQty(batch.qtyOnHandBase)}</strong>
-                    <span className="ml-1 text-xs text-slate-400">{batch.baseUnit}</span>
+                    <strong className="text-neutral-text">{formatInventoryQty(batch.qtyOnHandBase)}</strong>
+                    <span className="ml-1 text-xs text-neutral-muted">{batch.baseUnit}</span>
                   </td>
                   <td className="px-5 py-4">
                     <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${statusStyle[batch.status]}`}>
@@ -103,7 +103,7 @@ export function BatchTable({ rows }: { rows: InventoryBatchRecord[] }) {
                         type="button"
                         onClick={() => setWriteOffBatchId(batch.id)}
                         disabled={isPending}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 transition-colors hover:bg-red-100 disabled:opacity-50"
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-status-danger-bg px-3 py-1.5 text-xs font-semibold text-status-danger-text transition-colors hover:bg-red-100 disabled:opacity-50"
                         title="Remove expired stock"
                       >
                         <Trash2 className="size-3.5" />
@@ -118,7 +118,7 @@ export function BatchTable({ rows }: { rows: InventoryBatchRecord[] }) {
             })}
             {rows.length === 0 && (
               <tr>
-                <td className="px-5 py-16 text-center text-slate-400" colSpan={10}>
+                <td className="px-5 py-16 text-center text-neutral-muted" colSpan={10}>
                   No batches found.
                 </td>
               </tr>

@@ -38,10 +38,10 @@ function monthRange() {
 function ReportMessage({ message, warnings = [] }: { message?: string; warnings?: string[] }) {
   if (!message && warnings.length === 0) return null;
   return (
-    <div className="rounded-xl border border-amber-100 bg-amber-50 p-4 text-sm text-amber-900">
+    <div className="rounded-xl border border-status-warning-bg bg-status-warning-bg p-4 text-sm text-status-warning-text">
       {message ? <p className="font-bold">{message}</p> : null}
       {warnings.map((warning) => (
-        <p className="mt-1 text-amber-800/80" key={warning}>{warning}</p>
+        <p className="mt-1 text-status-warning-text/80" key={warning}>{warning}</p>
       ))}
     </div>
   );
@@ -244,7 +244,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
     const report = await getControlledDrugRegister(actor.id);
     content = (
       <div className="grid gap-4">
-        <div className="flex items-start gap-3 rounded-xl border border-red-100 bg-red-50 p-4 text-sm text-red-800">
+        <div className="flex items-start gap-3 rounded-xl border border-red-100 bg-status-danger-bg p-4 text-sm text-status-danger-text">
           <ShieldAlert className="mt-0.5 size-5 shrink-0" />
           <p>
             <strong>Sensitive register.</strong> Viewing this report is permission-gated and audit-logged.
@@ -265,9 +265,9 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
             Reports
           </h1>
           {heroSentence ? (
-            <p className="mt-2 font-semibold text-teal-700">{heroSentence}</p>
+            <p className="mt-2 font-semibold text-brand-default">{heroSentence}</p>
           ) : (
-            <p className="mt-2 text-slate-500">View and generate analytics reports</p>
+            <p className="mt-2 text-neutral-muted">View and generate analytics reports</p>
           )}
         </div>
       </div>
@@ -280,8 +280,8 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
             href={`/reports?type=${type}&range=${tab.key}`}
             className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
               activeRangeKey === tab.key && !hasCustomRange
-                ? "bg-teal-600 text-white"
-                : "border border-slate-200 bg-white text-slate-600 hover:border-teal-200 hover:text-teal-700"
+                ? "bg-brand-default text-white"
+                : "border border-neutral-border bg-neutral-surface text-neutral-muted hover:border-brand-default/20 hover:text-brand-default"
             }`}
           >
             {tab.label}
@@ -297,8 +297,8 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
             href={`/reports?type=${key}&range=${activeRangeKey}`}
             className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
               type === key
-                ? "border-teal-200 bg-teal-50 text-teal-700"
-                : "border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:text-slate-700"
+                ? "border-brand-default/20 bg-brand-pale text-brand-default"
+                : "border-neutral-border bg-neutral-surface text-neutral-muted hover:border-neutral-border hover:text-neutral-text"
             }`}
           >
             {label}
@@ -307,9 +307,9 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
       </div>
 
       {/* Advanced filters (always expanded now) */}
-      <div className="rounded-xl border border-slate-200 bg-white">
+      <div className="rounded-xl border border-neutral-border bg-neutral-surface">
         <div className="px-4 pb-4 pt-4">
-          <p className="mb-4 text-sm font-bold text-slate-700">Advanced filters (custom date range)</p>
+          <p className="mb-4 text-sm font-bold text-neutral-text">Advanced filters (custom date range)</p>
           <ReportFilter range={range} type={type} />
         </div>
       </div>

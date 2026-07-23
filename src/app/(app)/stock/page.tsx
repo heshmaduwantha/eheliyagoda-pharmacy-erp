@@ -31,43 +31,43 @@ export default async function StockPage() {
       {/* Metric Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {/* Active Products */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_8px_30px_rgba(15,51,58,.04)]">
-          <div className="mb-4 inline-flex size-10 items-center justify-center rounded-xl bg-teal-50 text-teal-700">
+        <div className="rounded-2xl border border-neutral-border bg-neutral-surface p-5 shadow-[0_8px_30px_rgba(15,51,58,.04)]">
+          <div className="mb-4 inline-flex size-10 items-center justify-center rounded-xl bg-brand-pale text-brand-default">
             <Boxes className="size-5" />
           </div>
-          <p className="text-sm font-bold text-slate-500">Active products</p>
-          <p className="mt-1 text-3xl font-black tracking-tight text-slate-900">{summary.totalActiveProducts}</p>
-          <p className="mt-2 text-xs font-medium text-slate-400">Active catalogue records</p>
+          <p className="text-sm font-bold text-neutral-muted">Active products</p>
+          <p className="mt-1 text-3xl font-black tracking-tight text-neutral-text">{summary.totalActiveProducts}</p>
+          <p className="mt-2 text-xs font-medium text-neutral-muted">Active catalogue records</p>
         </div>
 
         {/* Low Stock */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_8px_30px_rgba(15,51,58,.04)]">
-          <div className="mb-4 inline-flex size-10 items-center justify-center rounded-xl bg-amber-50 text-amber-700">
+        <div className="rounded-2xl border border-neutral-border bg-neutral-surface p-5 shadow-[0_8px_30px_rgba(15,51,58,.04)]">
+          <div className="mb-4 inline-flex size-10 items-center justify-center rounded-xl bg-status-warning-bg text-status-warning-text">
             <AlertTriangle className="size-5" />
           </div>
-          <p className="text-sm font-bold text-slate-500">Low stock</p>
-          <p className="mt-1 text-3xl font-black tracking-tight text-slate-900">{summary.lowStockCount}</p>
-          <p className="mt-2 text-xs font-medium text-slate-400">At or below reorder level</p>
+          <p className="text-sm font-bold text-neutral-muted">Low stock</p>
+          <p className="mt-1 text-3xl font-black tracking-tight text-neutral-text">{summary.lowStockCount}</p>
+          <p className="mt-2 text-xs font-medium text-neutral-muted">At or below reorder level</p>
         </div>
 
         {/* Near Expiry */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_8px_30px_rgba(15,51,58,.04)]">
+        <div className="rounded-2xl border border-neutral-border bg-neutral-surface p-5 shadow-[0_8px_30px_rgba(15,51,58,.04)]">
           <div className="mb-4 inline-flex size-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
             <CalendarClock className="size-5" />
           </div>
-          <p className="text-sm font-bold text-slate-500">Near expiry</p>
-          <p className="mt-1 text-3xl font-black tracking-tight text-slate-900">{summary.nearExpiryCount}</p>
-          <p className="mt-2 text-xs font-medium text-slate-400">Active batches within 30 days</p>
+          <p className="text-sm font-bold text-neutral-muted">Near expiry</p>
+          <p className="mt-1 text-3xl font-black tracking-tight text-neutral-text">{summary.nearExpiryCount}</p>
+          <p className="mt-2 text-xs font-medium text-neutral-muted">Active batches within 30 days</p>
         </div>
 
         {/* Expired / Quarantined */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_8px_30px_rgba(15,51,58,.04)]">
-          <div className="mb-4 inline-flex size-10 items-center justify-center rounded-xl bg-red-50 text-red-600">
+        <div className="rounded-2xl border border-neutral-border bg-neutral-surface p-5 shadow-[0_8px_30px_rgba(15,51,58,.04)]">
+          <div className="mb-4 inline-flex size-10 items-center justify-center rounded-xl bg-status-danger-bg text-status-danger-text">
             <ShieldAlert className="size-5" />
           </div>
-          <p className="text-sm font-bold text-slate-500">Expired / quarantined</p>
-          <p className="mt-1 text-3xl font-black tracking-tight text-slate-900">{summary.expiredOrQuarantinedCount}</p>
-          <p className="mt-2 text-xs font-medium text-slate-400">Batches requiring attention</p>
+          <p className="text-sm font-bold text-neutral-muted">Expired / quarantined</p>
+          <p className="mt-1 text-3xl font-black tracking-tight text-neutral-text">{summary.expiredOrQuarantinedCount}</p>
+          <p className="mt-2 text-xs font-medium text-neutral-muted">Batches requiring attention</p>
         </div>
       </div>
 
@@ -75,10 +75,10 @@ export default async function StockPage() {
       <section>
         <div className="mb-3 flex items-center justify-between">
           <div>
-            <h2 className="text-base font-bold text-slate-800">Stock overview</h2>
-            <p className="mt-1 text-xs text-slate-500">Total quantity by item. Use Batch register for individual batch details.</p>
+            <h2 className="text-base font-bold text-neutral-text">Stock overview</h2>
+            <p className="mt-1 text-xs text-neutral-muted">Total quantity by item. Use Batch register for individual batch details.</p>
           </div>
-          <Link className="flex items-center gap-1 text-sm font-semibold text-teal-700 hover:underline" href="/stock/batches">
+          <Link className="flex items-center gap-1 text-sm font-semibold text-brand-default hover:underline" href="/stock/batches">
             View all batches <ArrowRight className="size-4" />
           </Link>
         </div>

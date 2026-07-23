@@ -38,34 +38,34 @@ export function RoleForm({ role }: RoleFormProps) {
         <Field htmlFor="description" label="Description">
           <input className={inputClass} defaultValue={role?.description ?? ""} id="description" name="description" placeholder="Optional role note" />
         </Field>
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-          <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Status</p>
-          <label className={`mt-3 inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold ${isOwnerRole ? "border-amber-200 bg-amber-50 text-amber-800" : "border-slate-200 bg-white text-slate-700"}`}>
+        <div className="rounded-2xl border border-neutral-border bg-neutral-bg p-4">
+          <p className="text-xs font-bold uppercase tracking-wide text-neutral-muted">Status</p>
+          <label className={`mt-3 inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold ${isOwnerRole ? "border-status-warning-bg bg-status-warning-bg text-status-warning-text" : "border-neutral-border bg-neutral-surface text-neutral-text"}`}>
             {isOwnerRole ? <input name="isActive" type="hidden" value="on" /> : null}
             <input defaultChecked={role?.isActive ?? true} disabled={isOwnerRole} name="isActive" type="checkbox" />
             Active
           </label>
-          {isOwnerRole ? <p className="mt-2 text-xs font-semibold text-amber-700">Owner permissions are locked to the full registry.</p> : null}
+          {isOwnerRole ? <p className="mt-2 text-xs font-semibold text-status-warning-text">Owner permissions are locked to the full registry.</p> : null}
         </div>
       </div>
 
-      <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="rounded-3xl border border-neutral-border bg-neutral-surface p-5 shadow-sm">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Permission matrix</p>
-            <h3 className="mt-1 text-lg font-black text-slate-900">Grouped by module</h3>
+            <p className="text-xs font-bold uppercase tracking-wide text-neutral-muted">Permission matrix</p>
+            <h3 className="mt-1 text-lg font-black text-neutral-text">Grouped by module</h3>
           </div>
-          <p className="text-xs text-slate-500">{permissionRegistry.length} seeded permissions</p>
+          <p className="text-xs text-neutral-muted">{permissionRegistry.length} seeded permissions</p>
         </div>
         <div className="mt-5 grid gap-4">
           {groups.map((group) => (
-            <section className="rounded-2xl border border-slate-200 bg-slate-50 p-4" key={group.module}>
+            <section className="rounded-2xl border border-neutral-border bg-neutral-bg p-4" key={group.module}>
               <div className="flex items-center justify-between gap-3">
-                <h4 className="text-sm font-bold uppercase tracking-widest text-teal-700">{group.module}</h4>
+                <h4 className="text-sm font-bold uppercase tracking-widest text-brand-default">{group.module}</h4>
                 <div className="flex items-center gap-3">
                   {!isOwnerRole && (
                     <button
-                      className="inline-flex items-center gap-1 rounded bg-teal-100 font-bold uppercase tracking-wider text-teal-700 transition hover:bg-teal-200"
+                      className="inline-flex items-center gap-1 rounded bg-brand-pale font-bold uppercase tracking-wider text-brand-default transition hover:bg-brand-pale"
                       style={{ fontSize: "9px", padding: "2px 6px" }}
                       type="button"
                       onClick={(e) => {
@@ -84,12 +84,12 @@ export function RoleForm({ role }: RoleFormProps) {
                       Select all
                     </button>
                   )}
-                  <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-500">{group.permissions.length} permissions</span>
+                  <span className="rounded-full bg-neutral-surface px-3 py-1 text-xs font-semibold text-neutral-muted">{group.permissions.length} permissions</span>
                 </div>
               </div>
               <div className="mt-4 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
                 {group.permissions.map((permission) => (
-                  <label className={`flex items-start gap-3 rounded-xl border px-3 py-3 text-sm ${permission.isSensitive ? "border-rose-200 bg-rose-50" : "border-slate-200 bg-white"}`} key={permission.code}>
+                  <label className={`flex items-start gap-3 rounded-xl border px-3 py-3 text-sm ${permission.isSensitive ? "border-status-danger-bg bg-status-danger-bg" : "border-neutral-border bg-neutral-surface"}`} key={permission.code}>
                     <input
                       defaultChecked={isOwnerRole || selectedCodes.has(permission.code)}
                       disabled={isOwnerRole}
@@ -98,11 +98,11 @@ export function RoleForm({ role }: RoleFormProps) {
                       value={permission.code}
                     />
                     <span className="min-w-0">
-                      <span className="block font-semibold text-slate-800">{permission.code}</span>
-                      <span className="mt-0.5 block text-xs text-slate-500">{permission.description}</span>
-                      <span className="mt-1 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-[.18em] text-slate-400">
+                      <span className="block font-semibold text-neutral-text">{permission.code}</span>
+                      <span className="mt-0.5 block text-xs text-neutral-muted">{permission.description}</span>
+                      <span className="mt-1 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-[.18em] text-neutral-muted">
                         {permission.resource}.{permission.action}
-                        {permission.isSensitive ? <span className="text-rose-600">Sensitive</span> : null}
+                        {permission.isSensitive ? <span className="text-status-danger-text">Sensitive</span> : null}
                       </span>
                     </span>
                   </label>

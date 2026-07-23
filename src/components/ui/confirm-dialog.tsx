@@ -37,36 +37,36 @@ export function ConfirmDialog({
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm">
       <div 
-        className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+        className="w-full max-w-md overflow-hidden rounded-2xl bg-neutral-surface shadow-2xl animate-in fade-in zoom-in-95 duration-200"
         role="dialog"
         aria-modal="true"
       >
-        <div className="flex items-start justify-between border-b border-slate-100 p-5">
+        <div className="flex items-start justify-between border-b border-neutral-border p-5">
           <div className="flex items-center gap-3">
-            <div className={`flex size-10 shrink-0 items-center justify-center rounded-full ${isDestructive ? 'bg-red-50 text-red-600' : 'bg-teal-50 text-teal-600'}`}>
+            <div className={`flex size-10 shrink-0 items-center justify-center rounded-full ${isDestructive ? 'bg-status-danger-bg text-status-danger-text' : 'bg-brand-pale text-brand-default'}`}>
               <AlertTriangle className="size-5" />
             </div>
-            <h2 className="text-lg font-bold text-slate-800">{title}</h2>
+            <h2 className="text-lg font-bold text-neutral-text">{title}</h2>
           </div>
           <button
             onClick={onClose}
             disabled={isPending}
-            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
+            className="rounded-lg p-1.5 text-neutral-muted hover:bg-slate-100 hover:text-neutral-muted transition-colors"
           >
             <X className="size-5" />
           </button>
         </div>
         
         <div className="p-5">
-          <p className="text-sm text-slate-600">{description}</p>
+          <p className="text-sm text-neutral-muted">{description}</p>
         </div>
 
-        <div className="flex items-center justify-end gap-3 bg-slate-50 p-5">
+        <div className="flex items-center justify-end gap-3 bg-neutral-bg p-5">
           <button
             type="button"
             onClick={onClose}
             disabled={isPending}
-            className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 hover:text-slate-900 disabled:opacity-50"
+            className="rounded-xl border border-neutral-border bg-neutral-surface px-4 py-2 text-sm font-semibold text-neutral-text shadow-sm transition-colors hover:bg-neutral-bg hover:text-neutral-text disabled:opacity-50"
           >
             {cancelText}
           </button>
@@ -77,7 +77,7 @@ export function ConfirmDialog({
             className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold text-white shadow-sm transition-all disabled:opacity-50 ${
               isDestructive
                 ? "bg-red-600 hover:bg-red-700 hover:shadow-red-600/20"
-                : "bg-teal-600 hover:bg-teal-700 hover:shadow-teal-600/20"
+                : "bg-brand-default hover:bg-brand-default hover:shadow-teal-600/20"
             }`}
           >
             {isPending ? (

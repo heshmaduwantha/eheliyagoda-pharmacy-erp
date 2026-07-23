@@ -21,21 +21,21 @@ export function Pagination({ currentPage, totalPages, baseUrl, queryParams }: Pa
   };
 
   return (
-    <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/50 px-5 py-3">
-      <p className="text-xs text-slate-500">
-        Showing page <span className="font-semibold text-slate-800">{currentPage}</span> of <span className="font-semibold text-slate-800">{totalPages}</span>
+    <div className="flex items-center justify-between border-t border-neutral-border bg-neutral-bg/50 px-5 py-3">
+      <p className="text-xs text-neutral-muted">
+        Showing page <span className="font-semibold text-neutral-text">{currentPage}</span> of <span className="font-semibold text-neutral-text">{totalPages}</span>
       </p>
       
       <div className="flex items-center gap-2">
         {currentPage > 1 ? (
           <Link
             href={createUrl(currentPage - 1)}
-            className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+            className="inline-flex items-center gap-1 rounded-md border border-neutral-border bg-neutral-surface px-3 py-1.5 text-xs font-semibold text-neutral-text transition hover:bg-neutral-bg"
           >
             <ChevronLeft className="size-3.5" /> Previous
           </Link>
         ) : (
-          <button disabled className="inline-flex items-center gap-1 rounded-md border border-slate-100 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-400">
+          <button disabled className="inline-flex items-center gap-1 rounded-md border border-neutral-border bg-neutral-bg px-3 py-1.5 text-xs font-semibold text-neutral-muted">
             <ChevronLeft className="size-3.5" /> Previous
           </button>
         )}
@@ -43,12 +43,12 @@ export function Pagination({ currentPage, totalPages, baseUrl, queryParams }: Pa
         {currentPage < totalPages ? (
           <Link
             href={createUrl(currentPage + 1)}
-            className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+            className="inline-flex items-center gap-1 rounded-md border border-neutral-border bg-neutral-surface px-3 py-1.5 text-xs font-semibold text-neutral-text transition hover:bg-neutral-bg"
           >
             Next <ChevronRight className="size-3.5" />
           </Link>
         ) : (
-          <button disabled className="inline-flex items-center gap-1 rounded-md border border-slate-100 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-400">
+          <button disabled className="inline-flex items-center gap-1 rounded-md border border-neutral-border bg-neutral-bg px-3 py-1.5 text-xs font-semibold text-neutral-muted">
             Next <ChevronRight className="size-3.5" />
           </button>
         )}

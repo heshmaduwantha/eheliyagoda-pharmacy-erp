@@ -12,7 +12,7 @@ export function TrainingProgressButton({ lessonKey, stepCount, completed }: { le
   return (
     <div className="print:hidden">
       <button
-        className={`inline-flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-bold transition sm:w-auto ${isCompleted ? "border border-emerald-200 bg-emerald-50 text-emerald-700" : "bg-teal-700 text-white shadow-lg shadow-teal-900/15"}`}
+        className={`inline-flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-bold transition sm:w-auto ${isCompleted ? "border border-status-success-bg bg-status-success-bg text-status-success-text" : "bg-brand-default text-white shadow-lg shadow-teal-900/15"}`}
         disabled={pending || isCompleted}
         onClick={() => startTransition(async () => {
           setNotice(null);
@@ -25,7 +25,7 @@ export function TrainingProgressButton({ lessonKey, stepCount, completed }: { le
         {pending ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}
         {isCompleted ? "පාඩම සම්පූර්ණයි" : "පාඩම සම්පූර්ණ ලෙස සලකුණු කරන්න"}
       </button>
-      {notice ? <p className="mt-2 text-sm font-semibold text-rose-700">{notice}</p> : null}
+      {notice ? <p className="mt-2 text-sm font-semibold text-status-danger-text">{notice}</p> : null}
     </div>
   );
 }

@@ -31,7 +31,7 @@ export function SupplierStatusToggle({ supplierId, supplierName, isActive }: Sup
   return (
     <>
       <button
-        className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${isActive ? "border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100" : "border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"}`}
+        className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${isActive ? "border border-status-danger-bg bg-status-danger-bg text-status-danger-text hover:bg-status-danger-bg" : "border border-status-success-bg bg-status-success-bg text-status-success-text hover:bg-status-success-bg"}`}
         disabled={isPending}
         onClick={() => setIsOpen(true)}
         type="button"

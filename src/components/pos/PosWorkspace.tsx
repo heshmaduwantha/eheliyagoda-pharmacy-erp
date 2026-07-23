@@ -273,10 +273,10 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
         <div
           className={`mt-5 flex items-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold ${
             notice.tone === "success"
-              ? "border-emerald-100 bg-emerald-50 text-emerald-700"
+              ? "border-status-success-bg bg-status-success-bg text-status-success-text"
               : notice.tone === "warning"
-                ? "border-amber-100 bg-amber-50 text-amber-700"
-                : "border-rose-100 bg-rose-50 text-rose-700"
+                ? "border-status-warning-bg bg-status-warning-bg text-status-warning-text"
+                : "border-status-danger-bg bg-status-danger-bg text-status-danger-text"
           }`}
         >
           {notice.tone === "success" ? (

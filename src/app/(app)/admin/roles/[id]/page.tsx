@@ -17,13 +17,13 @@ export default async function AdminRoleDetailPage({ params }: { params: Promise<
         <div>
           <h1 className="text-3xl font-black tracking-tight text-neutral-text">{role.name}</h1>
         </div>
-        <Link className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 shadow-sm" href="/admin/roles">
+        <Link className="inline-flex items-center gap-2 rounded-xl border border-neutral-border bg-neutral-surface px-4 py-3 text-sm font-bold text-neutral-text shadow-sm" href="/admin/roles">
           <ArrowLeft className="size-4" />
           Back
         </Link>
       </div>
 
-      <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-[0_14px_50px_rgba(15,51,58,.06)] sm:p-8">
+      <section className="rounded-3xl border border-neutral-border bg-neutral-surface p-6 shadow-[0_14px_50px_rgba(15,51,58,.06)] sm:p-8">
         <RoleForm role={role} />
       </section>
     </div>

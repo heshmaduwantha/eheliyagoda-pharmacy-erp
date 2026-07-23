@@ -40,37 +40,37 @@ export default async function SupplierPaymentsPage({ searchParams }: { searchPar
       </div>
 
       {/* Hero — you owe */}
-      <div className="flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-4 shadow-sm">
+      <div className="flex items-center justify-between rounded-xl border border-status-success-bg bg-status-success-bg px-5 py-4 shadow-sm">
         <div>
-          <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-emerald-700">
+          <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-status-success-text">
             <span>💸</span> You currently owe
           </p>
-          <p className="mt-1 text-sm font-medium text-emerald-600/80">
+          <p className="mt-1 text-sm font-medium text-status-success-text/80">
             Across {payables.summary?.invoiceCount ?? 0} outstanding invoice{(payables.summary?.invoiceCount ?? 0) === 1 ? "" : "s"}
           </p>
         </div>
-        <div className="text-2xl font-black tracking-tight text-emerald-900">{outstandingTotal}</div>
+        <div className="text-2xl font-black tracking-tight text-status-success-text">{outstandingTotal}</div>
       </div>
 
       {/* Overdue alert */}
       {overdueCount > 0 && (
-        <div className="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-800">
+        <div className="flex items-center gap-3 rounded-xl border border-red-200 bg-status-danger-bg px-4 py-3 text-sm font-semibold text-status-danger-text">
           <AlertTriangle className="size-4 shrink-0" />
           {overdueCount} invoice{overdueCount === 1 ? "" : "s"} are overdue — payment due date has passed
         </div>
       )}
 
       {/* Payment form */}
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
-        <h2 className="mb-4 text-base font-bold text-slate-800">Make a payment</h2>
+      <section className="rounded-2xl border border-neutral-border bg-neutral-surface p-5 sm:p-6">
+        <h2 className="mb-4 text-base font-bold text-neutral-text">Make a payment</h2>
         <SupplierPaymentForm invoices={openInvoices} />
       </section>
 
       {/* Payment history */}
-      <section className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+      <section className="rounded-xl border border-neutral-border bg-neutral-surface shadow-sm overflow-hidden">
         <div className="p-5">
-          <h2 className="mb-1 text-base font-bold text-slate-800">Payments this month</h2>
-          <p className="text-sm text-slate-500">
+          <h2 className="mb-1 text-base font-bold text-neutral-text">Payments this month</h2>
+          <p className="text-sm text-neutral-muted">
             {report.summary?.paymentCount ?? 0} payment{(report.summary?.paymentCount ?? 0) === 1 ? "" : "s"} ·{" "}
             {formatMoney(report.summary?.totalAmount ?? "0.00")} total
           </p>

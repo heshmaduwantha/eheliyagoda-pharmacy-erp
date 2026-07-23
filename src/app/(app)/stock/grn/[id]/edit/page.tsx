@@ -44,7 +44,7 @@ export default async function EditGrnDraftPage({ params }: { params: Promise<{ i
     <div className="mx-auto max-w-5xl">
       <PageHeader
         action={
-          <Link className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600" href={`/stock/grn/${grn.id}`}>
+          <Link className="inline-flex items-center gap-2 rounded-xl border border-neutral-border bg-neutral-surface px-4 py-2 text-sm font-semibold text-neutral-muted" href={`/stock/grn/${grn.id}`}>
             <ArrowLeft className="size-4" /> Cancel
           </Link>
         }

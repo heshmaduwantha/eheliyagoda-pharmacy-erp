@@ -57,14 +57,14 @@ export function ExpenseForm() {
       </div>
 
       {/* More options inline */}
-      <details className="rounded-lg border border-slate-200 bg-slate-50 group">
-        <summary className="flex cursor-pointer items-center justify-between px-3 py-2.5 text-xs font-semibold text-slate-600 marker:content-none">
+      <details className="rounded-lg border border-neutral-border bg-neutral-bg group">
+        <summary className="flex cursor-pointer items-center justify-between px-3 py-2.5 text-xs font-semibold text-neutral-muted marker:content-none">
           <div className="flex items-center gap-1.5">
-            <ChevronDown className="size-3.5 text-slate-400 group-open:rotate-180 transition-transform" />
-            More options <span className="font-normal text-slate-400">(date, category, reference, notes)</span>
+            <ChevronDown className="size-3.5 text-neutral-muted group-open:rotate-180 transition-transform" />
+            More options <span className="font-normal text-neutral-muted">(date, category, reference, notes)</span>
           </div>
         </summary>
-        <div className="grid gap-3 border-t border-slate-200 p-3 sm:grid-cols-4">
+        <div className="grid gap-3 border-t border-neutral-border p-3 sm:grid-cols-4">
           <Field htmlFor="date" label="Date" error={state.status === "error" ? state.fieldErrors?.date : undefined}>
             <input className={inputClass} defaultValue={date} id="date" name="date" type="date" required />
           </Field>

@@ -18,8 +18,8 @@ export default async function SuppliersPage({ searchParams }: { searchParams: Pr
       <h1 className="text-3xl font-black tracking-tight text-neutral-text sm:text-4xl">Suppliers</h1>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <form className="flex w-full max-w-sm items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm">
-          <Search className="size-4 text-slate-400" />
+        <form className="flex w-full max-w-sm items-center gap-2 rounded-xl border border-neutral-border bg-neutral-surface px-3 py-2 shadow-sm">
+          <Search className="size-4 text-neutral-muted" />
           <input
             className="bg-transparent text-sm outline-none w-full"
             defaultValue={q}
@@ -28,7 +28,7 @@ export default async function SuppliersPage({ searchParams }: { searchParams: Pr
           />
         </form>
         <Link
-          className="inline-flex items-center gap-2 rounded-lg border border-teal-200 bg-white px-4 py-2 text-sm font-semibold text-teal-700 shadow-sm transition hover:bg-teal-50"
+          className="inline-flex items-center gap-2 rounded-lg border border-brand-default/20 bg-neutral-surface px-4 py-2 text-sm font-semibold text-brand-default shadow-sm transition hover:bg-brand-pale"
           href="/suppliers/payments"
         >
           Pay suppliers →
@@ -36,55 +36,55 @@ export default async function SuppliersPage({ searchParams }: { searchParams: Pr
       </div>
 
       {/* Add supplier — collapsible */}
-      <details className="rounded-xl border border-teal-200 bg-white shadow-sm" id="add-supplier-section">
+      <details className="rounded-xl border border-brand-default/20 bg-neutral-surface shadow-sm" id="add-supplier-section">
         <summary className="flex cursor-pointer items-center gap-2 px-5 py-4 marker:content-none">
-          <span className="flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-teal-700">
+          <span className="flex items-center gap-2 rounded-lg bg-brand-default px-4 py-2 text-sm font-bold text-white transition hover:bg-brand-default">
             Add a supplier
           </span>
-          <span className="text-sm text-slate-400">Click to expand</span>
+          <span className="text-sm text-neutral-muted">Click to expand</span>
         </summary>
-        <div className="border-t border-slate-100 px-5 pb-6 pt-4">
+        <div className="border-t border-neutral-border px-5 pb-6 pt-4">
           <SupplierForm />
         </div>
       </details>
 
       {/* Supplier list */}
-      <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+      <section className="overflow-hidden rounded-xl border border-neutral-border bg-neutral-surface shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[600px] border-collapse text-left text-sm text-slate-600">
-            <thead className="bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
+          <table className="w-full min-w-[600px] border-collapse text-left text-sm text-neutral-muted">
+            <thead className="bg-neutral-bg text-xs uppercase tracking-wider text-neutral-muted">
               <tr>
-                <th className="border-b border-slate-200 px-5 py-4 font-bold">Supplier</th>
-                <th className="border-b border-slate-200 px-5 py-4 font-bold">Contact</th>
-                <th className="border-b border-slate-200 px-5 py-4 font-bold">Terms</th>
-                <th className="border-b border-slate-200 px-5 py-4 font-bold">Status</th>
-                <th className="border-b border-slate-200 px-5 py-4 font-bold text-right">Actions</th>
+                <th className="border-b border-neutral-border px-5 py-4 font-bold">Supplier</th>
+                <th className="border-b border-neutral-border px-5 py-4 font-bold">Contact</th>
+                <th className="border-b border-neutral-border px-5 py-4 font-bold">Terms</th>
+                <th className="border-b border-neutral-border px-5 py-4 font-bold">Status</th>
+                <th className="border-b border-neutral-border px-5 py-4 font-bold text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {suppliers.length === 0 ? (
                 <tr>
-                  <td className="px-5 py-16 text-center text-slate-400" colSpan={5}>
+                  <td className="px-5 py-16 text-center text-neutral-muted" colSpan={5}>
                     No suppliers found.
                   </td>
                 </tr>
               ) : (
                 suppliers.map((supplier) => (
-                  <tr className="align-middle hover:bg-slate-50/50" key={supplier.id}>
+                  <tr className="align-middle hover:bg-neutral-bg/50" key={supplier.id}>
                     <td className="px-5 py-4">
-                      <strong className="block text-slate-900">{supplier.name}</strong>
+                      <strong className="block text-neutral-text">{supplier.name}</strong>
                     </td>
-                    <td className="px-5 py-4 text-slate-600">
+                    <td className="px-5 py-4 text-neutral-muted">
                       <div className="flex flex-col gap-0.5">
                         <span>{supplier.phone ?? "No phone"}</span>
-                        {supplier.contactPerson && <span className="text-xs text-slate-400">{supplier.contactPerson}</span>}
+                        {supplier.contactPerson && <span className="text-xs text-neutral-muted">{supplier.contactPerson}</span>}
                       </div>
                     </td>
-                    <td className="px-5 py-4 text-slate-600">
+                    <td className="px-5 py-4 text-neutral-muted">
                       {supplier.creditTermDays === 0 ? "Pay immediately" : `${supplier.creditTermDays} days`}
                     </td>
                     <td className="px-5 py-4">
-                      <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-bold ${supplier.isActive ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-slate-100 text-slate-500 border-slate-200"}`}>
+                      <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-bold ${supplier.isActive ? "bg-status-success-bg text-status-success-text border-status-success-bg" : "bg-slate-100 text-neutral-muted border-neutral-border"}`}>
                         {supplier.isActive ? "Active" : "Inactive"}
                       </span>
                     </td>

@@ -50,7 +50,7 @@ export function SupplierPaymentForm({ invoices }: { invoices: SupplierInvoiceBal
 
   if (invoices.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6 text-sm text-slate-500">
+      <div className="rounded-xl border border-dashed border-neutral-border bg-neutral-bg p-6 text-sm text-neutral-muted">
         No outstanding invoices — you&apos;re all paid up!
       </div>
     );
@@ -81,14 +81,14 @@ export function SupplierPaymentForm({ invoices }: { invoices: SupplierInvoiceBal
 
       {/* Invoice summary */}
       {selectedInvoice && (
-        <div className="rounded-xl border border-teal-100 bg-teal-50/60 px-4 py-3 text-sm text-teal-900">
+        <div className="rounded-xl border border-brand-default/20 bg-brand-pale/60 px-4 py-3 text-sm text-brand-default">
           <p className="font-bold">{selectedInvoice.supplierName}</p>
-          <p className="mt-1 text-teal-800">
+          <p className="mt-1 text-brand-default">
             Invoice {selectedInvoice.invoiceNumber ?? "—"} · Total paid so far: {selectedInvoice.paidAmount} ·{" "}
             <strong>Still owe: {selectedInvoice.outstandingAmount}</strong>
           </p>
           {selectedInvoice.dueDate && (
-            <p className="mt-1 text-xs text-teal-700">Due date: {selectedInvoice.dueDate}</p>
+            <p className="mt-1 text-xs text-brand-default">Due date: {selectedInvoice.dueDate}</p>
           )}
         </div>
       )}
@@ -121,13 +121,13 @@ export function SupplierPaymentForm({ invoices }: { invoices: SupplierInvoiceBal
       </div>
 
       {/* More options */}
-      <details className="rounded-xl border border-slate-200 bg-slate-50">
-        <summary className="flex cursor-pointer items-center gap-2 px-4 py-3 text-sm font-semibold text-slate-600 marker:content-none">
-          <ChevronDown className="size-4 text-slate-400" />
+      <details className="rounded-xl border border-neutral-border bg-neutral-bg">
+        <summary className="flex cursor-pointer items-center gap-2 px-4 py-3 text-sm font-semibold text-neutral-muted marker:content-none">
+          <ChevronDown className="size-4 text-neutral-muted" />
           More options
-          <span className="ml-1 text-xs font-normal text-slate-400">(payment date, reference, notes)</span>
+          <span className="ml-1 text-xs font-normal text-neutral-muted">(payment date, reference, notes)</span>
         </summary>
-        <div className="grid gap-4 border-t border-slate-200 px-4 pb-4 pt-4 sm:grid-cols-2">
+        <div className="grid gap-4 border-t border-neutral-border px-4 pb-4 pt-4 sm:grid-cols-2">
           <Field htmlFor="paidAt" label="Payment date" error={state.status === "error" ? state.fieldErrors?.paidAt : undefined}>
             <input className={inputClass} id="paidAt" name="paidAt" onChange={(event) => setPaidAt(event.target.value)} value={paidAt} type="date" required />
           </Field>
@@ -141,7 +141,7 @@ export function SupplierPaymentForm({ invoices }: { invoices: SupplierInvoiceBal
       </details>
 
       {overLimit && (
-        <p className="text-sm font-semibold text-red-600">
+        <p className="text-sm font-semibold text-status-danger-text">
           The amount you entered is more than what you owe on this invoice.
         </p>
       )}

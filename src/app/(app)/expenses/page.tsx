@@ -38,36 +38,36 @@ export default async function ExpensesPage({ searchParams }: { searchParams: Pro
       </div>
 
       {/* Hero — this month's total */}
-      <div className="flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-4 shadow-sm">
+      <div className="flex items-center justify-between rounded-xl border border-status-success-bg bg-status-success-bg px-5 py-4 shadow-sm">
         <div>
-          <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-emerald-700">
+          <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-status-success-text">
             <span>📉</span> Expenses this month
           </p>
-          <p className="mt-1 text-sm font-medium text-emerald-600/80">
+          <p className="mt-1 text-sm font-medium text-status-success-text/80">
             {expenseCount > 0
               ? `${expenseCount} expense${expenseCount === 1 ? "" : "s"} recorded this month`
               : "No expenses recorded this month"}
           </p>
         </div>
-        <div className="text-2xl font-black tracking-tight text-emerald-900">{totalThisMonth}</div>
+        <div className="text-2xl font-black tracking-tight text-status-success-text">{totalThisMonth}</div>
       </div>
 
       {/* Add expense */}
-      <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="mb-4 text-base font-bold text-slate-800">Record an expense</h2>
+      <section className="rounded-xl border border-neutral-border bg-neutral-surface p-5 shadow-sm">
+        <h2 className="mb-4 text-base font-bold text-neutral-text">Record an expense</h2>
         {user.permissions.includes("expense.create") ? (
           <ExpenseForm />
         ) : (
-          <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-5 text-sm text-slate-500">
+          <div className="rounded-lg border border-dashed border-neutral-border bg-neutral-bg p-5 text-sm text-neutral-muted">
             You can view expenses but don&apos;t have permission to add new ones.
           </div>
         )}
       </section>
 
       {/* Expense list */}
-      <section className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-slate-100">
-          <h2 className="text-base font-bold text-slate-800">This month&apos;s expenses</h2>
+      <section className="rounded-xl border border-neutral-border bg-neutral-surface shadow-sm overflow-hidden">
+        <div className="p-4 border-b border-neutral-border">
+          <h2 className="text-base font-bold text-neutral-text">This month&apos;s expenses</h2>
         </div>
         <ExpenseTable expenses={expenses} />
         {expenses.length > 0 && (

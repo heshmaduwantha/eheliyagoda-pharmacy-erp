@@ -26,18 +26,18 @@ export default async function AdminRolesPage({ searchParams }: { searchParams: P
         <div>
           <h1 className="text-3xl font-black tracking-tight text-neutral-text sm:text-4xl">Roles</h1>
         </div>
-        <Link className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-teal-700" href="/admin/roles/new">
+        <Link className="inline-flex items-center gap-2 rounded-lg bg-brand-default px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-brand-default" href="/admin/roles/new">
           <Plus className="size-4" />
           New role
         </Link>
       </div>
 
-      <form className="grid gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm md:grid-cols-[1fr_220px_auto]">
-        <label className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3">
-          <Search className="size-4 text-slate-400" />
+      <form className="grid gap-3 rounded-xl border border-neutral-border bg-neutral-surface p-3 shadow-sm md:grid-cols-[1fr_220px_auto]">
+        <label className="flex items-center gap-2 rounded-lg border border-neutral-border bg-neutral-bg px-3">
+          <Search className="size-4 text-neutral-muted" />
           <input className="min-w-0 flex-1 bg-transparent py-2 text-sm outline-none" defaultValue={params.search} name="search" placeholder="Search code, name, or description…" />
         </label>
-        <select className="rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-teal-500" defaultValue={status} name="status">
+        <select className="rounded-lg border border-neutral-border px-3 py-2 text-sm outline-none focus:border-brand-default" defaultValue={status} name="status">
           <option value="all">All roles</option>
           <option value="active">Active</option>
           <option value="inactive">Inactive</option>
@@ -47,43 +47,43 @@ export default async function AdminRolesPage({ searchParams }: { searchParams: P
         </button>
       </form>
 
-      <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+      <section className="overflow-hidden rounded-xl border border-neutral-border bg-neutral-surface shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1100px] border-collapse text-left text-sm text-slate-600">
-            <thead className="bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
+          <table className="w-full min-w-[1100px] border-collapse text-left text-sm text-neutral-muted">
+            <thead className="bg-neutral-bg text-xs uppercase tracking-wider text-neutral-muted">
               <tr>
-                <th className="border-b border-slate-200 px-5 py-4 font-bold">Role</th>
-                <th className="border-b border-slate-200 px-5 py-4 font-bold">Code</th>
-                <th className="border-b border-slate-200 px-5 py-4 font-bold">Description</th>
-                <th className="border-b border-slate-200 px-5 py-4 font-bold">Users</th>
-                <th className="border-b border-slate-200 px-5 py-4 font-bold">Permissions</th>
-                <th className="border-b border-slate-200 px-5 py-4 font-bold">Status</th>
-                <th className="border-b border-slate-200 px-5 py-4 font-bold" />
+                <th className="border-b border-neutral-border px-5 py-4 font-bold">Role</th>
+                <th className="border-b border-neutral-border px-5 py-4 font-bold">Code</th>
+                <th className="border-b border-neutral-border px-5 py-4 font-bold">Description</th>
+                <th className="border-b border-neutral-border px-5 py-4 font-bold">Users</th>
+                <th className="border-b border-neutral-border px-5 py-4 font-bold">Permissions</th>
+                <th className="border-b border-neutral-border px-5 py-4 font-bold">Status</th>
+                <th className="border-b border-neutral-border px-5 py-4 font-bold" />
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {roles.length === 0 ? (
                 <tr>
-                  <td className="px-5 py-16 text-center text-slate-400" colSpan={7}>
+                  <td className="px-5 py-16 text-center text-neutral-muted" colSpan={7}>
                     No roles found.
                   </td>
                 </tr>
               ) : (
                 roles.map((role) => (
-                  <tr className="align-top hover:bg-slate-50/50" key={role.id}>
+                  <tr className="align-top hover:bg-neutral-bg/50" key={role.id}>
                     <td className="px-5 py-4">
-                      <strong className="block text-slate-800">{role.name}</strong>
-                      {role.isSystem ? <span className="mt-1 inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[.18em] text-amber-700">System</span> : null}
+                      <strong className="block text-neutral-text">{role.name}</strong>
+                      {role.isSystem ? <span className="mt-1 inline-flex rounded-full bg-status-warning-bg px-2.5 py-1 text-[10px] font-bold uppercase tracking-[.18em] text-status-warning-text">System</span> : null}
                     </td>
-                    <td className="px-5 py-4 font-mono text-xs text-slate-600">{role.code}</td>
-                    <td className="px-5 py-4 text-slate-600">{role.description ?? "—"}</td>
-                    <td className="px-5 py-4 text-slate-600">{role.userCount}</td>
-                    <td className="px-5 py-4 text-slate-600">{role.permissionCount}</td>
+                    <td className="px-5 py-4 font-mono text-xs text-neutral-muted">{role.code}</td>
+                    <td className="px-5 py-4 text-neutral-muted">{role.description ?? "—"}</td>
+                    <td className="px-5 py-4 text-neutral-muted">{role.userCount}</td>
+                    <td className="px-5 py-4 text-neutral-muted">{role.permissionCount}</td>
                     <td className="px-5 py-4">
-                      <span className={`rounded-full px-3 py-1 text-xs font-bold ${role.isActive ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`}>{role.isActive ? "Active" : "Inactive"}</span>
+                      <span className={`rounded-full px-3 py-1 text-xs font-bold ${role.isActive ? "bg-status-success-bg text-status-success-text" : "bg-status-danger-bg text-status-danger-text"}`}>{role.isActive ? "Active" : "Inactive"}</span>
                     </td>
                     <td className="px-5 py-4 text-right">
-                      <Link className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" href={`/admin/roles/${role.id}`}>
+                      <Link className="rounded-lg border border-neutral-border bg-neutral-surface px-3 py-2 text-sm font-semibold text-neutral-text hover:bg-neutral-bg" href={`/admin/roles/${role.id}`}>
                         Open
                       </Link>
                     </td>

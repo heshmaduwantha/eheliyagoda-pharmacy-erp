@@ -2,11 +2,11 @@ import type { StockMovementRecord, StockMovementType } from "@/modules/inventory
 import { formatInventoryQty, formatMovementDate } from "@/modules/inventory/inventory.utils";
 
 const movementStyle: Record<StockMovementType, string> = {
-  GRN_IN: "bg-emerald-50 text-emerald-700",
+  GRN_IN: "bg-status-success-bg text-status-success-text",
   SALE_OUT: "bg-blue-50 text-blue-700",
   RETURN_IN: "bg-cyan-50 text-cyan-700",
-  WRITE_OFF: "bg-red-50 text-red-700",
-  ADJUSTMENT: "bg-amber-50 text-amber-700",
+  WRITE_OFF: "bg-status-danger-bg text-status-danger-text",
+  ADJUSTMENT: "bg-status-warning-bg text-status-warning-text",
 };
 
 const movementLabel: Record<StockMovementType, string> = {
@@ -18,10 +18,10 @@ const movementLabel: Record<StockMovementType, string> = {
 };
 
 const directionStyle = {
-  IN: "bg-emerald-50 text-emerald-700",
-  OUT: "bg-rose-50 text-rose-700",
+  IN: "bg-status-success-bg text-status-success-text",
+  OUT: "bg-status-danger-bg text-status-danger-text",
 };
 
 export function StockMovementTable({ rows }: { rows: StockMovementRecord[] }) {
-  return <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_8px_30px_rgba(15,51,58,.05)]"><div className="overflow-x-auto"><table className="w-full min-w-[1260px] border-collapse text-left text-sm"><thead className="bg-slate-50 text-xs uppercase tracking-wider text-slate-500"><tr>{["Date", "Product", "System Batch", "Supplier Lot", "Movement Type", "Direction", "Qty Base", "Reference", "Created By"].map((heading) => <th className="border-b border-slate-200 px-5 py-4 font-bold" key={heading}>{heading}</th>)}</tr></thead><tbody className="divide-y divide-slate-100">{rows.map((movement) => { const quantity = Number(movement.qtyBase); return <tr className="hover:bg-teal-50/30" key={movement.id}><td className="px-5 py-4 text-slate-500">{formatMovementDate(movement.occurredAt)}</td><td className="px-5 py-4 font-bold text-slate-800">{movement.productName}</td><td className="px-5 py-4 font-semibold text-slate-600">{movement.batchNumber ?? "—"}</td><td className="px-5 py-4 font-semibold text-slate-600">{movement.supplierLotNumber ?? "—"}</td><td className="px-5 py-4"><span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${movementStyle[movement.movementType]}`}>{movementLabel[movement.movementType]}</span></td><td className="px-5 py-4"><span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${directionStyle[movement.direction]}`}>{movement.direction}</span></td><td className={`px-5 py-4 font-black ${quantity >= 0 ? "text-emerald-600" : "text-red-600"}`}>{quantity > 0 ? "+" : ""}{formatInventoryQty(movement.qtyBase)} <span className="text-xs font-normal text-slate-400">{movement.baseUnit}</span></td><td className="px-5 py-4 text-slate-600">{movement.reference}</td><td className="px-5 py-4 text-slate-600">{movement.createdBy ?? "System"}</td></tr>; })}{rows.length === 0 && <tr><td className="px-5 py-16 text-center text-slate-400" colSpan={9}>No stock movements found.</td></tr>}</tbody></table></div></section>;
+  return <section className="overflow-hidden rounded-2xl border border-neutral-border bg-neutral-surface shadow-[0_8px_30px_rgba(15,51,58,.05)]"><div className="overflow-x-auto"><table className="w-full min-w-[1260px] border-collapse text-left text-sm"><thead className="bg-neutral-bg text-xs uppercase tracking-wider text-neutral-muted"><tr>{["Date", "Product", "System Batch", "Supplier Lot", "Movement Type", "Direction", "Qty Base", "Reference", "Created By"].map((heading) => <th className="border-b border-neutral-border px-5 py-4 font-bold" key={heading}>{heading}</th>)}</tr></thead><tbody className="divide-y divide-slate-100">{rows.map((movement) => { const quantity = Number(movement.qtyBase); return <tr className="hover:bg-brand-pale/30" key={movement.id}><td className="px-5 py-4 text-neutral-muted">{formatMovementDate(movement.occurredAt)}</td><td className="px-5 py-4 font-bold text-neutral-text">{movement.productName}</td><td className="px-5 py-4 font-semibold text-neutral-muted">{movement.batchNumber ?? "—"}</td><td className="px-5 py-4 font-semibold text-neutral-muted">{movement.supplierLotNumber ?? "—"}</td><td className="px-5 py-4"><span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${movementStyle[movement.movementType]}`}>{movementLabel[movement.movementType]}</span></td><td className="px-5 py-4"><span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${directionStyle[movement.direction]}`}>{movement.direction}</span></td><td className={`px-5 py-4 font-black ${quantity >= 0 ? "text-status-success-text" : "text-status-danger-text"}`}>{quantity > 0 ? "+" : ""}{formatInventoryQty(movement.qtyBase)} <span className="text-xs font-normal text-neutral-muted">{movement.baseUnit}</span></td><td className="px-5 py-4 text-neutral-muted">{movement.reference}</td><td className="px-5 py-4 text-neutral-muted">{movement.createdBy ?? "System"}</td></tr>; })}{rows.length === 0 && <tr><td className="px-5 py-16 text-center text-neutral-muted" colSpan={9}>No stock movements found.</td></tr>}</tbody></table></div></section>;
 }
