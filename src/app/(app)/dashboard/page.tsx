@@ -1,166 +1,276 @@
-import { AlertTriangle, Banknote, Clock, CreditCard, DollarSign, Receipt, Truck, ChevronRight, LayoutDashboard } from "lucide-react";
+import { TrendingUp, ShoppingCart, AlertTriangle, Clock, ArrowRight, Plus } from "lucide-react";
 import Link from "next/link";
 import { formatMoney } from "@/lib/money";
 import { withPerformanceTrace } from "@/lib/performance";
-import { requirePermission } from "@/modules/auth/permissions";
-import { getDashboardMetrics } from "@/modules/dashboard/dashboard.service";
+import { requireAuth, requirePermission } from "@/modules/auth/permissions";
+import { 
+  getDashboardMetrics, 
+  getDashboardWeeklySales, 
+  getDashboardTopProducts, 
+  getDashboardWatchlist 
+} from "@/modules/dashboard/dashboard.service";
 
 export default function DashboardPage() {
   return withPerformanceTrace({ route: "/dashboard", method: "RSC" }, renderDashboardPage);
 }
 
 async function renderDashboardPage() {
+  const user = await requireAuth();
   await requirePermission("dashboard.view");
-  const metrics = await getDashboardMetrics();
   
-  const dateStr = new Intl.DateTimeFormat("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" }).format(new Date());
+  const [metrics, weeklySales, topProducts, watchlist] = await Promise.all([
+    getDashboardMetrics(),
+    getDashboardWeeklySales(),
+    getDashboardTopProducts(),
+    getDashboardWatchlist()
+  ]);
+  
+  // Prepare alerts
+  const alerts = [
+    { 
+      icon: AlertTriangle, 
+      bg: "bg-[#FCEBEB] text-[#791F1F]", 
+      title: `${metrics.lowStockCount} products out of stock or low`, 
+      desc: "Reorder required" 
+    },
+    { 
+      icon: Clock, 
+      bg: "bg-[#FDE9CC] text-[#8A4B0A]", 
+      title: `${metrics.nearExpiryCount} batches expiring within 30 days`, 
+      desc: "Review needed immediately" 
+    },
+    { 
+      icon: ShoppingCart, 
+      bg: "bg-[#E1F5EE] text-[#085041]", 
+      title: `${metrics.totalActiveProducts} active products in catalog`, 
+      desc: "System running normally" 
+    }
+  ];
 
-  const todaySalesValue = metrics.saleCount > 0 ? formatMoney(metrics.salesTotal) : "No completed sales yet";
-  const cashVsCardValue = metrics.paymentCount > 0 ? `${formatMoney(metrics.cashTotal)} / ${formatMoney(metrics.cardTotal)}` : "No completed payments yet";
-  const grossProfitValue = metrics.profitLineCount > 0 ? formatMoney(metrics.grossProfitTotal) : "No completed sales yet";
+  const maxTotal = Math.max(...weeklySales.map(d => Number(d.total)), 1);
 
   return (
-    <div className="grid gap-4 min-w-0">
+    <div className="grid gap-6 min-w-0 max-w-7xl mx-auto pb-12">
       {/* Header */}
-      <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-neutral-text sm:text-4xl">
-            Dashboard
+          <p className="text-[11px] font-bold uppercase tracking-widest text-neutral-muted mb-1">
+            Home / Dashboard
+          </p>
+          <h1 className="text-2xl font-black tracking-tight text-neutral-text sm:text-3xl">
+            Good morning, {user.name.split(" ")[0]}
           </h1>
+          <p className="mt-1 text-sm text-neutral-muted">
+            Here's what's happening across your pharmacy today.
+          </p>
         </div>
-        <div className="inline-flex items-center rounded-xl border border-neutral-border bg-neutral-surface px-4 py-2 text-sm font-semibold text-neutral-text shadow-[0_8px_30px_rgba(15,51,58,.04)]">
-          {dateStr}
+        <div>
+          <Link 
+            href="/pos" 
+            className="inline-flex items-center gap-2 rounded-xl bg-brand-default px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-brand-hover"
+          >
+            <Plus className="size-4" strokeWidth={3} />
+            New sale
+          </Link>
         </div>
       </div>
 
-      {/* Hero Metrics */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {/* Card 1: Today Sales */}
-        <Link href="/sales" className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-teal-600 to-emerald-500 p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg sm:col-span-2">
-          {/* Decorative background blur */}
-          <div className="absolute -right-8 -top-8 size-32 rounded-full bg-neutral-surface/20 blur-2xl transition-transform duration-700 group-hover:scale-125"></div>
-          <div className="absolute right-4 top-4 text-white/50 transition-colors duration-300 group-hover:text-white">
-            <ChevronRight className="size-5" />
-          </div>
-          <div className="mb-2 inline-flex size-8 items-center justify-center rounded-xl bg-neutral-surface/20 text-white backdrop-blur-md transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3">
-            <DollarSign className="size-4" />
-          </div>
-          <p className="text-[11px] font-semibold text-emerald-50 uppercase tracking-widest">Today sales</p>
-          <p className="mt-1 text-2xl font-black tracking-tight text-white drop-shadow-sm">{todaySalesValue}</p>
-          <p className="mt-1 text-[11px] font-medium text-emerald-100/90">Sale model is live</p>
-        </Link>
-
-        {/* Card 2: Gross Profit */}
-        <Link href="/sales" className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-600 p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg sm:col-span-2">
-          {/* Decorative background blur */}
-          <div className="absolute -right-8 -top-8 size-32 rounded-full bg-neutral-surface/20 blur-2xl transition-transform duration-700 group-hover:scale-125"></div>
-          <div className="absolute right-4 top-4 text-white/50 transition-colors duration-300 group-hover:text-white">
-            <ChevronRight className="size-5" />
-          </div>
-          <div className="mb-2 inline-flex size-8 items-center justify-center rounded-xl bg-neutral-surface/20 text-white backdrop-blur-md transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3">
-            <Banknote className="size-4" />
-          </div>
-          <p className="text-[11px] font-semibold text-indigo-50 uppercase tracking-widest">Gross profit</p>
-          <p className="mt-1 text-2xl font-black tracking-tight text-white drop-shadow-sm">{grossProfitValue}</p>
-          <p className="mt-1 text-[11px] font-medium text-indigo-100/90">Historical sale cost is pending</p>
-        </Link>
-      </div>
-
-      {/* Standard Financials */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {/* Cash vs Card */}
-        <Link href="/sales" className="group relative rounded-2xl border border-neutral-border/60 bg-neutral-surface p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-blue-300 hover:shadow-md">
-          <div className="absolute right-4 top-4 text-slate-300 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-            <ChevronRight className="size-5" />
-          </div>
-          <div className="mb-2 inline-flex size-8 items-center justify-center rounded-xl bg-blue-50 text-blue-500 transition-colors duration-300 group-hover:bg-blue-500 group-hover:text-white group-hover:shadow-md group-hover:shadow-blue-500/20">
-            <CreditCard className="size-4" />
-          </div>
-          <p className="text-[11px] font-semibold text-neutral-muted uppercase tracking-wider">Cash vs card</p>
-          <p className="mt-1 text-xl font-black tracking-tight text-neutral-text">{cashVsCardValue}</p>
-        </Link>
-
-        {/* Expenses */}
-        <Link href="/expenses" className="group relative rounded-2xl border border-neutral-border/60 bg-neutral-surface p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-status-success-bg hover:shadow-md">
-          <div className="absolute right-4 top-4 text-slate-300 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-            <ChevronRight className="size-5" />
-          </div>
-          <div className="mb-2 inline-flex size-8 items-center justify-center rounded-xl bg-status-success-bg text-emerald-500 transition-colors duration-300 group-hover:bg-emerald-500 group-hover:text-white group-hover:shadow-md group-hover:shadow-emerald-500/20">
-            <Receipt className="size-4" />
-          </div>
-          <p className="text-[11px] font-semibold text-neutral-muted uppercase tracking-wider">Expenses this month</p>
-          <p className="mt-1 text-xl font-black tracking-tight text-neutral-text">{formatMoney(metrics.expenseTotal)}</p>
-        </Link>
-
-        {/* Supplier Payables */}
-        <Link href="/suppliers/payments" className="group relative rounded-2xl border border-neutral-border/60 bg-neutral-surface p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-brand-default/20 hover:shadow-md">
-          <div className="absolute right-4 top-4 text-slate-300 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-            <ChevronRight className="size-5" />
-          </div>
-          <div className="mb-2 inline-flex size-8 items-center justify-center rounded-xl bg-brand-pale text-brand-default transition-colors duration-300 group-hover:bg-brand-default group-hover:text-white group-hover:shadow-md group-hover:shadow-teal-500/20">
-            <Truck className="size-4" />
-          </div>
-          <p className="text-[11px] font-semibold text-neutral-muted uppercase tracking-wider">Supplier payables</p>
-          <p className="mt-1 text-xl font-black tracking-tight text-neutral-text">{formatMoney(metrics.outstandingTotal)}</p>
-        </Link>
-      </div>
-
-      {/* Action Required Section */}
-      <div>
-        <h2 className="mb-2 flex items-center gap-2 text-sm font-black tracking-tight text-neutral-text">
-          <div className="flex size-5 items-center justify-center rounded-full bg-status-danger-bg text-rose-500">
-            <AlertTriangle className="size-3" />
-          </div>
-          Action Required
-        </h2>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {/* Low Stock */}
-          <Link href="/products" className="group relative rounded-2xl border border-status-warning-bg/60 bg-gradient-to-b from-white to-amber-50/50 p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:bg-status-warning-bg hover:shadow-md">
-            <div className="absolute right-4 top-4 text-amber-300 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-              <ChevronRight className="size-5" />
+      {/* Top KPI Grid */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="rounded-2xl border border-neutral-border/50 bg-white p-5 shadow-sm">
+          <div className="flex items-start justify-between">
+            <p className="text-xs font-semibold text-neutral-muted uppercase tracking-wider">Today's sales</p>
+            <div className="grid size-7 place-items-center rounded-lg bg-brand-pale text-brand-default">
+              <TrendingUp className="size-4" />
             </div>
-            <div className="mb-2 inline-flex size-8 items-center justify-center rounded-xl bg-status-warning-bg text-status-warning-text transition-all duration-300 group-hover:bg-amber-500 group-hover:text-white group-hover:shadow-md group-hover:shadow-amber-500/30">
+          </div>
+          <p className="mt-4 text-2xl font-black tracking-tight">{formatMoney(metrics.salesTotal)}</p>
+          <p className="mt-2 text-xs font-bold text-status-success-text flex items-center gap-1">
+            <TrendingUp className="size-3" />
+            Live tracking
+          </p>
+        </div>
+        
+        <div className="rounded-2xl border border-neutral-border/50 bg-white p-5 shadow-sm">
+          <div className="flex items-start justify-between">
+            <p className="text-xs font-semibold text-neutral-muted uppercase tracking-wider">Transactions</p>
+            <div className="grid size-7 place-items-center rounded-lg bg-[#E1F5EE] text-[#085041]">
+              <ShoppingCart className="size-4" />
+            </div>
+          </div>
+          <p className="mt-4 text-2xl font-black tracking-tight">{metrics.saleCount}</p>
+          <p className="mt-2 text-xs font-bold text-status-success-text flex items-center gap-1">
+            <TrendingUp className="size-3" />
+            Today
+          </p>
+        </div>
+
+        <div className="rounded-2xl border border-neutral-border/50 bg-white p-5 shadow-sm">
+          <div className="flex items-start justify-between">
+            <p className="text-xs font-semibold text-neutral-muted uppercase tracking-wider">Low stock items</p>
+            <div className="grid size-7 place-items-center rounded-lg bg-[#FAEEDA] text-[#633806]">
               <AlertTriangle className="size-4" />
             </div>
-            <p className="text-[11px] font-semibold text-status-warning-text uppercase tracking-wider">Low stock</p>
-            <p className="mt-1 text-xl font-black tracking-tight text-amber-950">{metrics.lowStockCount}</p>
-          </Link>
+          </div>
+          <p className="mt-4 text-2xl font-black tracking-tight">{metrics.lowStockCount}</p>
+          <p className="mt-2 text-xs font-bold text-[#791F1F]">
+            Check reorder levels
+          </p>
+        </div>
 
-          {/* Near Expiry */}
-          <Link href="/stock/batches" className="group relative rounded-2xl border border-orange-200/60 bg-gradient-to-b from-white to-orange-50/50 p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:bg-orange-50 hover:shadow-md">
-            <div className="absolute right-4 top-4 text-orange-300 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-              <ChevronRight className="size-5" />
-            </div>
-            <div className="mb-2 inline-flex size-8 items-center justify-center rounded-xl bg-orange-100 text-orange-600 transition-all duration-300 group-hover:bg-orange-500 group-hover:text-white group-hover:shadow-md group-hover:shadow-orange-500/30">
+        <div className="rounded-2xl border border-neutral-border/50 bg-white p-5 shadow-sm">
+          <div className="flex items-start justify-between">
+            <p className="text-xs font-semibold text-neutral-muted uppercase tracking-wider">Expiring within 30d</p>
+            <div className="grid size-7 place-items-center rounded-lg bg-[#FCEBEB] text-[#791F1F]">
               <Clock className="size-4" />
             </div>
-            <p className="text-[11px] font-semibold text-orange-800 uppercase tracking-wider">Near expiry</p>
-            <p className="mt-1 text-xl font-black tracking-tight text-orange-950">{metrics.nearExpiryCount}</p>
-          </Link>
+          </div>
+          <p className="mt-4 text-2xl font-black tracking-tight">{metrics.nearExpiryCount}</p>
+          <p className="mt-2 text-xs font-bold text-[#791F1F]">
+            Review needed
+          </p>
+        </div>
+      </div>
 
-          {/* Expired Stock */}
-          <Link href="/stock/batches" className="group relative rounded-2xl border border-red-200/60 bg-gradient-to-b from-white to-red-50/50 p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:bg-status-danger-bg hover:shadow-md">
-            <div className="absolute right-4 top-4 text-red-300 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-              <ChevronRight className="size-5" />
-            </div>
-            <div className="mb-2 inline-flex size-8 items-center justify-center rounded-xl bg-red-100 text-status-danger-text transition-all duration-300 group-hover:bg-red-500 group-hover:text-white group-hover:shadow-md group-hover:shadow-red-500/30">
-              <AlertTriangle className="size-4" />
-            </div>
-            <p className="text-[11px] font-semibold text-status-danger-text uppercase tracking-wider">Expired stock</p>
-            <p className="mt-1 text-xl font-black tracking-tight text-red-950">{metrics.expiredOrQuarantinedCount}</p>
-          </Link>
+      {/* Middle Section: Chart and Alerts */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Chart */}
+        <div className="lg:col-span-2 rounded-2xl border border-neutral-border/50 bg-white p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-sm font-bold text-neutral-text">Sales this week</h2>
+            <Link href="/sales" className="text-xs font-bold text-brand-default flex items-center gap-1 hover:underline">
+              View reports <ArrowRight className="size-3" />
+            </Link>
+          </div>
+          
+          <div className="flex h-48 items-end gap-3 sm:gap-6 mt-6">
+            {weeklySales.map((day, i) => {
+              const height = Math.max((Number(day.total) / maxTotal) * 100, 4); // min 4%
+              const isToday = i === weeklySales.length - 1;
+              return (
+                <div key={i} className="group relative flex flex-1 flex-col items-center gap-3 h-full justify-end">
+                  <div 
+                    className={`w-full rounded-t-sm transition-all ${isToday ? 'bg-brand-default' : 'bg-brand-pale group-hover:bg-brand-default/40'}`} 
+                    style={{ height: \`\${height}%\` }}
+                  ></div>
+                  <span className="text-[10px] font-bold text-neutral-muted uppercase">
+                    {new Intl.DateTimeFormat("en-US", { weekday: "short" }).format(day.date)}
+                  </span>
+                </div>
+              );
+            })}
+            {weeklySales.length === 0 && (
+              <div className="w-full flex items-center justify-center text-sm text-neutral-muted h-full pb-8">
+                No sales data yet
+              </div>
+            )}
+          </div>
+        </div>
 
-          {/* Overdue Payables */}
-          <Link href="/suppliers/payments" className="group relative rounded-2xl border border-status-danger-bg/60 bg-gradient-to-b from-white to-rose-50/50 p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:bg-status-danger-bg hover:shadow-md">
-            <div className="absolute right-4 top-4 text-rose-300 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-              <ChevronRight className="size-5" />
-            </div>
-            <div className="mb-2 inline-flex size-8 items-center justify-center rounded-xl bg-status-danger-bg text-status-danger-text transition-all duration-300 group-hover:bg-rose-600 group-hover:text-white group-hover:shadow-md group-hover:shadow-rose-600/30">
-              <AlertTriangle className="size-4" />
-            </div>
-            <p className="text-[11px] font-semibold text-status-danger-text uppercase tracking-wider">Overdue payables</p>
-            <p className="mt-1 text-xl font-black tracking-tight text-rose-950">{metrics.overdueCount}</p>
-          </Link>
+        {/* Alerts */}
+        <div className="rounded-2xl border border-neutral-border/50 bg-white p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-sm font-bold text-neutral-text">Alerts</h2>
+            <Link href="/reports" className="text-xs font-bold text-brand-default flex items-center gap-1 hover:underline">
+              View all <ArrowRight className="size-3" />
+            </Link>
+          </div>
+          
+          <div className="flex flex-col gap-5">
+            {alerts.map((alert, i) => (
+              <div key={i} className="flex gap-4">
+                <div className={`grid size-9 shrink-0 place-items-center rounded-xl ${alert.bg}`}>
+                  <alert.icon className="size-4" strokeWidth={2.5} />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-neutral-text">{alert.title}</p>
+                  <p className="text-xs text-neutral-muted mt-0.5">{alert.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom Section: Top Selling and Watchlist */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Top Selling */}
+        <div className="lg:col-span-2 rounded-2xl border border-neutral-border/50 bg-white p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-sm font-bold text-neutral-text">Top selling products</h2>
+            <Link href="/products" className="text-xs font-bold text-brand-default flex items-center gap-1 hover:underline">
+              View all <ArrowRight className="size-3" />
+            </Link>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-neutral-border/50">
+                  <th className="pb-3 text-[10px] font-bold uppercase tracking-wider text-neutral-muted">Product</th>
+                  <th className="pb-3 text-[10px] font-bold uppercase tracking-wider text-neutral-muted text-center">Units Sold</th>
+                  <th className="pb-3 text-[10px] font-bold uppercase tracking-wider text-neutral-muted text-right">Revenue</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-border/40">
+                {topProducts.map((p, i) => (
+                  <tr key={i} className="group transition hover:bg-brand-pale/30">
+                    <td className="py-4 font-bold text-neutral-text">{p.productName}</td>
+                    <td className="py-4 text-center font-semibold text-neutral-muted">{p.unitsSold}</td>
+                    <td className="py-4 text-right font-black text-neutral-text">{formatMoney(p.revenue)}</td>
+                  </tr>
+                ))}
+                {topProducts.length === 0 && (
+                  <tr>
+                    <td colSpan={3} className="py-8 text-center text-neutral-muted">No sales yet</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Watchlist */}
+        <div className="rounded-2xl border border-neutral-border/50 bg-white p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-sm font-bold text-neutral-text">Stock watchlist</h2>
+            <Link href="/inventory" className="text-xs font-bold text-brand-default flex items-center gap-1 hover:underline">
+              Manage stock <ArrowRight className="size-3" />
+            </Link>
+          </div>
+
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-neutral-border/50">
+                <th className="pb-3 text-[10px] font-bold uppercase tracking-wider text-neutral-muted">Product</th>
+                <th className="pb-3 text-[10px] font-bold uppercase tracking-wider text-neutral-muted text-right">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-neutral-border/40">
+              {watchlist.map((p, i) => {
+                let badgeClass = "bg-[#E1F5EE] text-[#085041]"; // In stock
+                if (p.status === "Out of stock" || p.status === "Expired") badgeClass = "bg-[#FCEBEB] text-[#791F1F]";
+                if (p.status === "Expiring soon") badgeClass = "bg-[#FDE9CC] text-[#8A4B0A]";
+                if (p.status === "Low stock") badgeClass = "bg-[#FAEEDA] text-[#633806]";
+                
+                return (
+                  <tr key={i} className="group transition hover:bg-brand-pale/30">
+                    <td className="py-4 font-bold text-neutral-text pr-2 line-clamp-1">{p.name}</td>
+                    <td className="py-4 text-right pl-2">
+                      <span className={\`inline-flex rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wider \${badgeClass}\`}>
+                        {p.status}
+                      </span>
+                    </td>
+                  </tr>
+                )
+              })}
+              {watchlist.length === 0 && (
+                <tr>
+                  <td colSpan={2} className="py-8 text-center text-neutral-muted">Watchlist clear</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

@@ -187,3 +187,52 @@ export async function getAlertCounts(): Promise<AlertCounts> {
 
   return rows[0] ?? { lowStockCount: 0, nearExpiryCount: 0, expiredCount: 0, overdueCount: 0 };
 }
+
+export async function getDashboardWeeklySales() {
+  const sevenDaysAgo = addDays(startOfDay(), -6);
+  const rows = await prisma.$queryRaw<{ date: Date; total: string }[]>(Prisma.sql`
+    SELECT DATE_TRUNC('day', "completedAt") as date, COALESCE(SUM(total), 0)::text as total
+    FROM "Sale"
+    WHERE status = 'COMPLETED' AND "completedAt" >= ${sevenDaysAgo}
+    GROUP BY 1 ORDER BY 1 ASC
+  `);
+  return rows;
+}
+
+export async function getDashboardTopProducts() {
+  const thirtyDaysAgo = addDays(startOfDay(), -30);
+  const rows = await prisma.$queryRaw<{ productName: string; unitsSold: number; revenue: string }[]>(Prisma.sql`
+    SELECT "productName", SUM("qtyBase")::int as "unitsSold", SUM("lineTotal")::text as "revenue"
+    FROM "SaleLine"
+    INNER JOIN "Sale" ON "Sale".id = "SaleLine"."saleId"
+    WHERE "Sale".status = 'COMPLETED' AND "Sale"."completedAt" >= ${thirtyDaysAgo}
+    GROUP BY "productName"
+    ORDER BY "unitsSold" DESC
+    LIMIT 4
+  `);
+  return rows;
+}
+
+export async function getDashboardWatchlist() {
+  const today = startOfDay();
+  const nearExpiryDate = addDays(today, 30);
+  
+  const rows = await prisma.$queryRaw<{ name: string; status: string }[]>(Prisma.sql`
+    SELECT p.name,
+      CASE 
+        WHEN SUM(b."qtyOnHandBase") = 0 OR SUM(b."qtyOnHandBase") IS NULL THEN 'Out of stock'
+        WHEN MIN(b."expiryDate") < ${today} THEN 'Expired'
+        WHEN MIN(b."expiryDate") <= ${nearExpiryDate} THEN 'Expiring soon'
+        WHEN SUM(b."qtyOnHandBase") <= p."reorderLevel" THEN 'Low stock'
+        ELSE 'In stock'
+      END as status
+    FROM "Product" p
+    LEFT JOIN "Batch" b ON b."productId" = p.id AND b.status = 'ACTIVE'
+    WHERE p."isActive" = TRUE
+    GROUP BY p.id, p.name, p."reorderLevel"
+    HAVING (SUM(b."qtyOnHandBase") = 0 OR SUM(b."qtyOnHandBase") IS NULL OR SUM(b."qtyOnHandBase") <= p."reorderLevel" OR MIN(b."expiryDate") <= ${nearExpiryDate})
+    ORDER BY status ASC
+    LIMIT 4
+  `);
+  return rows;
+}
