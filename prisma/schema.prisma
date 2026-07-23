@@ -27,6 +27,7 @@ model User {
   expenses                      Expense[]  @relation("ExpenseCreatedBy")
   supplierPayments              SupplierPayment[] @relation("SupplierPaymentCreatedBy")
   capturedPrescriptions         Prescription[] @relation("PrescriptionCapturedBy")
+  batchPricesSet                Batch[]        @relation("BatchPriceSetBy")
   trainingProgress              TrainingProgress[]
   createdAt                     DateTime   @default(now())
   updatedAt                     DateTime   @updatedAt
@@ -152,6 +153,7 @@ model Product {
   isSpecialDrug       Boolean          @default(false)
   reorderLevel        Decimal          @default(0) @db.Decimal(14, 3)
   reorderQty          Decimal          @default(0) @db.Decimal(14, 3)
+  /// Legacy-only value. New writes and all POS reads use batch selling prices.
   defaultSellingPrice Decimal?         @db.Decimal(12, 2)
   isActive            Boolean          @default(true)
   units               ProductUnit[]
@@ -179,6 +181,7 @@ model ProductUnit {
   barcodes          ProductBarcode[]
   grnLines          GrnLine[]
   saleLines         SaleLine[]
+  pricedBatches     Batch[]           @relation("BatchPricingUnit")
   createdAt         DateTime         @default(now())
 
   @@unique([productId, unitName])
@@ -329,6 +332,11 @@ model Batch {
   mrp            Decimal?        @db.Decimal(12, 2)
   costPrice      Decimal         @db.Decimal(12, 2)
   sellingPrice   Decimal         @db.Decimal(12, 2)
+  priceUnitId    String?         @db.Uuid
+  priceUnit      ProductUnit?    @relation("BatchPricingUnit", fields: [priceUnitId], references: [id], onDelete: Restrict)
+  priceSetById   String?         @db.Uuid
+  priceSetBy     User?           @relation("BatchPriceSetBy", fields: [priceSetById], references: [id], onDelete: SetNull)
+  priceSetAt     DateTime?       @db.Timestamptz(6)
   qtyOnHandBase  Decimal         @default(0) @db.Decimal(14, 3)
   status         BatchStatus     @default(ACTIVE)
   stockMovements StockMovement[]
@@ -338,6 +346,13 @@ model Batch {
   updatedAt      DateTime        @updatedAt
 
   @@index([productId, status, expiryDate])
+  @@index([priceUnitId])
+}
+
+model InventorySetting {
+  id                Int      @id
+  expiryAlertMonths Int      @default(6)
+  updatedAt         DateTime @updatedAt
 }
 
 model StockMovement {
@@ -416,6 +431,7 @@ model SaleLine {
   discountAmount      Decimal               @default(0) @db.Decimal(12, 2)
   costPriceAtSale     Decimal               @db.Decimal(12, 2)
   mrpAtSale           Decimal?              @db.Decimal(12, 2)
+  unitFactorToBaseAtSale Decimal             @default(1) @db.Decimal(14, 3)
   barcodeUsed         String?               @db.VarChar(120)
   productNameSnapshot String                @db.VarChar(200)
   batchNoSnapshot     String?               @db.VarChar(80)

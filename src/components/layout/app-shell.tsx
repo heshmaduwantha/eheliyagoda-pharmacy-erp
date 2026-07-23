@@ -7,14 +7,16 @@ import type { CurrentUser } from "@/modules/auth/session";
 import { NotificationBell } from "./notification-bell";
 import type { AlertCounts } from "@/modules/dashboard/dashboard.service";
 import { Breadcrumbs } from "./breadcrumbs";
+import { isUatEnvironment } from "@/lib/env";
 
 export function AppShell({ children, user, alerts }: Readonly<{ children: React.ReactNode; user: CurrentUser; alerts: AlertCounts }>) {
   const initials = user.name.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase();
 
   return (
     <div className="min-h-screen bg-neutral-bg">
+      {isUatEnvironment ? <div className="fixed inset-x-0 top-0 z-[60] bg-amber-400 px-3 py-1 text-center text-xs font-black tracking-wide text-amber-950">UAT / TEST ENVIRONMENT — DO NOT ENTER REAL PATIENT DATA</div> : null}
       {/* Desktop sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col overflow-hidden bg-brand-pale border-r border-brand-default/10 px-4 pt-6 pb-6 shadow-xl lg:flex">
+      <aside className={`fixed inset-y-0 left-0 z-40 hidden w-64 flex-col overflow-hidden bg-brand-pale border-r border-brand-default/10 px-4 pb-6 shadow-xl lg:flex ${isUatEnvironment ? "pt-11" : "pt-6"}`}>
         <div className="px-2">
           <Link href="/dashboard">
             <Brand />
@@ -30,6 +32,7 @@ export function AppShell({ children, user, alerts }: Readonly<{ children: React.
           </div>
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-neutral-text">{user.name}</p>
+            {isUatEnvironment ? <span className="mt-0.5 inline-flex rounded bg-amber-400 px-1.5 py-0.5 text-[9px] font-black tracking-wide text-amber-950">UAT</span> : null}
           </div>
           <form action={logoutAction} className="ml-auto">
             <button aria-label="Log out" className="grid size-7 place-items-center rounded-lg text-neutral-muted transition hover:bg-neutral-border hover:text-neutral-text" type="submit">
@@ -41,7 +44,7 @@ export function AppShell({ children, user, alerts }: Readonly<{ children: React.
 
       {/* Main content */}
       <div className="flex min-h-screen min-w-0 flex-col lg:pl-64">
-        <header className="sticky top-0 z-30 border-b border-neutral-border/80 bg-neutral-surface/90 backdrop-blur-xl">
+        <header className={`sticky z-30 border-b border-neutral-border/80 bg-neutral-surface/90 backdrop-blur-xl ${isUatEnvironment ? "top-6" : "top-0"}`}>
           <div className="flex h-12 items-center gap-4 px-4 sm:px-6 lg:px-8">
             <Link className="lg:hidden" href="/dashboard">
               <Brand compact />

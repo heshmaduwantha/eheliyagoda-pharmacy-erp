@@ -16,6 +16,8 @@ const saleLineSchema = z.object({
   unitId: z.string().uuid(),
   quantity: decimalLike,
   quotedUnitPrice: decimalLike,
+  selectedBatchId: z.string().uuid().optional(),
+  batchOverrideReason: z.string().trim().min(3).max(500).optional(),
   barcodeUsed: z.string().trim().max(120).optional(),
 });
 

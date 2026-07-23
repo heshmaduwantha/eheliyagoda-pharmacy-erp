@@ -203,6 +203,7 @@ async function createFixture(options: FixtureOptions): Promise<Fixture> {
         mrp: batchInput.mrp != null ? new Prisma.Decimal(batchInput.mrp) : null,
         costPrice: new Prisma.Decimal(batchInput.costPrice),
         sellingPrice: new Prisma.Decimal(batchInput.sellingPrice),
+        priceUnitId: saleUnit.id,
         qtyOnHandBase: new Prisma.Decimal(batchInput.qtyOnHandBase),
         status: batchInput.status ?? BatchStatus.ACTIVE,
       },
@@ -244,6 +245,8 @@ function saleInput(fixture: Fixture, overrides: Partial<{
   discountAmount: string;
   taxAmount: string;
   prescription: unknown;
+  selectedBatchId: string;
+  batchOverrideReason: string;
 }> = {}) {
   const quantity = overrides.quantity ?? "1";
   const quotedUnitPrice = overrides.quotedUnitPrice ?? fixture.saleUnitPrice.toFixed(2);
@@ -261,6 +264,8 @@ function saleInput(fixture: Fixture, overrides: Partial<{
         unitId: fixture.saleUnitId,
         quantity,
         quotedUnitPrice,
+        selectedBatchId: overrides.selectedBatchId,
+        batchOverrideReason: overrides.batchOverrideReason,
       },
     ],
     payments: overrides.payments ?? [{ method: "CASH" as const, amount: total.toFixed(2) }],
@@ -554,6 +559,31 @@ test("FEFO picks nearest expiry batch", async () => {
   const lines = await prisma.saleLine.findMany({ where: { saleId: result.saleId } });
   assert.equal(lines.length, 1);
   assert.equal(lines[0].batchId, fixture.batchIds[0]);
+  await cleanupSaleEntities(result.saleId);
+});
+
+test("an authorised batch override uses the chosen batch price and stock", async () => {
+  const baseActor = await getSaleActor();
+  const actor = { ...baseActor, permissions: [...new Set([...baseActor.permissions, "pos.batch.override"])] };
+  const fixture = await createFixture({
+    name: `OVERRIDE-${randomUUID().slice(0, 8)}`,
+    defaultSellingPrice: "18.00",
+    batches: [
+      { qtyOnHandBase: "10.000", expiryDate: new Date("2027-01-01"), mrp: "20.00", costPrice: "8.00", sellingPrice: "18.00" },
+      { qtyOnHandBase: "10.000", expiryDate: new Date("2027-12-31"), mrp: "22.00", costPrice: "9.00", sellingPrice: "20.00" },
+    ],
+  });
+
+  const result = await completeSale(saleInput(fixture, {
+    quotedUnitPrice: "20.00",
+    expectedTotal: "20.00",
+    selectedBatchId: fixture.batchIds[1],
+    batchOverrideReason: "Customer requested later-expiry batch",
+  }), actor);
+  assert.equal(result.allocations[0]?.batchId, fixture.batchIds[1]);
+  assert.equal(result.allocations[0]?.unitPrice, "20.00");
+  const audit = await prisma.auditLog.findFirst({ where: { entityType: "SALE", entityId: result.saleId, action: "sale.batch_override" } });
+  assert.ok(audit);
   await cleanupSaleEntities(result.saleId);
 });
 

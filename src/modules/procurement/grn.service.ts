@@ -292,6 +292,9 @@ export async function confirmGrn(grnId: string, actorUserId: string) {
       mrp: line.mrp,
       costPrice: line.costPrice,
       sellingPrice: line.sellingPrice,
+      priceUnitId: line.unitId,
+      priceSetById: actorUserId,
+      priceSetAt: new Date(),
       qtyOnHandBase: line.qtyBase,
     }));
     await tx.batch.createMany({ data: batches });

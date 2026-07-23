@@ -57,7 +57,7 @@ export default async function StockPage() {
           </div>
           <p className="text-sm font-bold text-neutral-muted">Near expiry</p>
           <p className="mt-1 text-3xl font-black tracking-tight text-neutral-text">{summary.nearExpiryCount}</p>
-          <p className="mt-2 text-xs font-medium text-neutral-muted">Active batches within 30 days</p>
+          <p className="mt-2 text-xs font-medium text-neutral-muted">Active batches within 6 calendar months</p>
         </div>
 
         {/* Expired / Quarantined */}

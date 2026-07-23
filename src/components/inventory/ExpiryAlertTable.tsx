@@ -3,7 +3,9 @@ import { formatInventoryDate, formatInventoryQty } from "@/modules/inventory/inv
 
 const statusStyle: Record<ExpiryAlertState, string> = {
   EXPIRED: "bg-status-danger-bg text-status-danger-text",
+  CRITICAL: "bg-status-danger-bg text-status-danger-text",
   NEAR_EXPIRY: "bg-status-warning-bg text-status-warning-text",
+  WARNING: "bg-blue-50 text-blue-700",
   QUARANTINED: "bg-purple-50 text-purple-700",
 };
 

@@ -14,6 +14,9 @@
     "prisma:migrate": "node scripts/with-database-url.mjs prisma migrate dev",
     "prisma:migrate:deploy": "node scripts/with-database-url.mjs prisma migrate deploy",
     "prisma:studio": "node scripts/with-database-url.mjs prisma studio",
+    "db:deploy:uat": "node scripts/uat-guard.mjs && node scripts/with-database-url.mjs ./node_modules/.bin/prisma migrate deploy",
+    "db:seed:uat": "node scripts/uat-guard.mjs && node scripts/with-database-url.mjs ./node_modules/.bin/tsx prisma/seed.ts",
+    "db:check:uat": "node scripts/uat-guard.mjs && node scripts/with-database-url.mjs ./node_modules/.bin/tsx scripts/uat-db-check.ts",
     "prisma:seed": "tsx --env-file=.env prisma/seed.ts",
     "uat:reset": "UAT_RESET=CONFIRM_TRUNCATE_ALL tsx --env-file=.env prisma/seed.ts",
     "seed": "tsx --env-file=.env prisma/seed.ts"

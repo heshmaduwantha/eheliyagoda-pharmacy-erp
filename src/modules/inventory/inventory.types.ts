@@ -61,7 +61,7 @@ export type StockMovementRecord = {
   createdBy: string | null;
 };
 
-export type ExpiryAlertState = "EXPIRED" | "NEAR_EXPIRY" | "QUARANTINED";
+export type ExpiryAlertState = "EXPIRED" | "CRITICAL" | "NEAR_EXPIRY" | "WARNING" | "QUARANTINED";
 
 export type ExpiryAlertRecord = {
   id: UUID;

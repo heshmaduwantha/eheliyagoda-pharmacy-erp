@@ -2,22 +2,15 @@ import { BatchStatus, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import type { ExpiryReportRow, LowStockRow, ReportResult, StockValuationRow } from "./report.types";
 import { serverOnly } from "@/lib/server-only";
+import { addCalendarMonths, getExpiryAlertMonths } from "@/modules/inventory/expiry-alert.service";
 
 serverOnly();
 
-// TODO(settings): Read system_settings.near_expiry_days when the settings model exists.
-export const DEFAULT_NEAR_EXPIRY_DAYS = 30;
 
 function startOfToday() {
   const value = new Date();
   value.setHours(0, 0, 0, 0);
   return value;
-}
-
-function addDays(value: Date, days: number) {
-  const result = new Date(value);
-  result.setDate(result.getDate() + days);
-  return result;
 }
 
 function toDateOnly(value: Date | null) {
@@ -92,9 +85,10 @@ export async function getLowStockReport(): Promise<ReportResult<{ productCount: 
   };
 }
 
-export async function getNearExpiryReport(nearExpiryDays = DEFAULT_NEAR_EXPIRY_DAYS): Promise<ReportResult<{ batchCount: number }, ExpiryReportRow>> {
+export async function getNearExpiryReport(): Promise<ReportResult<{ batchCount: number }, ExpiryReportRow>> {
   const today = startOfToday();
-  const threshold = addDays(today, nearExpiryDays);
+  const nearExpiryMonths = await getExpiryAlertMonths();
+  const threshold = addCalendarMonths(today, nearExpiryMonths);
   const batches = await prisma.batch.findMany({
     where: {
       status: { in: [BatchStatus.ACTIVE, BatchStatus.QUARANTINED] },
@@ -122,7 +116,7 @@ export async function getNearExpiryReport(nearExpiryDays = DEFAULT_NEAR_EXPIRY_D
     availability: rows.length ? "ready" : "empty",
     summary: { batchCount: rows.length },
     rows,
-    message: rows.length ? undefined : `No batches expire within ${nearExpiryDays} days.`,
+    message: rows.length ? undefined : `No batches expire within ${nearExpiryMonths} calendar months.`,
   };
 }
 

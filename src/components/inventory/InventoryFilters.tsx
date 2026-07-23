@@ -80,7 +80,7 @@ export function InventoryFilters({
         <Filter className="size-4 shrink-0" />
         <select className="bg-transparent py-2.5 font-semibold text-neutral-text outline-none" defaultValue={timeframe} name="timeframe" onChange={handleChange}>
           <option value="ALL">Any expiry</option>
-          <option value="NEAR_EXPIRY">Near expiry (30d)</option>
+          <option value="NEAR_EXPIRY">Within alert window (6 months)</option>
           <option value="EXPIRED">Expired</option>
         </select>
       </label> : null}

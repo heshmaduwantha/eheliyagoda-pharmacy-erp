@@ -1,7 +1,6 @@
 [build]
-  command = "corepack enable && corepack pnpm install --frozen-lockfile && corepack pnpm prisma:generate && corepack pnpm build"
+  command = "corepack enable && pnpm install --frozen-lockfile && pnpm prisma:generate && pnpm build"
   publish = ".next"
 
 [build.environment]
   NODE_VERSION = "22"
-

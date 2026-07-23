@@ -8,6 +8,7 @@ type Props = {
   lines: PosCartLine[];
   onQuantityChange: (lineId: string, quantity: number) => void;
   onSelectUnit: (line: PosCartLine) => void;
+  onSelectBatch: (line: PosCartLine) => void;
   onRemove: (lineId: string) => void;
 };
 
@@ -27,6 +28,7 @@ export function CartTable(props: Props) {
             onQuantityChange={props.onQuantityChange} 
             onRemove={props.onRemove} 
             onSelectUnit={props.onSelectUnit} 
+            onSelectBatch={props.onSelectBatch}
           />
         ))}
         {props.lines.length === 0 && (

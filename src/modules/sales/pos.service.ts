@@ -23,7 +23,6 @@ const productSelect = {
   isControlled: true,
   isSpecialDrug: true,
   isActive: true,
-  defaultSellingPrice: true,
 } satisfies Prisma.ProductSelect;
 
 const unitSelect = {
@@ -53,13 +52,14 @@ const stockBatchSelect = {
   mrp: true,
   costPrice: true,
   grnLine: { select: { unit: { select: { factorToBase: true } } } },
+  priceUnit: { select: { factorToBase: true } },
 } satisfies Prisma.BatchSelect;
 
 type ProductBaseRow = Prisma.ProductGetPayload<{ select: typeof productSelect }>;
 type UnitRow = Prisma.ProductUnitGetPayload<{ select: typeof unitSelect }>;
 type BarcodeRow = Prisma.ProductBarcodeGetPayload<{ select: typeof barcodeSelect }>;
 type StockBatchRow = Prisma.BatchGetPayload<{ select: typeof stockBatchSelect }>;
-type BatchPriceSource = Pick<StockBatchRow, "grnLine">;
+type BatchPriceSource = Pick<StockBatchRow, "grnLine" | "priceUnit">;
 type ProductReadRow = ProductBaseRow & {
   units: UnitRow[];
   barcodes: BarcodeRow[];
@@ -100,7 +100,7 @@ function batchPriceForUnit(
   saleUnitFactor: Prisma.Decimal,
   price: Prisma.Decimal,
 ) {
-  const sourceUnitFactor = batch.grnLine?.unit.factorToBase;
+  const sourceUnitFactor = batch.priceUnit?.factorToBase ?? batch.grnLine?.unit.factorToBase;
   return sourceUnitFactor?.gt(0)
     ? price.div(sourceUnitFactor).mul(saleUnitFactor)
     : price;
@@ -114,8 +114,6 @@ function serializeUnit(
   const barcode = product.barcodes.find((item) => item.unitId === unit.id)?.barcode ?? null;
   const sellingPrice = preferredBatch
     ? batchPriceForUnit(preferredBatch, unit.factorToBase, preferredBatch.sellingPrice).toFixed(2)
-    : product.defaultSellingPrice
-    ? product.defaultSellingPrice.mul(unit.factorToBase).toFixed(2)
     : null;
   return {
     id: unit.id,
@@ -198,6 +196,7 @@ async function hydrateProductRows(products: ProductBaseRow[]): Promise<ProductRe
         productId: { in: productIds },
         status: BatchStatus.ACTIVE,
         qtyOnHandBase: { gt: 0 },
+        priceUnitId: { not: null },
       },
       select: stockBatchSelect,
       orderBy: [{ expiryDate: { sort: "asc", nulls: "last" } }, { createdAt: "asc" }],
@@ -268,7 +267,7 @@ export async function getProductUnits(productId: string): Promise<PosUnitOption[
     prisma.productUnit.findMany({ where: { productId }, select: unitSelect, orderBy: { factorToBase: "asc" } }),
     prisma.productBarcode.findMany({ where: { productId }, select: barcodeSelect }),
     prisma.batch.findMany({
-      where: { productId, status: BatchStatus.ACTIVE, qtyOnHandBase: { gt: 0 } },
+      where: { productId, status: BatchStatus.ACTIVE, qtyOnHandBase: { gt: 0 }, priceUnitId: { not: null } },
       select: stockBatchSelect,
       orderBy: [{ expiryDate: { sort: "asc", nulls: "last" } }, { createdAt: "asc" }],
     }),
@@ -304,6 +303,7 @@ export async function getPosBatchPreview(
       productId,
       status: BatchStatus.ACTIVE,
       qtyOnHandBase: { gt: 0 },
+      priceUnitId: { not: null },
       ...(product.productType === ProductType.MEDICINE ? { expiryDate: { gte: today } } : {}),
     },
     select: {
@@ -316,6 +316,7 @@ export async function getPosBatchPreview(
       costPrice: true,
       sellingPrice: true,
       grnLine: { select: { unit: { select: { factorToBase: true } } } },
+      priceUnit: { select: { factorToBase: true } },
     },
     orderBy: [{ expiryDate: { sort: "asc", nulls: "last" } }, { createdAt: "asc" }],
   });
@@ -329,9 +330,11 @@ export async function getPosBatchPreview(
   return {
     productId,
     unitName: unit.unitName,
+    unitFactorToBase: unit.factorToBase.toFixed(3),
     requestedQtyBase: requestedQtyBase.toFixed(3),
     totalAvailableQtyBase: totalAvailableQtyBase.toFixed(3),
     canFulfil: totalAvailableQtyBase.gte(requestedQtyBase),
+    recommendedBatchId: batches[0]?.id ?? null,
     candidates: batches.map((batch, index) => ({
       id: batch.id,
       batchNumber: batch.batchNo,

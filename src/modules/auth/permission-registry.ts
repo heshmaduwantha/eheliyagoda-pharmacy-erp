@@ -16,6 +16,7 @@ export const permissionRegistry: PermissionDefinition[] = [
   // POS
   { code: "pos.sale.read", module: "pos", resource: "sale", action: "read", description: "View POS sales and workspace access" },
   { code: "pos.sale.create", module: "pos", resource: "sale", action: "create", description: "Create and complete sales" },
+  { code: "pos.batch.override", module: "pos", resource: "batch", action: "override", description: "Select a non-FEFO sale batch with a recorded reason", isSensitive: true },
   { code: "pos.sale.void", module: "pos", resource: "sale", action: "void", description: "Void completed sales" },
   { code: "pos.discount.override", module: "pos", resource: "discount", action: "override", description: "Override discount limits" },
   { code: "pos.cash_session.manage", module: "pos", resource: "cash_session", action: "manage", description: "Open and manage a POS cash session" },

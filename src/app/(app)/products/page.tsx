@@ -1,6 +1,6 @@
 import { Search, Plus, ChevronDown } from "lucide-react";
 import Link from "next/link";
-import { formatMoney, formatQty } from "@/lib/money";
+import { formatQty } from "@/lib/money";
 import { requirePermission } from "@/modules/auth/permissions";
 import { searchProducts } from "@/modules/catalog/catalog.service";
 import { ProductForm } from "@/modules/catalog/product-form";
@@ -84,9 +84,8 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
                     <th className="px-5 py-3 font-semibold text-neutral-text">Product Name</th>
                     <th className="px-5 py-3 font-semibold text-neutral-text">Generic</th>
                     <th className="px-5 py-3 font-semibold text-neutral-text">Type &amp; Form</th>
-                    <th className="px-5 py-3 font-semibold text-neutral-text">Sold in &amp; unit pricing</th>
+                    <th className="px-5 py-3 font-semibold text-neutral-text">Sold in</th>
                     <th className="px-5 py-3 font-semibold text-neutral-text">Barcode</th>
-                    <th className="px-5 py-3 text-right font-semibold text-neutral-text">Selling Price</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -115,13 +114,9 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
                             </summary>
                             <div className="mt-2 grid gap-1.5 rounded-lg border border-neutral-border bg-neutral-bg p-2.5">
                               {product.units.map((unit) => {
-                                const unitPrice = product.defaultSellingPrice == null
-                                  ? null
-                                  : Number(product.defaultSellingPrice) * Number(unit.factorToBase);
                                 return (
                                   <div className="flex items-center justify-between gap-3 text-xs" key={unit.id}>
                                     <span className="font-semibold text-neutral-text">{unit.unitName} <span className="font-normal text-neutral-muted">· {formatQty(unit.factorToBase)} {product.baseUnitName}</span></span>
-                                    <strong className="whitespace-nowrap text-brand-default">{unitPrice == null ? "Price pending" : `${formatMoney(unitPrice)} each`}</strong>
                                   </div>
                                 );
                               })}
@@ -131,10 +126,6 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
                       </td>
                       <td className="px-5 py-3.5 font-mono text-xs text-neutral-muted">
                         {product.barcodes.length > 0 ? product.barcodes[0].barcode : "—"}
-                      </td>
-                      <td className="px-5 py-3.5 text-right font-bold text-neutral-text">
-                        {product.defaultSellingPrice ? formatMoney(product.defaultSellingPrice) : "—"}
-                        <span className="ml-1 text-xs font-normal text-neutral-muted">/{product.baseUnitName}</span>
                       </td>
                     </tr>
                   ))}

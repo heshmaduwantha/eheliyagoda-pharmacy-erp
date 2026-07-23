@@ -10,22 +10,15 @@ import type {
   StockSummary,
 } from "./inventory.types";
 import { serverOnly } from "@/lib/server-only";
+import { addCalendarMonths, getExpiryAlertMonths } from "./expiry-alert.service";
 
 serverOnly();
 
-// TODO(settings): Read system_settings.near_expiry_days when that model is introduced.
-const DEFAULT_NEAR_EXPIRY_DAYS = 30;
 
 function startOfToday() {
   const value = new Date();
   value.setHours(0, 0, 0, 0);
   return value;
-}
-
-function addDays(value: Date, days: number) {
-  const result = new Date(value);
-  result.setDate(result.getDate() + days);
-  return result;
 }
 
 function toDateOnly(value: Date | null) {
@@ -112,7 +105,7 @@ const batchInclude = {
 
 export async function getStockSummary(): Promise<StockSummary> {
   const today = startOfToday();
-  const nearExpiryDate = addDays(today, DEFAULT_NEAR_EXPIRY_DAYS);
+  const nearExpiryDate = addCalendarMonths(today, await getExpiryAlertMonths());
 
   const [totalActiveProducts, productsWithReorderLevels, nearExpiryCount, expiredOrQuarantinedCount] = await Promise.all([
     prisma.product.count({ where: { isActive: true } }),
@@ -162,7 +155,7 @@ export async function getBatchList(filters: InventoryFilterInput = {}): Promise<
   let expiryWhere: Prisma.DateTimeFilter | undefined = undefined;
   if (filters.timeframe === "NEAR_EXPIRY") {
     const today = startOfToday();
-    const threshold = addDays(today, DEFAULT_NEAR_EXPIRY_DAYS);
+    const threshold = addCalendarMonths(today, await getExpiryAlertMonths());
     expiryWhere = { gte: today, lte: threshold };
   } else if (filters.timeframe === "EXPIRED") {
     expiryWhere = { lt: startOfToday() };
@@ -342,7 +335,7 @@ export async function getStockMovementList(filters: InventoryFilterInput = {}): 
 export async function getExpiryAlerts(filters: InventoryFilterInput = {}): Promise<{ data: ExpiryAlertRecord[]; total: number }> {
   const { page = 1, pageSize = 10 } = filters;
   const today = startOfToday();
-  const threshold = addDays(today, DEFAULT_NEAR_EXPIRY_DAYS);
+  const threshold = addCalendarMonths(today, await getExpiryAlertMonths());
   const query = filters.search?.trim();
   
   let timeCondition: Prisma.BatchWhereInput | undefined;
@@ -393,7 +386,11 @@ export async function getExpiryAlerts(filters: InventoryFilterInput = {}): Promi
       ? "QUARANTINED" as const
       : daysLeft != null && daysLeft < 0
         ? "EXPIRED" as const
-        : "NEAR_EXPIRY" as const;
+        : daysLeft != null && daysLeft <= 30
+          ? "CRITICAL" as const
+          : daysLeft != null && daysLeft <= 90
+            ? "NEAR_EXPIRY" as const
+            : "WARNING" as const;
     return {
       id: row.id,
       productName: row.product.name,

@@ -33,7 +33,6 @@ type DevProductInput = {
   baseUnitName: string;
   prescriptionRule: PrescriptionRule;
   isControlled?: boolean;
-  defaultSellingPrice: string;
   reorderLevel: string;
   units: { name: string; factor: string; saleDefault?: boolean; purchaseDefault?: boolean; barcode?: string }[];
 };
@@ -53,7 +52,6 @@ async function upsertDevProduct(input: DevProductInput) {
           prescriptionRule: input.prescriptionRule,
           isControlled: input.isControlled ?? false,
           isSpecialDrug: input.isControlled ?? false,
-          defaultSellingPrice: new Prisma.Decimal(input.defaultSellingPrice),
           reorderLevel: new Prisma.Decimal(input.reorderLevel),
           isActive: true,
         },
@@ -70,7 +68,6 @@ async function upsertDevProduct(input: DevProductInput) {
           prescriptionRule: input.prescriptionRule,
           isControlled: input.isControlled ?? false,
           isSpecialDrug: input.isControlled ?? false,
-          defaultSellingPrice: new Prisma.Decimal(input.defaultSellingPrice),
           reorderLevel: new Prisma.Decimal(input.reorderLevel),
         },
       });
@@ -115,12 +112,17 @@ async function upsertDevProduct(input: DevProductInput) {
 }
 
 async function main() {
-  const ownerUsername = requiredSeedValue("SEED_OWNER_USERNAME");
-  const ownerPassword = requiredSeedValue("SEED_OWNER_PASSWORD");
-  const pharmacistUsername = requiredSeedValue("SEED_PHARMACIST_USERNAME");
-  const pharmacistPassword = requiredSeedValue("SEED_PHARMACIST_PASSWORD");
+  const isUat = process.env.APP_ENV === "uat" && process.env.UAT_MODE === "true";
+  if (process.env.APP_ENV === "production") throw new Error("Refusing to seed a production environment.");
+  const ownerUsername = requiredSeedValue(isUat ? "UAT_ADMIN_USERNAME" : "SEED_OWNER_USERNAME");
+  const ownerPassword = requiredSeedValue(isUat ? "UAT_ADMIN_PASSWORD" : "SEED_OWNER_PASSWORD");
+  const pharmacistUsername = requiredSeedValue(isUat ? "UAT_PHARMACIST_USERNAME" : "SEED_PHARMACIST_USERNAME");
+  const pharmacistPassword = requiredSeedValue(isUat ? "UAT_PHARMACIST_PASSWORD" : "SEED_PHARMACIST_PASSWORD");
 
   if (process.env.UAT_RESET === "CONFIRM_TRUNCATE_ALL") {
+    if (!isUat || process.env.UAT_ALLOW_DEMO_RESET !== "true") {
+      throw new Error("UAT reset requires APP_ENV=uat, UAT_MODE=true, and UAT_ALLOW_DEMO_RESET=true.");
+    }
     await prisma.$executeRawUnsafe(`
       TRUNCATE TABLE
         "PrescriptionSaleLine", "Prescription", "Patient", "SaleVoid",
@@ -175,7 +177,7 @@ async function main() {
     });
   }
 
-  const existingSupplier = await prisma.supplier.findFirst({ where: { name: "Eheliyagoda Medical Distributors" } });
+  const existingSupplier = await prisma.supplier.findFirst({ where: { name: "UAT Medical Distributors" } });
   const supplier = existingSupplier
     ? await prisma.supplier.update({
         where: { id: existingSupplier.id },
@@ -183,7 +185,7 @@ async function main() {
       })
     : await prisma.supplier.create({
         data: {
-          name: "Eheliyagoda Medical Distributors",
+        name: "UAT Medical Distributors",
           contactPerson: "Development Contact",
           phone: "0450000000",
           email: "dev-supplier@example.test",
@@ -202,7 +204,6 @@ async function main() {
       category: "Analgesic",
       baseUnitName: "tablet",
       prescriptionRule: PrescriptionRule.NONE,
-      defaultSellingPrice: "10.00",
       reorderLevel: "200.000",
       units: [
         { name: "tablet", factor: "1.000", saleDefault: true, barcode: "9417000000011" },
@@ -219,7 +220,6 @@ async function main() {
       category: "Antibiotic",
       baseUnitName: "capsule",
       prescriptionRule: PrescriptionRule.PROMPT_SKIPPABLE,
-      defaultSellingPrice: "28.00",
       reorderLevel: "100.000",
       units: [
         { name: "capsule", factor: "1.000", saleDefault: true, barcode: "9417000000035" },
@@ -237,7 +237,6 @@ async function main() {
       baseUnitName: "tablet",
       prescriptionRule: PrescriptionRule.HARD_REQUIRED_CONTROLLED,
       isControlled: true,
-      defaultSellingPrice: "15.00",
       reorderLevel: "50.000",
       units: [
         { name: "tablet", factor: "1.000", saleDefault: true, barcode: "9417000000042" },
@@ -250,7 +249,6 @@ async function main() {
       category: "General",
       baseUnitName: "piece",
       prescriptionRule: PrescriptionRule.NONE,
-      defaultSellingPrice: "25.00",
       reorderLevel: "50.000",
       units: [
         { name: "piece", factor: "1.000", saleDefault: true, barcode: "9417000000059" },
@@ -317,6 +315,9 @@ async function main() {
             mrp: line.mrp ? new Prisma.Decimal(line.mrp) : null,
             costPrice: new Prisma.Decimal(line.cost),
             sellingPrice: new Prisma.Decimal(line.selling),
+            priceUnitId: baseUnit.id,
+            priceSetById: ownerUser.id,
+            priceSetAt: new Date(),
             qtyOnHandBase: new Prisma.Decimal(line.qty),
           },
         });

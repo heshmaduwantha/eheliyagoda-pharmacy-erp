@@ -26,7 +26,6 @@ const createProductSchema = z.object({
   baseUnitName: z.string().trim().min(1, "Base unit is required").max(60),
   prescriptionRule: z.nativeEnum(PrescriptionRule),
   isControlled: z.coerce.boolean(),
-  defaultSellingPrice: z.coerce.number().nonnegative().optional(),
   reorderLevel: z.coerce.number().nonnegative().optional(),
   units: z.array(unitSchema).min(1, "Select at least one sold-in unit"),
 }).superRefine((input, context) => {
@@ -63,7 +62,6 @@ export async function createProductAction(_prev: FormState, formData: FormData):
       ? "HARD_REQUIRED_CONTROLLED" 
       : formData.get("prescriptionRule"),
     isControlled: formData.get("isControlled") === "on" || formData.get("isControlled") === "true",
-    defaultSellingPrice: formData.get("defaultSellingPrice") || undefined,
     reorderLevel: formData.get("reorderLevel") || undefined,
     units,
   });

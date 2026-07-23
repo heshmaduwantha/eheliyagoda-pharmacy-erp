@@ -52,7 +52,6 @@ async function main() {
         category: "General",
         baseUnitName: "tablet",
         prescriptionRule: PrescriptionRule.NONE,
-        defaultSellingPrice: new Prisma.Decimal(10 + i),
         reorderLevel: new Prisma.Decimal(50),
         isActive: true,
       },
@@ -131,6 +130,9 @@ async function main() {
           expiryDate: expiry,
           costPrice: new Prisma.Decimal(5),
           sellingPrice: new Prisma.Decimal(10 + i),
+          priceUnitId: p.unit.id,
+          priceSetById: ownerUser.id,
+          priceSetAt: new Date(),
           qtyOnHandBase: new Prisma.Decimal(qty),
         },
       });

@@ -44,6 +44,8 @@ type PreparedLine = {
   requestedQty: Prisma.Decimal;
   requestedQtyBase: Prisma.Decimal;
   quotedUnitPrice: Prisma.Decimal;
+  selectedBatchId: string | null;
+  batchOverrideReason: string | null;
 };
 
 type PreparedProductGroup = {
@@ -147,15 +149,17 @@ async function lockCandidateBatches(tx: Prisma.TransactionClient, products: Prod
       b."qtyOnHandBase",
       b.status,
       b."createdAt",
-      source_unit."factorToBase" AS "sourceUnitFactor"
+      COALESCE(price_unit."factorToBase", source_unit."factorToBase") AS "sourceUnitFactor"
     FROM "Batch" b
     INNER JOIN "Product" p ON p.id = b."productId"
     LEFT JOIN "GrnLine" source_line ON source_line.id = b."grnLineId"
     LEFT JOIN "ProductUnit" source_unit ON source_unit.id = source_line."unitId"
+    LEFT JOIN "ProductUnit" price_unit ON price_unit.id = b."priceUnitId"
     WHERE b."productId" IN (${Prisma.join(productIds.map((id) => Prisma.sql`${id}::uuid`))})
       AND p."isActive" = TRUE
       AND b.status = 'ACTIVE'
       AND b."qtyOnHandBase" > 0
+      AND b."priceUnitId" IS NOT NULL
       AND (
         p."productType" <> 'MEDICINE'
         OR (b."expiryDate" IS NOT NULL AND b."expiryDate" >= CURRENT_DATE)
@@ -180,13 +184,24 @@ function batchPriceForUnit(
     : price;
 }
 
-function allocateProductGroup(group: PreparedProductGroup) {
+function allocateProductGroup(group: PreparedProductGroup, canOverrideFefo: boolean) {
   const remainingByBatch = new Map(group.batches.map((batch) => [batch.id, batch.qtyOnHandBase]));
   const allocations: PlannedAllocation[] = [];
 
   for (const line of group.lines) {
+    const recommendedBatch = group.batches.find((batch) => (remainingByBatch.get(batch.id) ?? new Prisma.Decimal(0)).gt(0)) ?? null;
+    const lineBatches = line.selectedBatchId
+      ? group.batches.filter((batch) => batch.id === line.selectedBatchId)
+      : group.batches;
+    if (line.selectedBatchId && lineBatches.length === 0) {
+      throw new SaleCompletionError("INVENTORY_NO_ACTIVE_STOCK", `${line.product.name} selected batch is no longer available.`, { productId: line.product.id, batchId: line.selectedBatchId });
+    }
+    if (line.selectedBatchId && recommendedBatch && recommendedBatch.id !== line.selectedBatchId) {
+      if (!canOverrideFefo) throw new SaleCompletionError("FORBIDDEN", "You do not have permission to select a non-FEFO batch.");
+      if (!line.batchOverrideReason) throw new SaleCompletionError("VALIDATION_ERROR", "Provide a reason when selecting a non-FEFO batch.");
+    }
     let remainingLineQtyBase = line.requestedQtyBase;
-    const availableQtyBase = group.batches.reduce(
+    const availableQtyBase = lineBatches.reduce(
       (sum, batch) => sum.add(remainingByBatch.get(batch.id) ?? new Prisma.Decimal(0)),
       new Prisma.Decimal(0),
     );
@@ -211,7 +226,7 @@ function allocateProductGroup(group: PreparedProductGroup) {
       );
     }
 
-    for (const batch of group.batches) {
+    for (const batch of lineBatches) {
       if (remainingLineQtyBase.lte(0)) break;
       const batchRemaining = remainingByBatch.get(batch.id) ?? new Prisma.Decimal(0);
       if (batchRemaining.lte(0)) continue;
@@ -647,6 +662,8 @@ export async function completeSale(input: SaleCompletionInput, actor: CurrentUse
         requestedQty,
         requestedQtyBase: requestedQty.mul(unit.factorToBase),
         quotedUnitPrice,
+        selectedBatchId: line.selectedBatchId ?? null,
+        batchOverrideReason: line.batchOverrideReason?.trim() || null,
       });
     }
 
@@ -684,7 +701,7 @@ export async function completeSale(input: SaleCompletionInput, actor: CurrentUse
 
     const allocations: PlannedAllocation[] = [];
     for (const group of preparedGroups) {
-      allocations.push(...allocateProductGroup(group));
+      allocations.push(...allocateProductGroup(group, hasPermission(actor, "pos.batch.override")));
     }
     const batchMap = groupBatchesById(preparedGroups);
     const subtotal = allocations.reduce((sum, allocation) => sum.add(allocation.lineTotal), new Prisma.Decimal(0));
@@ -752,6 +769,7 @@ export async function completeSale(input: SaleCompletionInput, actor: CurrentUse
         discountAmount: allocatedLineDiscount,
         costPriceAtSale: allocation.costPriceAtSale,
         mrpAtSale: allocation.mrpAtSale,
+        unitFactorToBaseAtSale: preparedLines.find((line) => line.input.clientLineId === allocation.clientLineId)?.unit.factorToBase ?? new Prisma.Decimal(1),
         barcodeUsed: allocation.barcodeUsed,
         productNameSnapshot: allocation.productName,
         batchNoSnapshot: allocation.batchNumber,
@@ -843,6 +861,23 @@ export async function completeSale(input: SaleCompletionInput, actor: CurrentUse
     }
 
     await writeAuditLogs([
+      ...preparedLines.flatMap((line) => {
+        if (!line.selectedBatchId || !line.batchOverrideReason) return [];
+        const recommendedBatch = preparedGroups.find((group) => group.product.id === line.product.id)?.batches[0] ?? null;
+        if (!recommendedBatch || recommendedBatch.id === line.selectedBatchId) return [];
+        return [{
+          actorUserId: actor.id,
+          action: "sale.batch_override",
+          entityType: "SALE",
+          entityId: sale.id,
+          afterData: {
+            productId: line.product.id,
+            recommendedBatchId: recommendedBatch.id,
+            selectedBatchId: line.selectedBatchId,
+            reason: line.batchOverrideReason,
+          },
+        }];
+      }),
       ...allocations.map((allocation) => ({
         actorUserId: actor.id,
         action: "stock.sale_out",

@@ -5,7 +5,6 @@ import { CircleAlert, CircleCheck, Search } from "lucide-react";
 import { completeSaleAction } from "@/modules/sales/sale.actions";
 import {
   getPosBatchPreviewAction,
-  lookupProductByBarcodeAction,
   searchProductsForPosAction,
 } from "@/modules/sales/pos.actions";
 import type { PrescriptionDecisionInput } from "@/modules/prescriptions/prescription.types";
@@ -31,6 +30,7 @@ import { PrescriptionPromptModal } from "./PrescriptionPromptModal";
 import { ProductSearchPanel } from "./ProductSearchPanel";
 import { ReceiptModal } from "./ReceiptModal";
 import { UnitSelectorModal } from "./UnitSelectorModal";
+import { BatchSelectorModal } from "./BatchSelectorModal";
 
 type Notice = { tone: "success" | "warning" | "error"; message: string } | null;
 
@@ -40,6 +40,7 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
   const [products, setProducts] = useState(initialProducts);
   const [lines, setLines] = useState<PosCartLine[]>([]);
   const [selectedLine, setSelectedLine] = useState<PosCartLine | null>(null);
+  const [selectedBatchLine, setSelectedBatchLine] = useState<PosCartLine | null>(null);
   const [paymentMode, setPaymentMode] = useState<PosPaymentMode>("split");
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [receipt, setReceipt] = useState<SaleReceipt | null>(null);
@@ -162,6 +163,8 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
           unitId: line.unitId,
           quantity: String(line.quantity),
           quotedUnitPrice: line.unitPrice.toFixed(2),
+          selectedBatchId: line.selectedBatchId,
+          batchOverrideReason: line.batchOverrideReason,
           barcodeUsed: line.primaryBarcode ?? undefined,
         })),
         payments: payments.map((payment) => ({
@@ -304,7 +307,8 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
               lines={lines}
               onQuantityChange={changeQuantity}
               onRemove={(lineId) => setLines((current) => current.filter((line) => line.id !== lineId))}
-              onSelectUnit={setSelectedLine}
+            onSelectUnit={setSelectedLine}
+            onSelectBatch={setSelectedBatchLine}
             />
           </div>
           <div className="border-t border-neutral-border p-5">
@@ -322,6 +326,7 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
       {selectedLine ? (
         <UnitSelectorModal line={selectedLine} onClose={() => setSelectedLine(null)} onSelect={changeUnit} />
       ) : null}
+      {selectedBatchLine ? <BatchSelectorModal line={selectedBatchLine} onClose={() => setSelectedBatchLine(null)} onSelect={(lineId, batch, reason) => setLines((current) => current.map((line) => line.id === lineId ? { ...line, selectedBatchId: batch.id === line.batchPreview?.recommendedBatchId ? undefined : batch.id, batchOverrideReason: batch.id === line.batchPreview?.recommendedBatchId ? undefined : reason, unitPrice: Number(batch.sellingPrice), lineTotal: Number(batch.sellingPrice) * line.quantity } : line))} /> : null}
       {paymentOpen ? (
         <PaymentModal
           mode={paymentMode}

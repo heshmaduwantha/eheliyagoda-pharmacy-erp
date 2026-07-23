@@ -144,7 +144,7 @@ export function ProductForm() {
             <input className={inputClass} id="baseUnitName" name="baseUnitName" onChange={(event) => setBaseUnitName(event.target.value)} placeholder="e.g. Tablet" required value={baseUnitName} />
           </Field>
         </div>
-        {/* Row 2: Sold In | Selling Price — both stretch to match each other */}
+        {/* Selling prices belong to confirmed GRN batches, not the product master. */}
         <div className="flex flex-col gap-1">
           <span className="text-xs font-semibold uppercase tracking-wide text-neutral-muted">Sold in</span>
           <SoldInMultiSelect onChange={updateSelectedUnits} selectedUnits={selectedUnits} />
@@ -152,11 +152,7 @@ export function ProductForm() {
             ? <span className="text-xs font-semibold text-status-danger-text">{state.fieldErrors.units}</span>
             : <span className="text-xs text-neutral-muted">Select every unit customers can buy. Add the exact conversion for each selection below.</span>}
         </div>
-        <div className="flex flex-col gap-1">
-          <Field htmlFor="defaultSellingPrice" label="Selling price (LKR)">
-            <input className={`${inputClass} h-11`} id="defaultSellingPrice" min="0" name="defaultSellingPrice" step="0.01" type="number" placeholder="0.00" />
-          </Field>
-        </div>
+        <p className="rounded-xl border border-brand-default/15 bg-brand-pale px-3 py-2 text-xs leading-relaxed text-brand-default">Selling price is set on each confirmed GRN batch. This keeps the POS price tied to the stock that is actually sold.</p>
       </div>
 
       {selectedUnits.length > 0 ? <section className="rounded-xl border border-neutral-border bg-neutral-bg p-4">

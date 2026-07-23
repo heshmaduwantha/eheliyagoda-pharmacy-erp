@@ -24,7 +24,6 @@ export type CreateProductInput = {
   baseUnitName: string;
   prescriptionRule: PrescriptionRule;
   isControlled: boolean;
-  defaultSellingPrice?: number;
   reorderLevel?: number;
   units: ProductUnitInput[];
 };
@@ -109,8 +108,6 @@ export async function createProduct(input: CreateProductInput, actorUserId: stri
         baseUnitName: input.baseUnitName,
         prescriptionRule,
         isControlled: input.isControlled,
-        defaultSellingPrice:
-          input.defaultSellingPrice != null ? new Prisma.Decimal(input.defaultSellingPrice) : null,
         reorderLevel: new Prisma.Decimal(input.reorderLevel ?? 0),
         units: {
           create: input.units.map((unit) => ({

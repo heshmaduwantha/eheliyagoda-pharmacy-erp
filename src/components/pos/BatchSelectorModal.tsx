@@ -1,0 +1,16 @@
+"use client";
+
+import { useState } from "react";
+import { Check, X } from "lucide-react";
+import type { PosBatchCandidate, PosCartLine } from "@/modules/sales/pos.types";
+import { formatLkr } from "@/modules/sales/pos.utils";
+
+type Props = { line: PosCartLine; onClose: () => void; onSelect: (lineId: string, batch: PosBatchCandidate, reason?: string) => void };
+
+export function BatchSelectorModal({ line, onClose, onSelect }: Props) {
+  const preview = line.batchPreview;
+  const [reason, setReason] = useState(line.batchOverrideReason ?? "");
+  if (!preview || preview.candidates.length === 0) return null;
+  const selectedId = line.selectedBatchId ?? preview.recommendedBatchId;
+  return <div className="fixed inset-0 z-[70] grid place-items-center bg-slate-950/35 p-4 backdrop-blur-sm" role="presentation"><section aria-modal="true" className="w-full max-w-lg rounded-3xl bg-neutral-surface p-6 shadow-2xl" role="dialog"><div className="flex items-start justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-wider text-brand-default">Batch selection</p><h2 className="mt-1 text-xl font-black text-neutral-text">{line.productName}</h2><p className="mt-1 text-xs text-neutral-muted">FEFO batch is recommended. A later batch needs permission and a reason at checkout.</p></div><button aria-label="Close" className="grid size-9 place-items-center rounded-full text-neutral-muted hover:bg-neutral-bg" onClick={onClose} type="button"><X className="size-5" /></button></div><div className="mt-5 grid gap-2">{preview.candidates.map((batch) => { const recommended = batch.id === preview.recommendedBatchId; const selected = batch.id === selectedId; return <button className={`rounded-xl border p-3 text-left ${selected ? "border-brand-default bg-brand-pale" : "border-neutral-border hover:border-brand-default/30"}`} key={batch.id} onClick={() => { if (!recommended && reason.trim().length < 3) return; onSelect(line.id, batch, recommended ? undefined : reason.trim()); onClose(); }} type="button"><span className="flex items-center justify-between gap-3"><strong className="text-sm text-neutral-text">{batch.batchNumber ?? "No batch number"}</strong><strong className="text-brand-default">{formatLkr(Number(batch.sellingPrice))}</strong></span><span className="mt-1 flex items-center justify-between text-xs text-neutral-muted"><span>Exp {batch.expiryDate ?? "—"} · {batch.availableQtyBase} base units</span>{recommended ? <span className="inline-flex items-center gap-1 font-bold text-brand-default"><Check className="size-3.5" /> FEFO recommended</span> : null}</span><span className="mt-1 block text-xs text-neutral-muted">MRP {batch.mrp ? formatLkr(Number(batch.mrp)) : "—"}</span></button>; })}</div>{preview.candidates.some((batch) => batch.id !== preview.recommendedBatchId) ? <label className="mt-4 block text-sm font-semibold text-neutral-text">Reason for a non-FEFO batch<textarea className="mt-1.5 min-h-20 w-full rounded-xl border border-neutral-border bg-neutral-bg px-3 py-2 text-sm font-normal outline-none focus:border-brand-default" onChange={(event) => setReason(event.target.value)} placeholder="Required if you select a later batch" value={reason} /></label> : null}</section></div>;
+}

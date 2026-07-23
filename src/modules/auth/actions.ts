@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { setPerformanceStatus, withPerformanceTrace } from "@/lib/performance";
 import { prisma } from "@/lib/prisma";
+import { clearLoginAttempts, consumeLoginAttempt } from "@/lib/redis";
 import { clearSession, createSession } from "./session";
 
 const loginSchema = z.object({
@@ -22,6 +23,11 @@ export async function loginAction(formData: FormData) {
       redirect(invalidLoginUrl);
     }
 
+    if (!(await consumeLoginAttempt(parsed.data.username))) {
+      setPerformanceStatus(401);
+      redirect(invalidLoginUrl);
+    }
+
     const user = await prisma.user.findUnique({
       where: { username: parsed.data.username },
       select: { id: true, passwordHash: true, isActive: true },
@@ -31,6 +37,7 @@ export async function loginAction(formData: FormData) {
       redirect(invalidLoginUrl);
     }
 
+    await clearLoginAttempts(parsed.data.username);
     await createSession(user.id);
     setPerformanceStatus(303);
     redirect("/dashboard");

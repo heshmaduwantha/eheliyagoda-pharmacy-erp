@@ -59,9 +59,11 @@ export type PosBatchCandidate = {
 export type PosBatchPreview = {
   productId: UUID;
   unitName: string;
+  unitFactorToBase: QuantityString;
   requestedQtyBase: QuantityString;
   totalAvailableQtyBase: QuantityString;
   canFulfil: boolean;
+  recommendedBatchId: UUID | null;
   candidates: PosBatchCandidate[];
   generatedAt: ISODateTime;
 };
@@ -80,6 +82,8 @@ export type PosCartLine = {
   lineTotal: number;
   availableUnits: PosUnitOption[];
   batchPreview?: PosBatchPreview;
+  selectedBatchId?: UUID;
+  batchOverrideReason?: string;
 };
 
 export type PosPaymentInput = {

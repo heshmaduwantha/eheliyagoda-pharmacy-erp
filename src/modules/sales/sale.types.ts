@@ -21,6 +21,8 @@ export type SaleLineInput = {
   unitId: UUID;
   quantity: QuantityString;
   quotedUnitPrice: MoneyString;
+  selectedBatchId?: UUID;
+  batchOverrideReason?: string;
   barcodeUsed?: string;
 };
 
