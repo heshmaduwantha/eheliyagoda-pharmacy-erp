@@ -81,7 +81,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
                     autoComplete="username"
                     required
                     placeholder="Your username"
-                    className="w-full rounded-xl border border-neutral-border py-3.5 pl-11 pr-4 text-sm font-medium text-neutral-text outline-none transition-all focus:border-brand-default focus:ring-4 focus:ring-brand-default/50/10 placeholder:text-neutral-muted"
+                    className="w-full rounded-xl border border-neutral-border py-3.5 pl-11 pr-4 text-sm font-medium text-neutral-text outline-none transition-all focus:border-brand-default focus:ring-4 focus:ring-brand-default/20 placeholder:text-neutral-muted"
                   />
                 </div>
               </div>
@@ -99,14 +99,14 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
                     autoComplete="current-password"
                     required
                     placeholder="Your password"
-                    className="w-full rounded-xl border border-neutral-border py-3.5 pl-11 pr-4 text-sm font-medium text-neutral-text outline-none transition-all focus:border-brand-default focus:ring-4 focus:ring-brand-default/50/10 placeholder:text-neutral-muted"
+                    className="w-full rounded-xl border border-neutral-border py-3.5 pl-11 pr-4 text-sm font-medium text-neutral-text outline-none transition-all focus:border-brand-default focus:ring-4 focus:ring-brand-default/20 placeholder:text-neutral-muted"
                   />
                 </div>
               </div>
 
               <button
                 type="submit"
-                className="mt-4 w-full rounded-xl bg-brand-default px-4 py-4 text-sm font-bold text-white transition-all hover:bg-brand-default active:scale-[0.98] shadow-lg shadow-teal-500/25"
+                className="mt-4 w-full rounded-xl bg-brand-default px-4 py-4 text-sm font-bold text-white transition-all hover:bg-brand-hover active:scale-[0.98] shadow-lg shadow-brand-default/25"
               >
                 Sign in
               </button>
@@ -114,13 +114,13 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           </div>
 
           {/* Info Banner Below */}
-          <div className="mt-6 flex items-center gap-4 rounded-2xl bg-status-success-bg/80 p-5 ring-1 ring-emerald-100">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-neutral-surface text-status-success-text shadow-sm ring-1 ring-emerald-100">
+          <div className="mt-6 flex items-center gap-4 rounded-2xl bg-brand-pale p-5 ring-1 ring-brand-default/10">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-neutral-surface text-brand-default shadow-sm ring-1 ring-brand-default/10">
               <ShieldCheck className="size-5" />
             </div>
             <div>
-              <p className="text-sm font-bold text-emerald-950">Staff sign-in</p>
-              <p className="text-xs font-medium text-status-success-text/80">Use your pharmacy account to continue.</p>
+              <p className="text-sm font-bold text-brand-hover">Staff sign-in</p>
+              <p className="text-xs font-medium text-brand-default/80">Use your pharmacy account to continue.</p>
             </div>
           </div>
         </div>
