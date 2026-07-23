@@ -17,9 +17,9 @@ export function Brand({ compact = false, inverse = false }: { compact?: boolean;
       {!compact && (
         <span>
           <strong className={`block text-xl font-extrabold tracking-tight ${inverse ? "text-white" : "text-neutral-text"}`}>
-            Medicare
+            Medisquare
           </strong>
-          <span className={`block text-xs ${inverse ? "text-brand-default/70" : "text-neutral-muted"}`}>
+          <span className={`block text-xs ${inverse ? "text-white/70" : "text-neutral-muted"}`}>
             Pharmacy ERP
           </span>
         </span>
