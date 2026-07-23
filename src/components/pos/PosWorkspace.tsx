@@ -264,8 +264,8 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
             Point of Sale
           </h1>
         </div>
-        <div className="w-full max-w-xl">
-          <label className="flex items-center gap-3 rounded-2xl bg-neutral-surface px-4 py-1.5 shadow-[0_2px_8px_rgba(15,23,42,0.04)] focus-within:ring-2 focus-within:ring-brand-default border border-neutral-border/50">
+        <div className="w-full max-w-xl p-0.5">
+          <label className="flex items-center gap-3 rounded-2xl bg-neutral-surface px-4 py-1.5 shadow-[0_2px_8px_rgba(15,23,42,0.04)] focus-within:ring-2 focus-within:ring-inset focus-within:ring-brand-default border border-neutral-border/50">
             <Search className="size-5 shrink-0 text-neutral-muted" />
             <input
               className="min-w-0 flex-1 bg-transparent py-3 text-sm outline-none"
