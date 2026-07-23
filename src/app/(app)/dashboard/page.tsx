@@ -151,7 +151,7 @@ async function renderDashboardPage() {
                 <div key={i} className="group relative flex flex-1 flex-col items-center gap-3 h-full justify-end">
                   <div 
                     className={`w-full rounded-t-sm transition-all ${isToday ? 'bg-brand-default' : 'bg-brand-pale group-hover:bg-brand-default/40'}`} 
-                    style={{ height: \`\${height}%\` }}
+                    style={{ height: `${height}%` }}
                   ></div>
                   <span className="text-[10px] font-bold text-neutral-muted uppercase">
                     {new Intl.DateTimeFormat("en-US", { weekday: "short" }).format(day.date)}
@@ -257,7 +257,7 @@ async function renderDashboardPage() {
                   <tr key={i} className="group transition hover:bg-brand-pale/30">
                     <td className="py-4 font-bold text-neutral-text pr-2 line-clamp-1">{p.name}</td>
                     <td className="py-4 text-right pl-2">
-                      <span className={\`inline-flex rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wider \${badgeClass}\`}>
+                      <span className={`inline-flex rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wider ${badgeClass}`}>
                         {p.status}
                       </span>
                     </td>
