@@ -257,15 +257,12 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
   }
 
   return (
-    <div>
-      <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+    <div className="flex flex-col h-[calc(100vh-80px)] overflow-hidden">
+      <div className="flex flex-col gap-4 shrink-0">
         <div>
           <h1 className="text-3xl font-black tracking-tight text-neutral-text sm:text-4xl">
             Point of Sale
           </h1>
-        </div>
-        <div className="w-full max-w-xl">
-          <BarcodeInput onScan={handleBarcodeScan} />
         </div>
       </div>
 
@@ -288,9 +285,9 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
         </div>
       ) : null}
 
-      <div className="mt-4 flex items-start gap-6 relative">
+      <div className="mt-4 flex flex-1 items-start gap-6 relative overflow-hidden pb-4">
         {/* Left main area */}
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 h-full overflow-y-auto pr-2">
           <ProductSearchPanel
             isLoading={isSearching}
             onAddProduct={(product) => {
@@ -303,7 +300,7 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
         </div>
 
         {/* Right sidebar cart */}
-        <div className="sticky top-20 w-[320px] flex-shrink-0 xl:w-[360px] flex flex-col rounded-2xl bg-neutral-surface shadow-[0_2px_12px_rgba(15,23,42,0.03)] border border-neutral-border/60 overflow-hidden h-[calc(100vh-120px)]">
+        <div className="w-[280px] flex-shrink-0 xl:w-[320px] flex flex-col rounded-2xl bg-neutral-surface shadow-[0_2px_12px_rgba(15,23,42,0.03)] border border-neutral-border/60 overflow-hidden h-full">
           <div className="flex-1 overflow-hidden p-4">
             <CartTable
               lines={lines}

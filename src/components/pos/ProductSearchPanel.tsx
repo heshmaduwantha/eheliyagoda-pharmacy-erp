@@ -78,11 +78,11 @@ export function ProductSearchPanel({ products, query, onQueryChange, onAddProduc
 
               {/* Price & Add Button */}
               <div className="mt-5 flex items-end justify-between gap-2">
-                <div>
-                  <p className="text-base font-black text-brand-default">
+                <div className="min-w-0 flex-1">
+                  <p className="text-base font-black text-brand-default truncate">
                     {unit?.sellingPrice ? formatLkr(Number(unit.sellingPrice)) : "—"}
                   </p>
-                  <p className="text-[10px] font-semibold text-neutral-muted">per {unit?.unitName ?? "unit"}</p>
+                  <p className="text-[10px] font-semibold text-neutral-muted truncate">per {unit?.unitName ?? "unit"}</p>
                 </div>
                 <button
                   onClick={() => onAddProduct(product)}
