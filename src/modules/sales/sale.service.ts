@@ -161,7 +161,7 @@ async function lockCandidateBatches(tx: Prisma.TransactionClient, products: Prod
         OR (b."expiryDate" IS NOT NULL AND b."expiryDate" >= CURRENT_DATE)
       )
     ORDER BY b."productId" ASC, b."expiryDate" ASC NULLS LAST, b."createdAt" ASC, b.id ASC
-    FOR UPDATE
+    FOR UPDATE OF b
   `);
 }
 
