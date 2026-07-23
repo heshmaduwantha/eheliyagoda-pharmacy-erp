@@ -38,7 +38,31 @@
 
 * { box-sizing: border-box; }
 
-html { background: var(--color-neutral-bg); }
+html { 
+  background: var(--color-neutral-bg); 
+  font-size: 14px; 
+}
+
+@layer base {
+  table {
+    @apply w-full border-collapse text-left text-sm text-neutral-muted !important;
+  }
+  thead {
+    @apply bg-brand-pale text-xs uppercase tracking-wider text-brand-hover !important;
+  }
+  th {
+    @apply border-b border-brand-default/20 px-5 py-3 font-black !important;
+  }
+  td {
+    @apply px-5 py-3 !important;
+  }
+  tr {
+    @apply border-b border-neutral-border/50 transition-colors !important;
+  }
+  tbody tr:hover {
+    @apply bg-brand-pale/30 !important;
+  }
+}
 
 body {
   min-height: 100vh;

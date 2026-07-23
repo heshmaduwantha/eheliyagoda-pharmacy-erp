@@ -6,6 +6,7 @@ import { SaleVoidButton } from "@/components/sales/SaleVoidButton";
 import { formatMoney } from "@/lib/money";
 import { hasPermission, requirePermission } from "@/modules/auth/permissions";
 import { listSalesForVoidPage } from "@/modules/sales/sale-void.service";
+import { AutoSubmit } from "@/components/ui/auto-submit";
 import type { SaleVoidListStatusFilter } from "@/modules/sales/sale-void.types";
 import { Pagination } from "@/components/ui/pagination";
 
@@ -101,11 +102,7 @@ export default async function SalesPage({
             To
             <input className="rounded-lg border border-neutral-border px-3 py-2 text-sm outline-none focus:border-brand-default" defaultValue={to ?? ""} name="to" type="date" />
           </label>
-          <div className="flex items-end">
-            <button className="w-full rounded-lg bg-brand-default px-4 py-2 text-sm font-bold text-white hover:bg-brand-default" type="submit">
-              Apply
-            </button>
-          </div>
+          <AutoSubmit />
         </form>
       </div>
 

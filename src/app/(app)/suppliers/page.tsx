@@ -5,6 +5,7 @@ import { listSuppliers } from "@/modules/procurement/supplier.service";
 import { SupplierForm } from "@/modules/procurement/supplier-form";
 import { Pagination } from "@/components/ui/pagination";
 import { SupplierStatusToggle } from "@/components/suppliers/supplier-status-toggle";
+import { AutoSubmit } from "@/components/ui/auto-submit";
 
 export default async function SuppliersPage({ searchParams }: { searchParams: Promise<{ q?: string; page?: string }> }) {
   await requirePermission("supplier.manage");
@@ -26,6 +27,7 @@ export default async function SuppliersPage({ searchParams }: { searchParams: Pr
             name="q"
             placeholder="Search suppliers..."
           />
+          <AutoSubmit />
         </form>
         <Link
           className="inline-flex items-center gap-2 rounded-lg border border-brand-default/20 bg-neutral-surface px-4 py-2 text-sm font-semibold text-brand-default shadow-sm transition hover:bg-brand-pale"

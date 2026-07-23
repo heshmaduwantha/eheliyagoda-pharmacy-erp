@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { Plus, Search, ShieldCheck } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { requirePermission } from "@/modules/auth/permissions";
 import { listAdminRoles } from "@/modules/admin/rbac.service";
 import { Pagination } from "@/components/ui/pagination";
+import { AutoSubmit } from "@/components/ui/auto-submit";
 
 type Params = { search?: string; status?: string; page?: string };
 
@@ -32,7 +33,7 @@ export default async function AdminRolesPage({ searchParams }: { searchParams: P
         </Link>
       </div>
 
-      <form className="grid gap-3 rounded-xl border border-neutral-border bg-neutral-surface p-3 shadow-sm md:grid-cols-[1fr_220px_auto]">
+      <form className="grid gap-3 rounded-xl border border-neutral-border bg-neutral-surface p-3 shadow-sm md:grid-cols-[1fr_220px]">
         <label className="flex items-center gap-2 rounded-lg border border-neutral-border bg-neutral-bg px-3">
           <Search className="size-4 text-neutral-muted" />
           <input className="min-w-0 flex-1 bg-transparent py-2 text-sm outline-none" defaultValue={params.search} name="search" placeholder="Search code, name, or description…" />
@@ -42,9 +43,7 @@ export default async function AdminRolesPage({ searchParams }: { searchParams: P
           <option value="active">Active</option>
           <option value="inactive">Inactive</option>
         </select>
-        <button className="rounded-lg bg-slate-800 px-4 py-2 text-sm font-bold text-white transition hover:bg-slate-900" type="submit">
-          Filter
-        </button>
+        <AutoSubmit />
       </form>
 
       <section className="overflow-hidden rounded-xl border border-neutral-border bg-neutral-surface shadow-sm">

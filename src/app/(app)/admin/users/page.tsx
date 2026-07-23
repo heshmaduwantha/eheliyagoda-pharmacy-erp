@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { Plus, Search, ShieldCheck } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { requirePermission } from "@/modules/auth/permissions";
 import { toggleUserActiveSubmitAction } from "@/modules/admin/rbac.actions";
 import { listAdminUsers } from "@/modules/admin/rbac.service";
 import { Pagination } from "@/components/ui/pagination";
+import { AutoSubmit } from "@/components/ui/auto-submit";
 
 type Params = { search?: string; status?: string; page?: string };
 
@@ -51,9 +52,7 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
           <option value="active">Active</option>
           <option value="inactive">Inactive</option>
         </select>
-        <button className="rounded-lg bg-slate-800 px-4 py-2 text-sm font-bold text-white transition hover:bg-slate-900" type="submit">
-          Filter
-        </button>
+        <AutoSubmit />
       </form>
 
       <section className="overflow-hidden rounded-xl border border-neutral-border bg-neutral-surface shadow-sm">

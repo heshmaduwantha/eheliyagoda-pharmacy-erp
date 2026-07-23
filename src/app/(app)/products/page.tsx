@@ -4,7 +4,9 @@ import { formatMoney, formatQty } from "@/lib/money";
 import { requirePermission } from "@/modules/auth/permissions";
 import { searchProducts } from "@/modules/catalog/catalog.service";
 import { ProductForm } from "@/modules/catalog/product-form";
+import { ProductForm } from "@/modules/catalog/product-form";
 import { Pagination } from "@/components/ui/pagination";
+import { AutoSubmit } from "@/components/ui/auto-submit";
 
 export default async function ProductsPage({ searchParams }: { searchParams: Promise<{ q?: string; filter?: string; page?: string }> }) {
   await requirePermission("product.manage");
@@ -64,6 +66,7 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
               placeholder="Search by name or barcode"
             />
             {filter === "controlled" && <input type="hidden" name="filter" value="controlled" />}
+            <AutoSubmit />
           </form>
         </div>
 

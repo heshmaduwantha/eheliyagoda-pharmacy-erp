@@ -5,7 +5,7 @@ import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 import type { FormState } from "@/lib/forms";
 
 export const inputClass =
-  "w-full rounded-lg border border-neutral-border bg-neutral-surface px-3 py-2 text-sm text-neutral-text shadow-sm outline-none transition placeholder:text-neutral-muted focus:border-brand-default focus:ring-1 focus:ring-brand-default/50";
+  "w-full rounded-lg border border-neutral-border bg-neutral-surface px-2.5 py-1.5 text-sm text-neutral-text shadow-sm outline-none transition placeholder:text-neutral-muted focus:border-brand-default focus:ring-1 focus:ring-brand-default/50";
 
 export function Field({
   label,
@@ -34,7 +34,7 @@ export function SubmitButton({ children, disabled = false, className = "" }: { c
   const { pending } = useFormStatus();
   return (
     <button
-      className={`inline-flex items-center justify-center gap-2 rounded-lg bg-brand-default px-4 py-2 text-sm font-bold text-white transition hover:bg-brand-default disabled:opacity-60 ${className}`}
+      className={`inline-flex items-center justify-center gap-2 rounded-lg bg-brand-default px-3 py-1.5 text-sm font-bold text-white transition hover:bg-brand-default disabled:opacity-60 ${className}`}
       disabled={pending || disabled}
       type="submit"
     >

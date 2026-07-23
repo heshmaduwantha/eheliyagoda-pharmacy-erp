@@ -67,7 +67,7 @@ export function SidebarNav({ permissions, mobile = false }: { permissions: strin
       {Object.entries(groups).map(([groupName, groupItems]) => (
         <div key={groupName} className="grid gap-0.5">
           {groupName !== "Main" && (
-            <p className="mb-0.5 ml-3 text-[10px] font-bold uppercase tracking-widest text-slate-500">
+            <p className="mb-0.5 ml-3 text-[10px] font-bold uppercase tracking-widest text-neutral-muted/70">
               {groupName}
             </p>
           )}
@@ -76,7 +76,7 @@ export function SidebarNav({ permissions, mobile = false }: { permissions: strin
             return (
               <Link
                 className={`group flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-semibold transition ${
-                  active ? "bg-white text-brand-default shadow-sm" : "text-slate-400 hover:bg-white/10 hover:text-white"
+                  active ? "bg-brand-pale text-brand-hover shadow-sm" : "text-neutral-muted hover:bg-neutral-bg hover:text-brand-hover"
                 }`}
                 href={href}
                 key={href}

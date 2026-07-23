@@ -14,25 +14,25 @@ export function AppShell({ children, user, alerts }: Readonly<{ children: React.
   return (
     <div className="min-h-screen bg-neutral-bg">
       {/* Desktop sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col overflow-hidden bg-[#0B1120] px-4 pt-6 pb-6 shadow-xl lg:flex">
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col overflow-hidden bg-neutral-surface border-r border-neutral-border px-4 pt-6 pb-6 shadow-xl lg:flex">
         <div className="px-2">
           <Link href="/dashboard">
-            <Brand inverse />
+            <Brand />
           </Link>
         </div>
         <div className="mt-6 flex-1 overflow-y-auto">
           <SidebarNav permissions={user.permissions} />
         </div>
         {/* User badge at bottom */}
-        <div className="mt-4 flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-2.5">
+        <div className="mt-4 flex items-center gap-3 rounded-xl border border-neutral-border bg-neutral-bg px-3 py-2.5">
           <div className="grid size-8 shrink-0 place-items-center rounded-full bg-brand-default text-xs font-bold text-white">
             {initials}
           </div>
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-white">{user.name}</p>
+            <p className="truncate text-sm font-semibold text-neutral-text">{user.name}</p>
           </div>
           <form action={logoutAction} className="ml-auto">
-            <button aria-label="Log out" className="grid size-7 place-items-center rounded-lg text-slate-400 transition hover:bg-white/10 hover:text-white" type="submit">
+            <button aria-label="Log out" className="grid size-7 place-items-center rounded-lg text-neutral-muted transition hover:bg-neutral-border hover:text-neutral-text" type="submit">
               <LogOut className="size-4" />
             </button>
           </form>
