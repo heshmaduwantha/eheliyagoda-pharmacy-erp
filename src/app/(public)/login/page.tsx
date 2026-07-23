@@ -14,7 +14,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   return (
     <main className="flex min-h-screen">
       {/* Left Side (Branding & Info) */}
-      <div className="relative hidden w-1/2 flex-col justify-between overflow-hidden bg-gradient-to-br from-teal-800 to-emerald-600 p-12 lg:flex xl:p-16">
+      <div className="relative hidden w-1/2 flex-col justify-between overflow-hidden bg-gradient-to-br from-brand-hover to-brand-default p-12 lg:flex xl:p-16">
         {/* Subtle background grid pattern */}
         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-soft-light"></div>
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff0a_1px,transparent_1px),linear-gradient(to_bottom,#ffffff0a_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)]"></div>
@@ -36,7 +36,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
 
           <div className="mt-12 flex h-32 items-center">
             {/* ECG SVG Graphic */}
-            <svg viewBox="0 0 500 100" className="h-full w-full stroke-emerald-300 drop-shadow-[0_0_8px_rgba(52,211,153,0.8)]" fill="none" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+            <svg viewBox="0 0 500 100" className="h-full w-full stroke-brand-pale drop-shadow-[0_0_8px_rgba(40,114,240,0.8)]" fill="none" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
               <path d="M 0,50 L 100,50 L 120,20 L 140,80 L 150,50 L 250,50 L 270,10 L 300,90 L 320,50 L 400,50 L 420,30 L 440,70 L 450,50 L 500,50" />
             </svg>
           </div>

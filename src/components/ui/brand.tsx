@@ -10,6 +10,7 @@ export function Brand({ compact = false, inverse = false }: { compact?: boolean;
           width={44}
           height={44}
           className="size-11 object-contain p-1.5"
+          style={{ filter: "brightness(0) saturate(100%) invert(32%) sepia(87%) saturate(3015%) hue-rotate(211deg) brightness(98%) contrast(100%)" }}
           priority
         />
       </div>
