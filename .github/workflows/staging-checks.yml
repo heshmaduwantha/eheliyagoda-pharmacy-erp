@@ -72,6 +72,12 @@ jobs:
       - name: Generate Prisma client
         run: corepack pnpm prisma:generate
 
+      - name: Migrate and Seed Database
+        run: |
+          touch .env
+          corepack pnpm prisma:migrate:deploy
+          corepack pnpm seed
+
       - name: TypeScript check
         run: node node_modules/typescript/bin/tsc --noEmit
 
