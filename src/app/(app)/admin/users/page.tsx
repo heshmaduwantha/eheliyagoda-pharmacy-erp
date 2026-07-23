@@ -56,8 +56,6 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
         </div>
         <AutoSubmit />
       </form>
-        <AutoSubmit />
-      </form>
 
       <section className="overflow-hidden rounded-xl border border-neutral-border bg-neutral-surface shadow-sm">
         <div className="overflow-x-auto">

@@ -454,6 +454,7 @@ async function getCommittedSaleByRequestId(
     barcodeUsed: line.barcodeUsed,
     lineGrossDiscount: line.discountAmount,
   }));
+
   const receipt = buildReceipt({
     saleId: sale.id,
     saleNumber: sale.saleNumber,
@@ -479,6 +480,82 @@ async function getCommittedSaleByRequestId(
     completedAt: sale.completedAt.toISOString(),
     receipt,
   };
+}
+
+export async function getSaleReceiptById(saleId: string): Promise<SaleReceipt | null> {
+  const sale = await prisma.sale.findUnique({
+    where: { id: saleId },
+    select: {
+      id: true,
+      saleNumber: true,
+      status: true,
+      subtotal: true,
+      discountAmount: true,
+      taxAmount: true,
+      total: true,
+      completedAt: true,
+      lines: {
+        select: {
+          id: true,
+          clientLineId: true,
+          productId: true,
+          productNameSnapshot: true,
+          unitId: true,
+          unit: { select: { unitName: true } },
+          batchId: true,
+          batchNoSnapshot: true,
+          expiryDateSnapshot: true,
+          qty: true,
+          qtyBase: true,
+          unitPrice: true,
+          lineTotal: true,
+          discountAmount: true,
+          costPriceAtSale: true,
+          mrpAtSale: true,
+          barcodeUsed: true,
+        },
+        orderBy: { createdAt: "asc" },
+      },
+      payments: {
+        select: { method: true, amount: true, cardReference: true },
+        orderBy: { createdAt: "asc" },
+      },
+    },
+  });
+  if (!sale || sale.status !== SaleStatus.COMPLETED || !sale.completedAt) return null;
+
+  const allocations: PlannedAllocation[] = sale.lines.map((line) => ({
+    saleLineId: line.id,
+    clientLineId: line.clientLineId ?? line.id,
+    productId: line.productId,
+    productName: line.productNameSnapshot,
+    unitId: line.unitId,
+    unitName: line.unit.unitName,
+    batchId: line.batchId,
+    batchNumber: line.batchNoSnapshot,
+    expiryDate: line.expiryDateSnapshot,
+    qty: line.qty,
+    qtyBase: line.qtyBase,
+    unitPrice: line.unitPrice,
+    lineTotal: line.lineTotal,
+    costPriceAtSale: line.costPriceAtSale,
+    mrpAtSale: line.mrpAtSale,
+    barcodeUsed: line.barcodeUsed,
+    lineGrossDiscount: line.discountAmount,
+  }));
+
+  return buildReceipt({
+    saleId: sale.id,
+    saleNumber: sale.saleNumber,
+    status: SaleStatus.COMPLETED,
+    completedAt: sale.completedAt,
+    subtotal: sale.subtotal,
+    discountAmount: sale.discountAmount,
+    taxAmount: sale.taxAmount,
+    total: sale.total,
+    allocations,
+    payments: sale.payments,
+  });
 }
 
 function validateActor(actor: CurrentUser) {
