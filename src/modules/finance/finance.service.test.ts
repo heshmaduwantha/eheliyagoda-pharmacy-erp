@@ -182,7 +182,7 @@ test("expense summary groups by category and payment method and excludes deleted
   assert.ok(summary.rows.some((row) => row.category === "RENT" && row.paymentMethod === PaymentMethod.CARD && row.totalAmount === "1200.00"));
 
   const listed = await listExpenses({ from: "2026-06-01", to: "2026-06-30" });
-  assert.equal(listed.length, 2);
+  assert.equal(listed.data.length, 2);
   await cleanupExpense(expense1.id);
   await cleanupExpense(expense2.id);
   await cleanupExpense(expense3.id);
