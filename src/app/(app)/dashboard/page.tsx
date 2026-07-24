@@ -140,7 +140,7 @@ async function renderDashboardPage() {
           iconColor="text-red-500"
           label="Near expiry"
           value={String(metrics.nearExpiryCount)}
-          hint="Active batches within 30 days"
+          hint="Active batches within 6 months"
         />
         <KpiCard
           href="/suppliers"

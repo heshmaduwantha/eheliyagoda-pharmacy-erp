@@ -39,7 +39,7 @@ function addDays(value: Date, days: number) {
 export async function getDashboardMetrics(): Promise<DashboardMetricsRow> {
   const today = startOfDay();
   const tomorrow = addDays(today, 1);
-  const nearExpiryDate = addDays(today, 30);
+  const nearExpiryDate = addDays(today, 180);
   const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
 
   const rows = await prisma.$queryRaw<DashboardMetricsRow[]>(Prisma.sql`
@@ -148,7 +148,7 @@ export type AlertCounts = {
 /** A very lightweight query specifically for the notification bell in the app shell. */
 export async function getAlertCounts(): Promise<AlertCounts> {
   const today = startOfDay();
-  const nearExpiryDate = addDays(today, 30);
+  const nearExpiryDate = addDays(today, 180);
 
   const rows = await prisma.$queryRaw<AlertCounts[]>(Prisma.sql`
     WITH stock_by_product AS (
@@ -216,7 +216,7 @@ export async function getDashboardTopProducts() {
 
 export async function getDashboardWatchlist() {
   const today = startOfDay();
-  const nearExpiryDate = addDays(today, 30);
+  const nearExpiryDate = addDays(today, 180);
   
   const rows = await prisma.$queryRaw<{ name: string; status: string }[]>(Prisma.sql`
     SELECT p.name,

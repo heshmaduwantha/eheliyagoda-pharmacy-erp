@@ -60,13 +60,13 @@ export function BatchTable({ rows }: { rows: InventoryBatchRecord[] }) {
 
               let dateColorClass = "text-neutral-muted";
               const isExpired = daysLeft !== null && daysLeft < 0;
-              const isNearExpiry = daysLeft !== null && daysLeft >= 0 && daysLeft <= 30;
+              const isNearExpiry = daysLeft !== null && daysLeft >= 0 && daysLeft <= 180;
 
               if (batch.status === "ACTIVE" || batch.status === "QUARANTINED") {
                 if (isExpired) {
                   dateColorClass = "font-bold text-status-danger-text";
                 } else if (isNearExpiry) {
-                  dateColorClass = "font-bold text-status-warning-text";
+                  dateColorClass = "font-bold text-status-orange-text";
                 }
               }
 

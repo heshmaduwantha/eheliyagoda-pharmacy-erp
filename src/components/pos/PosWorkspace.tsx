@@ -307,7 +307,7 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
         </div>
 
         {/* Right sidebar cart */}
-        <div className="w-[280px] flex-shrink-0 xl:w-[320px] flex flex-col rounded-2xl bg-neutral-surface shadow-[0_2px_12px_rgba(15,23,42,0.03)] border border-neutral-border/60 overflow-hidden">
+        <div className="w-[340px] flex-shrink-0 xl:w-[400px] flex flex-col rounded-2xl bg-neutral-surface shadow-[0_2px_12px_rgba(15,23,42,0.03)] border border-neutral-border/60 overflow-hidden">
           <div className="flex-1 overflow-hidden p-4">
             <CartTable
               lines={lines}

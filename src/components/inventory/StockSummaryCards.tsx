@@ -5,7 +5,7 @@ export function StockSummaryCards({ summary }: { summary: StockSummary }) {
   const cards = [
     { label: "Active products", value: summary.totalActiveProducts, note: "Active catalogue records", icon: Boxes, tone: "teal" },
     { label: "Low stock", value: summary.lowStockCount, note: "At or below reorder level", icon: AlertTriangle, tone: "amber" },
-    { label: "Near expiry", value: summary.nearExpiryCount, note: "Active batches within 30 days", icon: CalendarClock, tone: "blue" },
+    { label: "Near expiry", value: summary.nearExpiryCount, note: "Active batches within 6 months", icon: CalendarClock, tone: "blue" },
     { label: "Expired / quarantined", value: summary.expiredOrQuarantinedCount, note: "Batches requiring attention", icon: ShieldAlert, tone: "red" },
   ] as const;
 
