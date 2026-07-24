@@ -137,38 +137,41 @@ export async function GET(
 
     const jsreportUrl = process.env.JSREPORT_URL;
     
-    // If JSReport URL is configured, use it to generate a PDF
+    // If JSReport URL is configured, attempt to use it to generate a PDF
     if (jsreportUrl) {
-      const response = await fetch(`${jsreportUrl}/api/report`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          template: {
-            content: receiptTemplate,
-            engine: 'handlebars',
-            recipe: 'chrome-pdf',
+      try {
+        const response = await fetch(`${jsreportUrl}/api/report`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
           },
-          data
-        })
-      });
+          body: JSON.stringify({
+            template: {
+              content: receiptTemplate,
+              engine: 'handlebars',
+              recipe: 'chrome-pdf',
+            },
+            data
+          })
+        });
 
-      if (!response.ok) {
-        console.error("JSReport Error:", await response.text());
-        throw new Error("Failed to generate PDF from JSReport");
+        if (!response.ok) {
+          console.warn("JSReport returned non-ok status:", await response.text());
+        } else {
+          const pdfBuffer = await response.arrayBuffer();
+          return new NextResponse(pdfBuffer, {
+            headers: {
+              "Content-Type": "application/pdf",
+              "Content-Disposition": `inline; filename="receipt-${receipt.saleNumber}.pdf"`,
+            },
+          });
+        }
+      } catch (err) {
+        console.warn("Failed to connect to JSReport, falling back to local HTML render:", err);
       }
-
-      const pdfBuffer = await response.arrayBuffer();
-      return new NextResponse(pdfBuffer, {
-        headers: {
-          "Content-Type": "application/pdf",
-          "Content-Disposition": `inline; filename="receipt-${receipt.saleNumber}.pdf"`,
-        },
-      });
     }
 
-    // Fallback to local HTML rendering if JSReport is not configured
+    // Fallback to local HTML rendering if JSReport is not configured or failed
     const template = Handlebars.compile(receiptTemplate);
     const html = template(data);
 
