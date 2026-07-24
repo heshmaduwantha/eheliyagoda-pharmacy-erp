@@ -137,7 +137,7 @@ export async function GET(
 
     const jsreportUrl = process.env.JSREPORT_URL;
     
-    // If JSReport URL is configured, attempt to use it to generate a PDF
+    // If JSReport URL is configured, attempt to use it to generate the receipt
     if (jsreportUrl) {
       try {
         const response = await fetch(`${jsreportUrl}/api/report`, {
@@ -149,7 +149,7 @@ export async function GET(
             template: {
               content: receiptTemplate,
               engine: 'handlebars',
-              recipe: 'chrome-pdf',
+              recipe: 'html', // Use html instead of chrome-pdf so the browser can print it directly
             },
             data
           })
@@ -158,11 +158,10 @@ export async function GET(
         if (!response.ok) {
           console.warn("JSReport returned non-ok status:", await response.text());
         } else {
-          const pdfBuffer = await response.arrayBuffer();
-          return new NextResponse(pdfBuffer, {
+          const htmlContent = await response.text();
+          return new NextResponse(htmlContent, {
             headers: {
-              "Content-Type": "application/pdf",
-              "Content-Disposition": `inline; filename="receipt-${receipt.saleNumber}.pdf"`,
+              "Content-Type": "text/html",
             },
           });
         }
