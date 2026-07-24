@@ -17,6 +17,8 @@ export function InventoryFilters({
   showTimeframe = true,
   availability = "ALL",
   timeframe = "ALL",
+  sort = "CREATED_DESC",
+  showExpirySort = false,
 }: { 
   action: string; 
   search?: string; 
@@ -28,6 +30,8 @@ export function InventoryFilters({
   showTimeframe?: boolean;
   availability?: string;
   timeframe?: string;
+  sort?: string;
+  showExpirySort?: boolean;
 }) {
   const active = Boolean(search) || status !== "ALL" || direction !== "ALL" || availability !== "ALL" || timeframe !== "ALL";
   const formRef = useRef<HTMLFormElement>(null);
@@ -79,9 +83,20 @@ export function InventoryFilters({
       {showTimeframe ? <label className="flex items-center gap-2 rounded-xl border border-neutral-border px-3 text-sm text-neutral-muted shrink-0">
         <Filter className="size-4 shrink-0" />
         <select className="bg-transparent py-2.5 font-semibold text-neutral-text outline-none" defaultValue={timeframe} name="timeframe" onChange={handleChange}>
-          <option value="ALL">Any expiry</option>
-          <option value="NEAR_EXPIRY">Near expiry (30d)</option>
+          <option value="ALL">All expiry dates</option>
+          <option value="WITHIN_30_DAYS">Within 30 days</option>
+          <option value="WITHIN_3_MONTHS">Within 3 months</option>
+          <option value="WITHIN_6_MONTHS">Within 6 months</option>
           <option value="EXPIRED">Expired</option>
+          <option value="ACTIVE_BATCHES">All active batches</option>
+        </select>
+      </label> : null}
+
+      {showExpirySort ? <label className="flex items-center gap-2 rounded-xl border border-neutral-border px-3 text-sm text-neutral-muted shrink-0">
+        <Filter className="size-4 shrink-0" />
+        <select className="bg-transparent py-2.5 font-semibold text-neutral-text outline-none" defaultValue={sort} name="sort" onChange={handleChange}>
+          <option value="CREATED_DESC">Newest first</option>
+          <option value="EXPIRY_ASC">Nearest expiry first</option>
         </select>
       </label> : null}
       

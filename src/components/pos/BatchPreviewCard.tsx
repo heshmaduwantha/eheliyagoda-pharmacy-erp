@@ -1,29 +1,13 @@
 import { CalendarClock, PackageCheck, AlertCircle } from "lucide-react";
 import type { PosBatchPreview } from "@/modules/sales/pos.types";
 import { formatLkr } from "@/modules/sales/pos.utils";
+import { getExpiryStatus } from "@/modules/inventory/expiry";
 
 type Props = {
   batch?: PosBatchPreview;
   selectedBatchId?: string;
   onChange?: (batchId: string) => void;
 };
-
-function isExpiringSoon(expiryDate: string | null) {
-  if (!expiryDate) return false;
-  const expiry = new Date(expiryDate);
-  const now = new Date();
-  const diffTime = expiry.getTime() - now.getTime();
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  return diffDays <= 180; // 6 months (approx)
-}
-
-function isExpired(expiryDate: string | null) {
-  if (!expiryDate) return false;
-  const expiry = new Date(expiryDate);
-  const now = new Date();
-  now.setHours(0, 0, 0, 0);
-  return expiry < now;
-}
 
 export function BatchPreviewCard({ batch, selectedBatchId, onChange }: Props) {
   if (!batch) return <div className="rounded-lg border border-dashed border-neutral-border bg-neutral-bg px-3 py-2 text-xs text-neutral-muted">No active batch preview available</div>;
@@ -33,8 +17,9 @@ export function BatchPreviewCard({ batch, selectedBatchId, onChange }: Props) {
   const currentBatchId = selectedBatchId ?? batch.candidates[0]?.id;
   const candidate = batch.candidates.find(b => b.id === currentBatchId) ?? batch.candidates[0];
 
-  const expiringSoon = isExpiringSoon(candidate.expiryDate);
-  const expired = isExpired(candidate.expiryDate);
+  const expiryStatus = getExpiryStatus(candidate.expiryDate);
+  const expiringSoon = expiryStatus === "CRITICAL_EXPIRY" || expiryStatus === "NEAR_EXPIRY";
+  const expired = expiryStatus === "EXPIRED";
 
   const canFulfilCandidate = Number(candidate.availableQtyBase) >= Number(batch.requestedQtyBase);
 

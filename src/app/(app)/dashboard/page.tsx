@@ -134,13 +134,13 @@ async function renderDashboardPage() {
 
         {/* Row 2 */}
         <KpiCard
-          href="/stock"
+          href="/stock/batches?status=ACTIVE&availability=IN_STOCK&timeframe=WITHIN_6_MONTHS"
           icon={<CalendarClock className="size-5" />}
-          iconBg="bg-red-100"
-          iconColor="text-red-500"
-          label="Near expiry"
-          value={String(metrics.nearExpiryCount)}
-          hint="Active batches within 30 days"
+          iconBg="bg-amber-100"
+          iconColor="text-amber-600"
+          label="Expiring within 6 months"
+          value={String(metrics.expiringWithinSixMonthsCount)}
+          hint="Active, in-stock batches"
         />
         <KpiCard
           href="/suppliers"

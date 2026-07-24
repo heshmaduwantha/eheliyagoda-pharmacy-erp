@@ -9,7 +9,7 @@ export function NotificationBell({ alerts }: { alerts: AlertCounts }) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const totalAlerts = alerts.lowStockCount + alerts.nearExpiryCount + alerts.expiredCount + alerts.overdueCount;
+  const totalAlerts = alerts.lowStockCount + alerts.expiringWithinSixMonthsCount + alerts.expiredCount + alerts.overdueCount;
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -77,9 +77,9 @@ export function NotificationBell({ alerts }: { alerts: AlertCounts }) {
                   </Link>
                 )}
 
-                {alerts.nearExpiryCount > 0 && (
+                {alerts.expiringWithinSixMonthsCount > 0 && (
                   <Link
-                    href="/stock/batches"
+                    href="/stock/batches?status=ACTIVE&availability=IN_STOCK&timeframe=WITHIN_6_MONTHS"
                     onClick={() => setIsOpen(false)}
                     className="flex items-start gap-3 px-4 py-3 hover:bg-neutral-bg transition-colors"
                   >
@@ -87,9 +87,9 @@ export function NotificationBell({ alerts }: { alerts: AlertCounts }) {
                       <Clock className="size-4" />
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-neutral-text">Near expiry alert</p>
+                      <p className="text-sm font-semibold text-neutral-text">Expiry warning</p>
                       <p className="text-xs font-medium text-neutral-muted">
-                        {alerts.nearExpiryCount} batch{alerts.nearExpiryCount === 1 ? "" : "es"} expiring within 30 days.
+                        {alerts.expiringWithinSixMonthsCount} batch{alerts.expiringWithinSixMonthsCount === 1 ? "" : "es"} expiring within 6 months.
                       </p>
                     </div>
                   </Link>

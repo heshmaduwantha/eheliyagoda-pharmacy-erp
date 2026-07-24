@@ -50,15 +50,15 @@ export default async function StockPage() {
           <p className="mt-2 text-xs font-medium text-neutral-muted">At or below reorder level</p>
         </div>
 
-        {/* Near Expiry */}
-        <div className="rounded-2xl border border-neutral-border bg-neutral-surface p-5 shadow-[0_8px_30px_rgba(15,51,58,.04)]">
+        {/* Six-month expiry warning */}
+        <Link href="/stock/batches?status=ACTIVE&availability=IN_STOCK&timeframe=WITHIN_6_MONTHS" className="rounded-2xl border border-neutral-border bg-neutral-surface p-5 shadow-[0_8px_30px_rgba(15,51,58,.04)] transition hover:border-amber-200 hover:shadow-md">
           <div className="mb-4 inline-flex size-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
             <CalendarClock className="size-5" />
           </div>
-          <p className="text-sm font-bold text-neutral-muted">Near expiry</p>
-          <p className="mt-1 text-3xl font-black tracking-tight text-neutral-text">{summary.nearExpiryCount}</p>
-          <p className="mt-2 text-xs font-medium text-neutral-muted">Active batches within 30 days</p>
-        </div>
+          <p className="text-sm font-bold text-neutral-muted">Expiring within 6 months</p>
+          <p className="mt-1 text-3xl font-black tracking-tight text-neutral-text">{summary.expiringWithinSixMonthsCount}</p>
+          <p className="mt-2 text-xs font-medium text-neutral-muted">Active, in-stock batches</p>
+        </Link>
 
         {/* Expired / Quarantined */}
         <div className="rounded-2xl border border-neutral-border bg-neutral-surface p-5 shadow-[0_8px_30px_rgba(15,51,58,.04)]">

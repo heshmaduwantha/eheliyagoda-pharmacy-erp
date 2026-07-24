@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { Trash2 } from "lucide-react";
 import { removeExpiredBatchAction } from "@/modules/inventory/inventory.actions";
-import type { InventoryBatchRecord, InventoryBatchStatus } from "@/modules/inventory/inventory.types";
+import type { ExpiryStatus, InventoryBatchRecord, InventoryBatchStatus } from "@/modules/inventory/inventory.types";
 import { formatInventoryDate, formatInventoryMoney, formatInventoryQty } from "@/modules/inventory/inventory.utils";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { toast } from "sonner";
@@ -14,11 +14,14 @@ const statusStyle: Record<InventoryBatchStatus, string> = {
   DEPLETED: "bg-slate-100 text-neutral-muted",
 };
 
-export function BatchTable({ rows }: { rows: InventoryBatchRecord[] }) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const todayMs = today.getTime();
+const expiryStatusStyle: Record<ExpiryStatus, string> = {
+  EXPIRED: "bg-status-danger-bg text-status-danger-text",
+  CRITICAL_EXPIRY: "bg-rose-100 text-rose-700",
+  NEAR_EXPIRY: "bg-status-warning-bg text-status-warning-text",
+  NORMAL: "bg-status-success-bg text-status-success-text",
+};
 
+export function BatchTable({ rows }: { rows: InventoryBatchRecord[] }) {
   const [isPending, startTransition] = useTransition();
   const [writeOffBatchId, setWriteOffBatchId] = useState<string | null>(null);
 
@@ -39,10 +42,10 @@ export function BatchTable({ rows }: { rows: InventoryBatchRecord[] }) {
   return (
     <section className="overflow-hidden rounded-2xl border border-neutral-border bg-neutral-surface shadow-[0_8px_30px_rgba(15,51,58,.05)]">
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[1200px] border-collapse text-left text-sm">
+        <table className="w-full min-w-[1320px] border-collapse text-left text-sm">
           <thead className="bg-neutral-bg text-xs uppercase tracking-wider text-neutral-muted">
             <tr>
-              {["Product", "System Batch", "Supplier Lot", "Expiry Date", "MRP", "Cost Price", "Selling Price", "Qty On Hand Base", "Status", "Actions"].map((heading) => (
+              {["Product", "System Batch", "Supplier Lot", "Expiry Date", "Expiry status", "MRP", "Cost Price", "Selling Price", "Qty On Hand Base", "Status", "Actions"].map((heading) => (
                 <th className="border-b border-neutral-border px-5 py-4 font-bold" key={heading}>
                   {heading}
                 </th>
@@ -51,25 +54,7 @@ export function BatchTable({ rows }: { rows: InventoryBatchRecord[] }) {
           </thead>
           <tbody className="divide-y divide-slate-100">
             {rows.map((batch) => {
-              let daysLeft: number | null = null;
-              if (batch.expiryDate) {
-                const expDate = new Date(batch.expiryDate);
-                expDate.setHours(0, 0, 0, 0);
-                daysLeft = (expDate.getTime() - todayMs) / (1000 * 60 * 60 * 24);
-              }
-
-              let dateColorClass = "text-neutral-muted";
-              const isExpired = daysLeft !== null && daysLeft < 0;
-              const isNearExpiry = daysLeft !== null && daysLeft >= 0 && daysLeft <= 30;
-
-              if (batch.status === "ACTIVE" || batch.status === "QUARANTINED") {
-                if (isExpired) {
-                  dateColorClass = "font-bold text-status-danger-text";
-                } else if (isNearExpiry) {
-                  dateColorClass = "font-bold text-status-warning-text";
-                }
-              }
-
+              const isExpired = batch.expiryStatus === "EXPIRED";
               const canRemove = isExpired && batch.status !== "DEPLETED" && Number(batch.qtyOnHandBase) > 0;
 
               return (
@@ -82,8 +67,13 @@ export function BatchTable({ rows }: { rows: InventoryBatchRecord[] }) {
                   </td>
                   <td className="px-5 py-4 font-semibold text-neutral-text">{batch.batchNumber ?? "—"}</td>
                   <td className="px-5 py-4 font-semibold text-neutral-muted">{batch.supplierLotNumber ?? "—"}</td>
-                  <td className={`px-5 py-4 ${dateColorClass}`}>
+                  <td className={`px-5 py-4 ${isExpired ? "font-bold text-status-danger-text" : batch.expiryStatus === "CRITICAL_EXPIRY" ? "font-bold text-rose-700" : batch.expiryStatus === "NEAR_EXPIRY" ? "font-bold text-status-warning-text" : "text-neutral-muted"}`}>
                     {formatInventoryDate(batch.expiryDate)}
+                  </td>
+                  <td className="px-5 py-4">
+                    <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${expiryStatusStyle[batch.expiryStatus]}`}>
+                      {batch.expiryStatus === "EXPIRED" ? "Expired" : batch.expiryStatus === "NORMAL" ? "Valid" : batch.expiryDaysRemaining === 0 ? "Expires today" : `Expires in ${batch.expiryDaysRemaining} days`}
+                    </span>
                   </td>
                   <td className="px-5 py-4 text-neutral-muted">{formatInventoryMoney(batch.mrp)}</td>
                   <td className="px-5 py-4 text-neutral-muted">{formatInventoryMoney(batch.costPrice)}</td>
@@ -118,7 +108,7 @@ export function BatchTable({ rows }: { rows: InventoryBatchRecord[] }) {
             })}
             {rows.length === 0 && (
               <tr>
-                <td className="px-5 py-16 text-center text-neutral-muted" colSpan={10}>
+                <td className="px-5 py-16 text-center text-neutral-muted" colSpan={11}>
                   No batches found.
                 </td>
               </tr>

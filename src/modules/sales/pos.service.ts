@@ -7,6 +7,7 @@ import type {
   PosUnitOption,
 } from "./pos.types";
 import { serverOnly } from "@/lib/server-only";
+import { getColomboToday, toDateOnly } from "@/modules/inventory/expiry";
 
 serverOnly();
 
@@ -66,22 +67,8 @@ type ProductReadRow = ProductBaseRow & {
   batches: StockBatchRow[];
 };
 
-function startOfToday() {
-  const value = new Date();
-  value.setHours(0, 0, 0, 0);
-  return value;
-}
-
-function toDateOnly(value: Date | null) {
-  if (!value) return null;
-  const year = value.getFullYear();
-  const month = String(value.getMonth() + 1).padStart(2, "0");
-  const day = String(value.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
 function sellableBatches(product: ProductReadRow) {
-  const today = startOfToday();
+  const today = getColomboToday();
   return product.batches
     .filter((batch) => {
       if (batch.status !== BatchStatus.ACTIVE || batch.qtyOnHandBase.lte(0)) return false;
@@ -298,7 +285,7 @@ export async function getPosBatchPreview(
   ]);
   if (!unit || !product) return null;
 
-  const today = startOfToday();
+  const today = getColomboToday();
   const batches = await prisma.batch.findMany({
     where: {
       productId,

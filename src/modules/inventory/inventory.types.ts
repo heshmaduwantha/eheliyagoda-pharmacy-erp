@@ -45,6 +45,8 @@ export type InventoryBatchRecord = {
   qtyOnHandBase: QuantityString;
   baseUnit: string;
   status: BatchStatus;
+  expiryStatus: ExpiryStatus;
+  expiryDaysRemaining: number | null;
 };
 
 export type StockMovementRecord = {
@@ -61,7 +63,8 @@ export type StockMovementRecord = {
   createdBy: string | null;
 };
 
-export type ExpiryAlertState = "EXPIRED" | "NEAR_EXPIRY" | "QUARANTINED";
+export type ExpiryStatus = "EXPIRED" | "CRITICAL_EXPIRY" | "NEAR_EXPIRY" | "NORMAL";
+export type ExpiryAlertState = ExpiryStatus;
 
 export type ExpiryAlertRecord = {
   id: UUID;
@@ -74,12 +77,14 @@ export type ExpiryAlertRecord = {
   baseUnit: string;
   status: BatchStatus;
   alertState: ExpiryAlertState;
+  alertLabel: string;
 };
 
 export type StockSummary = {
   totalActiveProducts: number;
   lowStockCount: number;
   nearExpiryCount: number;
+  expiringWithinSixMonthsCount: number;
   expiredOrQuarantinedCount: number;
 };
 
@@ -89,6 +94,7 @@ export type InventoryFilterInput = {
   availability?: string;
   timeframe?: string;
   search?: string;
+  sort?: string;
   page?: number;
   pageSize?: number;
 };

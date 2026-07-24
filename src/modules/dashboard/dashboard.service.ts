@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { serverOnly } from "@/lib/server-only";
+import { addCalendarDays, getColomboToday, getExpiryDateWindows } from "@/modules/inventory/expiry";
 
 serverOnly();
 
@@ -8,6 +9,7 @@ type DashboardMetricsRow = {
   totalActiveProducts: number;
   lowStockCount: number;
   nearExpiryCount: number;
+  expiringWithinSixMonthsCount: number;
   expiredOrQuarantinedCount: number;
   salesTotal: string;
   saleCount: number;
@@ -24,23 +26,18 @@ type DashboardMetricsRow = {
 };
 
 function startOfDay(value = new Date()) {
-  const result = new Date(value);
-  result.setHours(0, 0, 0, 0);
-  return result;
+  return getColomboToday(value);
 }
 
 function addDays(value: Date, days: number) {
-  const result = new Date(value);
-  result.setDate(result.getDate() + days);
-  return result;
+  return addCalendarDays(value, days);
 }
 
 /** One read-only aggregate round trip for the dashboard's operational cards. */
 export async function getDashboardMetrics(): Promise<DashboardMetricsRow> {
-  const today = startOfDay();
+  const { today, criticalBoundary: nearExpiryDate, sixMonthBoundary } = getExpiryDateWindows();
   const tomorrow = addDays(today, 1);
-  const nearExpiryDate = addDays(today, 30);
-  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+  const monthStart = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1));
 
   const rows = await prisma.$queryRaw<DashboardMetricsRow[]>(Prisma.sql`
     WITH stock_by_product AS (
@@ -114,7 +111,10 @@ export async function getDashboardMetrics(): Promise<DashboardMetricsRow> {
         WHERE "reorderLevel" > 0 AND available_qty <= "reorderLevel") AS "lowStockCount",
       (SELECT COUNT(*)::int FROM "Batch"
         WHERE status = 'ACTIVE' AND "qtyOnHandBase" > 0
-          AND "expiryDate" >= ${today} AND "expiryDate" <= ${nearExpiryDate}) AS "nearExpiryCount",
+          AND "expiryDate" >= ${today} AND "expiryDate" < ${nearExpiryDate}) AS "nearExpiryCount",
+      (SELECT COUNT(*)::int FROM "Batch"
+        WHERE status = 'ACTIVE' AND "qtyOnHandBase" > 0
+          AND "expiryDate" >= ${today} AND "expiryDate" < ${sixMonthBoundary}) AS "expiringWithinSixMonthsCount",
       (SELECT COUNT(*)::int FROM "Batch"
         WHERE "qtyOnHandBase" > 0
           AND (status = 'QUARANTINED' OR "expiryDate" < ${today})) AS "expiredOrQuarantinedCount",
@@ -141,14 +141,14 @@ export async function getDashboardMetrics(): Promise<DashboardMetricsRow> {
 export type AlertCounts = {
   lowStockCount: number;
   nearExpiryCount: number;
+  expiringWithinSixMonthsCount: number;
   expiredCount: number;
   overdueCount: number;
 };
 
 /** A very lightweight query specifically for the notification bell in the app shell. */
 export async function getAlertCounts(): Promise<AlertCounts> {
-  const today = startOfDay();
-  const nearExpiryDate = addDays(today, 30);
+  const { today, criticalBoundary: nearExpiryDate, sixMonthBoundary } = getExpiryDateWindows();
 
   const rows = await prisma.$queryRaw<AlertCounts[]>(Prisma.sql`
     WITH stock_by_product AS (
@@ -178,14 +178,17 @@ export async function getAlertCounts(): Promise<AlertCounts> {
         WHERE "reorderLevel" > 0 AND available_qty <= "reorderLevel") AS "lowStockCount",
       (SELECT COUNT(*)::int FROM "Batch"
         WHERE status = 'ACTIVE' AND "qtyOnHandBase" > 0
-          AND "expiryDate" >= ${today} AND "expiryDate" <= ${nearExpiryDate}) AS "nearExpiryCount",
+          AND "expiryDate" >= ${today} AND "expiryDate" < ${nearExpiryDate}) AS "nearExpiryCount",
+      (SELECT COUNT(*)::int FROM "Batch"
+        WHERE status = 'ACTIVE' AND "qtyOnHandBase" > 0
+          AND "expiryDate" >= ${today} AND "expiryDate" < ${sixMonthBoundary}) AS "expiringWithinSixMonthsCount",
       (SELECT COUNT(*)::int FROM "Batch"
         WHERE "qtyOnHandBase" > 0
           AND "expiryDate" < ${today}) AS "expiredCount",
       (SELECT overdue_count FROM payables) AS "overdueCount"
   `);
 
-  return rows[0] ?? { lowStockCount: 0, nearExpiryCount: 0, expiredCount: 0, overdueCount: 0 };
+  return rows[0] ?? { lowStockCount: 0, nearExpiryCount: 0, expiringWithinSixMonthsCount: 0, expiredCount: 0, overdueCount: 0 };
 }
 
 export async function getDashboardWeeklySales() {

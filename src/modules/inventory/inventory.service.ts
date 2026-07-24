@@ -10,39 +10,16 @@ import type {
   StockSummary,
 } from "./inventory.types";
 import { serverOnly } from "@/lib/server-only";
+import {
+  daysUntilExpiry,
+  expiryStatusLabel,
+  getColomboToday,
+  getExpiryDateWindows,
+  getExpiryStatus,
+  toDateOnly,
+} from "./expiry";
 
 serverOnly();
-
-// TODO(settings): Read system_settings.near_expiry_days when that model is introduced.
-const DEFAULT_NEAR_EXPIRY_DAYS = 30;
-
-function startOfToday() {
-  const value = new Date();
-  value.setHours(0, 0, 0, 0);
-  return value;
-}
-
-function addDays(value: Date, days: number) {
-  const result = new Date(value);
-  result.setDate(result.getDate() + days);
-  return result;
-}
-
-function toDateOnly(value: Date | null) {
-  if (!value) return null;
-  const year = value.getFullYear();
-  const month = String(value.getMonth() + 1).padStart(2, "0");
-  const day = String(value.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function daysBetween(from: Date, to: Date | null) {
-  if (!to) return null;
-  const dayMs = 86_400_000;
-  const normalized = new Date(to);
-  normalized.setHours(0, 0, 0, 0);
-  return Math.round((normalized.getTime() - from.getTime()) / dayMs);
-}
 
 function batchStatus(value?: string) {
   return Object.values(BatchStatus).includes(value as BatchStatus) ? value as BatchStatus : undefined;
@@ -82,7 +59,8 @@ function serializeBatch(batch: {
   qtyOnHandBase: Prisma.Decimal;
   status: BatchStatus;
   product: { name: string; baseUnitName: string; barcodes: { barcode: string }[] };
-}): InventoryBatchRecord {
+}, today = getColomboToday()): InventoryBatchRecord {
+  const expiryDaysRemaining = daysUntilExpiry(batch.expiryDate, today);
   return {
     id: batch.id,
     productId: batch.productId,
@@ -97,6 +75,8 @@ function serializeBatch(batch: {
     qtyOnHandBase: batch.qtyOnHandBase.toFixed(3),
     baseUnit: batch.product.baseUnitName,
     status: batch.status,
+    expiryStatus: getExpiryStatus(batch.expiryDate, today),
+    expiryDaysRemaining,
   };
 }
 
@@ -111,10 +91,9 @@ const batchInclude = {
 } satisfies Prisma.BatchInclude;
 
 export async function getStockSummary(): Promise<StockSummary> {
-  const today = startOfToday();
-  const nearExpiryDate = addDays(today, DEFAULT_NEAR_EXPIRY_DAYS);
+  const { today, criticalBoundary, sixMonthBoundary } = getExpiryDateWindows();
 
-  const [totalActiveProducts, productsWithReorderLevels, nearExpiryCount, expiredOrQuarantinedCount] = await Promise.all([
+  const [totalActiveProducts, productsWithReorderLevels, nearExpiryCount, expiringWithinSixMonthsCount, expiredOrQuarantinedCount] = await Promise.all([
     prisma.product.count({ where: { isActive: true } }),
     prisma.product.findMany({
       where: { isActive: true, reorderLevel: { gt: 0 } },
@@ -130,7 +109,14 @@ export async function getStockSummary(): Promise<StockSummary> {
       where: {
         status: BatchStatus.ACTIVE,
         qtyOnHandBase: { gt: 0 },
-        expiryDate: { gte: today, lte: nearExpiryDate },
+        expiryDate: { gte: today, lt: criticalBoundary },
+      },
+    }),
+    prisma.batch.count({
+      where: {
+        status: BatchStatus.ACTIVE,
+        qtyOnHandBase: { gt: 0 },
+        expiryDate: { gte: today, lt: sixMonthBoundary },
       },
     }),
     prisma.batch.count({
@@ -149,7 +135,24 @@ export async function getStockSummary(): Promise<StockSummary> {
     return available.lte(product.reorderLevel) ? count + 1 : count;
   }, 0);
 
-  return { totalActiveProducts, lowStockCount, nearExpiryCount, expiredOrQuarantinedCount };
+  return { totalActiveProducts, lowStockCount, nearExpiryCount, expiringWithinSixMonthsCount, expiredOrQuarantinedCount };
+}
+
+function expiryTimeframeWhere(timeframe: string | undefined): Prisma.BatchWhereInput | undefined {
+  const { today, criticalBoundary, threeMonthBoundary, sixMonthBoundary } = getExpiryDateWindows();
+  switch (timeframe) {
+    case "NEAR_EXPIRY":
+    case "WITHIN_30_DAYS":
+      return { expiryDate: { gte: today, lt: criticalBoundary } };
+    case "WITHIN_3_MONTHS":
+      return { expiryDate: { gte: today, lt: threeMonthBoundary } };
+    case "WITHIN_6_MONTHS":
+      return { expiryDate: { gte: today, lt: sixMonthBoundary } };
+    case "EXPIRED":
+      return { expiryDate: { lt: today } };
+    default:
+      return undefined;
+  }
 }
 
 export async function getBatchList(filters: InventoryFilterInput = {}): Promise<{ data: InventoryBatchRecord[]; total: number }> {
@@ -159,19 +162,12 @@ export async function getBatchList(filters: InventoryFilterInput = {}): Promise<
   if (filters.availability === "IN_STOCK") qtyWhere = { gt: 0 };
   else if (filters.availability === "OUT_OF_STOCK") qtyWhere = { equals: 0 };
 
-  let expiryWhere: Prisma.DateTimeFilter | undefined = undefined;
-  if (filters.timeframe === "NEAR_EXPIRY") {
-    const today = startOfToday();
-    const threshold = addDays(today, DEFAULT_NEAR_EXPIRY_DAYS);
-    expiryWhere = { gte: today, lte: threshold };
-  } else if (filters.timeframe === "EXPIRED") {
-    expiryWhere = { lt: startOfToday() };
-  }
+  const timeframeWhere = expiryTimeframeWhere(filters.timeframe);
 
   const where: Prisma.BatchWhereInput = {
-    status: batchStatus(filters.status),
+    status: filters.timeframe === "ACTIVE_BATCHES" ? BatchStatus.ACTIVE : batchStatus(filters.status),
     qtyOnHandBase: qtyWhere,
-    expiryDate: expiryWhere,
+    ...(timeframeWhere ?? {}),
     OR: batchSearchWhere(filters.search),
   };
 
@@ -179,14 +175,17 @@ export async function getBatchList(filters: InventoryFilterInput = {}): Promise<
     prisma.batch.findMany({
       where,
       include: batchInclude,
-      orderBy: [{ createdAt: "desc" }],
+      orderBy: filters.sort === "EXPIRY_ASC"
+        ? [{ expiryDate: "asc" }, { createdAt: "desc" }]
+        : [{ createdAt: "desc" }],
       skip: (page - 1) * pageSize,
       take: pageSize,
     }),
     prisma.batch.count({ where }),
   ]);
   
-  return { data: rows.map(serializeBatch), total };
+  const today = getColomboToday();
+  return { data: rows.map((row) => serializeBatch(row, today)), total };
 }
 
 export async function getLatestActiveBatches(limit = 4): Promise<InventoryBatchRecord[]> {
@@ -196,7 +195,8 @@ export async function getLatestActiveBatches(limit = 4): Promise<InventoryBatchR
     orderBy: { createdAt: "desc" },
     take: Math.min(Math.max(limit, 1), 50),
   });
-  return rows.map(serializeBatch);
+  const today = getColomboToday();
+  return rows.map((row) => serializeBatch(row, today));
 }
 
 function writeOffReason(referenceId: string) {
@@ -210,7 +210,7 @@ function writeOffReason(referenceId: string) {
  * separate from stock currently unavailable or already removed by a write-off.
  */
 export async function getStockProductOverview(limit = 20): Promise<InventoryProductSummaryRecord[]> {
-  const today = startOfToday();
+  const today = getColomboToday();
   const products = await prisma.product.findMany({
     where: {
       OR: [
@@ -341,29 +341,19 @@ export async function getStockMovementList(filters: InventoryFilterInput = {}): 
 
 export async function getExpiryAlerts(filters: InventoryFilterInput = {}): Promise<{ data: ExpiryAlertRecord[]; total: number }> {
   const { page = 1, pageSize = 10 } = filters;
-  const today = startOfToday();
-  const threshold = addDays(today, DEFAULT_NEAR_EXPIRY_DAYS);
+  const { today, sixMonthBoundary } = getExpiryDateWindows();
   const query = filters.search?.trim();
   
-  let timeCondition: Prisma.BatchWhereInput | undefined;
-  if (filters.timeframe === "NEAR_EXPIRY") {
-    timeCondition = { expiryDate: { gte: today, lte: threshold } };
-  } else if (filters.timeframe === "EXPIRED") {
-    timeCondition = { expiryDate: { lt: today } };
-  } else {
-    timeCondition = {
-      OR: [
-        { status: BatchStatus.QUARANTINED },
-        { expiryDate: { lte: threshold } },
-      ],
-    };
-  }
+  const selectedTimeframe = expiryTimeframeWhere(filters.timeframe);
+  const timeCondition = selectedTimeframe ?? (filters.timeframe === "ACTIVE_BATCHES"
+    ? undefined
+    : { OR: [{ status: BatchStatus.QUARANTINED }, { expiryDate: { lt: sixMonthBoundary } }] });
 
   const where: Prisma.BatchWhereInput = {
     qtyOnHandBase: { gt: 0 },
-    status: batchStatus(filters.status),
+    status: filters.timeframe === "ACTIVE_BATCHES" ? BatchStatus.ACTIVE : batchStatus(filters.status),
     AND: [
-      timeCondition,
+      ...(timeCondition ? [timeCondition] : []),
       ...(query
         ? [{
             OR: [
@@ -388,12 +378,8 @@ export async function getExpiryAlerts(filters: InventoryFilterInput = {}): Promi
   ]);
 
   const data = rows.map((row) => {
-    const daysLeft = daysBetween(today, row.expiryDate);
-    const alertState = row.status === BatchStatus.QUARANTINED
-      ? "QUARANTINED" as const
-      : daysLeft != null && daysLeft < 0
-        ? "EXPIRED" as const
-        : "NEAR_EXPIRY" as const;
+    const daysLeft = daysUntilExpiry(row.expiryDate, today);
+    const alertState = getExpiryStatus(row.expiryDate, today);
     return {
       id: row.id,
       productName: row.product.name,
@@ -405,6 +391,7 @@ export async function getExpiryAlerts(filters: InventoryFilterInput = {}): Promi
       baseUnit: row.product.baseUnitName,
       status: row.status,
       alertState,
+      alertLabel: expiryStatusLabel(alertState, daysLeft),
     };
   });
 

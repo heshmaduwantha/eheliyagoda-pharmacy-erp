@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "test": "PERF_LOGGING=0 tsx --test --test-concurrency=1 src/modules/auth/*.test.ts src/modules/finance/*.test.ts src/modules/prescriptions/*.test.ts src/modules/procurement/*.test.ts src/modules/reports/*.test.ts src/modules/sales/*.test.ts src/modules/training/*.test.ts",
+    "test": "PERF_LOGGING=0 tsx --test --test-concurrency=1 src/modules/auth/*.test.ts src/modules/finance/*.test.ts src/modules/inventory/*.test.ts src/modules/prescriptions/*.test.ts src/modules/procurement/*.test.ts src/modules/reports/*.test.ts src/modules/sales/*.test.ts src/modules/training/*.test.ts",
     "performance:baseline": "tsx --env-file=.env scripts/performance-read-baseline.ts",
     "prisma:generate": "node scripts/with-database-url.mjs prisma generate",
     "prisma:migrate": "node scripts/with-database-url.mjs prisma migrate dev",
