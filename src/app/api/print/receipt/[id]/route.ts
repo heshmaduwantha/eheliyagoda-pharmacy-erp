@@ -130,11 +130,47 @@ export async function GET(
       return new NextResponse("Receipt not found", { status: 404 });
     }
 
-    const template = Handlebars.compile(receiptTemplate);
-    const html = template({
+    const data = {
       ...receipt,
       completedAt: new Date(receipt.completedAt).toLocaleString(),
-    });
+    };
+
+    const jsreportUrl = process.env.JSREPORT_URL;
+    
+    // If JSReport URL is configured, use it to generate a PDF
+    if (jsreportUrl) {
+      const response = await fetch(`${jsreportUrl}/api/report`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          template: {
+            content: receiptTemplate,
+            engine: 'handlebars',
+            recipe: 'chrome-pdf',
+          },
+          data
+        })
+      });
+
+      if (!response.ok) {
+        console.error("JSReport Error:", await response.text());
+        throw new Error("Failed to generate PDF from JSReport");
+      }
+
+      const pdfBuffer = await response.arrayBuffer();
+      return new NextResponse(pdfBuffer, {
+        headers: {
+          "Content-Type": "application/pdf",
+          "Content-Disposition": `inline; filename="receipt-${receipt.saleNumber}.pdf"`,
+        },
+      });
+    }
+
+    // Fallback to local HTML rendering if JSReport is not configured
+    const template = Handlebars.compile(receiptTemplate);
+    const html = template(data);
 
     return new NextResponse(html, {
       headers: {
