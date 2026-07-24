@@ -36,7 +36,14 @@ export function updateCartLineQuantity(line: PosCartLine, quantity: number): Pos
 
 export function updateCartLineUnit(line: PosCartLine, unit: PosUnitOption): PosCartLine {
   const unitPrice = Number(unit.sellingPrice ?? 0);
-  return { ...line, id: `${line.productId}-${unit.id}`, unitId: unit.id, unitLabel: unit.unitName, unitPrice, lineTotal: calculateLineTotal(line.quantity, unitPrice), batchPreview: undefined };
+  return { ...line, id: `${line.productId}-${unit.id}`, unitId: unit.id, unitLabel: unit.unitName, unitPrice, lineTotal: calculateLineTotal(line.quantity, unitPrice), batchPreview: undefined, selectedBatchId: undefined };
+}
+
+export function updateCartLineBatch(line: PosCartLine, batchId: string): PosCartLine {
+  const batch = line.batchPreview?.candidates.find((b) => b.id === batchId);
+  if (!batch) return { ...line, selectedBatchId: batchId };
+  const unitPrice = Number(batch.sellingPrice ?? 0);
+  return { ...line, selectedBatchId: batchId, unitPrice, lineTotal: calculateLineTotal(line.quantity, unitPrice) };
 }
 
 export function calculatePosTotals(lines: PosCartLine[], discount = 0, tax = 0) {

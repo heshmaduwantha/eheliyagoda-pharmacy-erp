@@ -80,6 +80,7 @@ export type PosCartLine = {
   lineTotal: number;
   availableUnits: PosUnitOption[];
   batchPreview?: PosBatchPreview;
+  selectedBatchId?: string;
 };
 
 export type PosPaymentInput = {

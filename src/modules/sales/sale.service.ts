@@ -186,7 +186,11 @@ function allocateProductGroup(group: PreparedProductGroup) {
 
   for (const line of group.lines) {
     let remainingLineQtyBase = line.requestedQtyBase;
-    const availableQtyBase = group.batches.reduce(
+    const usableBatches = line.input.batchId 
+      ? group.batches.filter(b => b.id === line.input.batchId)
+      : group.batches;
+
+    const availableQtyBase = usableBatches.reduce(
       (sum, batch) => sum.add(remainingByBatch.get(batch.id) ?? new Prisma.Decimal(0)),
       new Prisma.Decimal(0),
     );
@@ -194,14 +198,14 @@ function allocateProductGroup(group: PreparedProductGroup) {
     if (availableQtyBase.lte(0)) {
       throw new SaleCompletionError(
         "INVENTORY_NO_ACTIVE_STOCK",
-        `${line.product.name} has no active stock available for sale.`,
+        `${line.product.name} has no active stock available for sale${line.input.batchId ? " in the selected batch" : ""}.`,
         { productId: line.product.id, productName: line.product.name },
       );
     }
     if (availableQtyBase.lt(remainingLineQtyBase)) {
       throw new SaleCompletionError(
         "INVENTORY_INSUFFICIENT_STOCK",
-        `Not enough stock is available for ${line.product.name}.`,
+        `Not enough stock is available for ${line.product.name}${line.input.batchId ? " in the selected batch" : ""}.`,
         {
           productId: line.product.id,
           productName: line.product.name,
@@ -211,7 +215,8 @@ function allocateProductGroup(group: PreparedProductGroup) {
       );
     }
 
-    for (const batch of group.batches) {
+    for (const batch of usableBatches) {
+      if (line.input.batchId && batch.id !== line.input.batchId) continue;
       if (remainingLineQtyBase.lte(0)) break;
       const batchRemaining = remainingByBatch.get(batch.id) ?? new Prisma.Decimal(0);
       if (batchRemaining.lte(0)) continue;

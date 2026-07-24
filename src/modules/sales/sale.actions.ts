@@ -14,6 +14,7 @@ const saleLineSchema = z.object({
   clientLineId: z.string().min(1),
   productId: z.string().uuid(),
   unitId: z.string().uuid(),
+  batchId: z.string().uuid().optional(),
   quantity: decimalLike,
   quotedUnitPrice: decimalLike,
   barcodeUsed: z.string().trim().max(120).optional(),

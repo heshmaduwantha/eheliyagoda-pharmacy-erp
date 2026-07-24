@@ -20,6 +20,7 @@ import {
   createCartLine,
   updateCartLineQuantity,
   updateCartLineUnit,
+  updateCartLineBatch,
 } from "@/modules/sales/pos.utils";
 import type { SaleReceipt } from "@/modules/sales/sale.types";
 
@@ -131,6 +132,13 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
     void refreshBatchPreview(nextLine);
   };
 
+  const changeBatch = (lineId: string, batchId: string) => {
+    const line = lines.find((item) => item.id === lineId);
+    if (!line) return;
+    const nextLine = updateCartLineBatch(line, batchId);
+    setLines((current) => current.map((item) => (item.id === lineId ? nextLine : item)));
+  };
+
   const clearTransactionState = () => {
     setPendingPayments(null);
     setPromptOpen(false);
@@ -160,6 +168,7 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
           clientLineId: line.id,
           productId: line.productId,
           unitId: line.unitId,
+          batchId: line.selectedBatchId,
           quantity: String(line.quantity),
           quotedUnitPrice: line.unitPrice.toFixed(2),
           barcodeUsed: line.primaryBarcode ?? undefined,
@@ -305,6 +314,7 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
               onQuantityChange={changeQuantity}
               onRemove={(lineId) => setLines((current) => current.filter((line) => line.id !== lineId))}
               onSelectUnit={setSelectedLine}
+              onChangeBatch={changeBatch}
             />
           </div>
           <div className="border-t border-neutral-border p-5">

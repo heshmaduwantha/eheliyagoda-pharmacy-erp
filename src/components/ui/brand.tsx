@@ -5,7 +5,7 @@ export function Brand({ compact = false, inverse = false }: { compact?: boolean;
     <div className="flex items-center gap-3">
       <div className={`relative grid size-11 shrink-0 place-items-center overflow-hidden rounded-2xl ${inverse ? "shadow-md shadow-black/10 ring-1 ring-white/20" : "shadow-sm"}`}>
         <Image
-          src="/medisquare-logo.svg"
+          src="/medical-cross-logo.png"
           alt="Medisquare Logo"
           width={44}
           height={44}
