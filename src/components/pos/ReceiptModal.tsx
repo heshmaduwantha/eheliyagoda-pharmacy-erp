@@ -90,19 +90,15 @@ export function ReceiptModal({ receipt, onClose }: { receipt: SaleReceipt | null
         </div>
 
         <div className="mt-5 grid grid-cols-2 gap-3">
-          <button
+          <a
             className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-default px-4 py-3 font-bold text-white transition hover:bg-brand-default/90"
-            onClick={() => {
-              const iframe = document.getElementById("receipt-printer") as HTMLIFrameElement;
-              if (iframe && iframe.contentWindow) {
-                iframe.contentWindow.print();
-              }
-            }}
-            type="button"
+            href={`/api/print/receipt/${receipt.saleId}`}
+            target="_blank"
+            rel="noopener noreferrer"
           >
             <Printer className="size-4" />
             Print Bill
-          </button>
+          </a>
           <button
             className="flex w-full items-center justify-center gap-2 rounded-xl border border-neutral-border bg-neutral-surface px-4 py-3 font-bold text-neutral-text hover:bg-slate-50"
             onClick={onClose}
@@ -111,13 +107,6 @@ export function ReceiptModal({ receipt, onClose }: { receipt: SaleReceipt | null
             Close receipt
           </button>
         </div>
-        
-        <iframe
-          id="receipt-printer"
-          src={`/api/print/receipt/${receipt.saleId}`}
-          className="absolute w-0 h-0 border-0"
-          title="Receipt Printer"
-        />
       </section>
     </div>
   );
