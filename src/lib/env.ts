@@ -11,21 +11,23 @@ const serverEnvSchema = z.object({
   REDIS_URL: z.string().url("REDIS_URL must be a valid Redis connection URL."),
   AUTH_SECRET: z.string().min(32, "AUTH_SECRET must contain at least 32 characters."),
   APP_URL: z.string().url("APP_URL must be a valid application URL."),
+  JSREPORT_URL: z.string().url("JSREPORT_URL must be a valid URL.").optional(),
+  JSREPORT_USERNAME: z.string().optional(),
+  JSREPORT_PASSWORD: z.string().optional(),
 });
 
 function buildDatabaseUrl(env: z.infer<typeof serverEnvSchema>) {
+  const { PG_DB_HOST: host, PG_DB_PORT: port, PG_DB_NAME: name, PG_DB_USER: user, PG_DB_PASSWORD: password } = env;
+  if (host && port && name && user && password != null) {
+    const url = new URL(`postgresql://${encodeURIComponent(user)}:${encodeURIComponent(password)}@${host}:${port}/${encodeURIComponent(name)}`);
+    url.searchParams.set("schema", "public");
+    return url.toString();
+  }
   if (env.DATABASE_URL) return env.DATABASE_URL;
 
-  const { PG_DB_HOST: host, PG_DB_PORT: port, PG_DB_NAME: name, PG_DB_USER: user, PG_DB_PASSWORD: password } = env;
-  if (!host || !port || !name || !user || !password) {
-    throw new Error(
-      "Invalid server environment configuration. Provide DATABASE_URL or PG_DB_HOST, PG_DB_PORT, PG_DB_NAME, PG_DB_USER, and PG_DB_PASSWORD.",
-    );
-  }
-
-  const url = new URL(`postgresql://${encodeURIComponent(user)}:${encodeURIComponent(password)}@${host}:${port}/${encodeURIComponent(name)}`);
-  url.searchParams.set("schema", "public");
-  return url.toString();
+  throw new Error(
+    "Invalid server environment configuration. Provide DATABASE_URL or PG_DB_HOST, PG_DB_PORT, PG_DB_NAME, PG_DB_USER, and PG_DB_PASSWORD.",
+  );
 }
 
 function validateServerEnv() {
@@ -40,6 +42,9 @@ function validateServerEnv() {
     REDIS_URL: process.env.REDIS_URL,
     AUTH_SECRET: process.env.AUTH_SECRET,
     APP_URL: process.env.APP_URL,
+    JSREPORT_URL: process.env.JSREPORT_URL,
+    JSREPORT_USERNAME: process.env.JSREPORT_USERNAME,
+    JSREPORT_PASSWORD: process.env.JSREPORT_PASSWORD,
   });
 
   if (result.success) {

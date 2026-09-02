@@ -915,7 +915,7 @@ export async function completeSale(input: SaleCompletionInput, actor: CurrentUse
       completedAt: completedAt.toISOString(),
       receipt,
       } satisfies SaleCompletionResult;
-    }, { maxWait: 5_000, timeout: 15_000 });
+    }, { maxWait: 15_000, timeout: 30_000 });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
       const committedSale = await getCommittedSaleByRequestId(input.clientRequestId, actor.id);

@@ -22,6 +22,7 @@ import {
   updateCartLineUnit,
   updateCartLineBatch,
 } from "@/modules/sales/pos.utils";
+import { generateClientUuid } from "@/lib/uuid";
 import type { SaleReceipt } from "@/modules/sales/sale.types";
 
 import { CartTable } from "./CartTable";
@@ -101,27 +102,59 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
       return;
     }
 
-    let newLine = createCartLine(product);
-    if (selectedUnit && selectedUnit.id !== newLine.unitId) newLine = updateCartLineUnit(newLine, selectedUnit);
+    let targetUnit = selectedUnit;
+    if (!targetUnit) {
+      targetUnit = product.units.find((item) => item.id === product.defaultSaleUnitId) ?? product.units[0];
+    }
+    const targetUnitId = targetUnit?.id;
 
-    const existing = lines.find((line) => line.productId === product.id && line.unitId === newLine.unitId);
-    const nextLine = existing ? updateCartLineQuantity(existing, existing.quantity + 1) : newLine;
+    let updatedLine: PosCartLine | null = null;
 
-    setLines((current) =>
-      existing
-        ? current.map((line) => (line.id === existing.id ? nextLine : line))
-        : [...current, nextLine],
-    );
+    setLines((current) => {
+      const existingIndex = current.findIndex(
+        (line) => line.productId === product.id && line.unitId === targetUnitId,
+      );
+      if (existingIndex >= 0) {
+        const existing = current[existingIndex];
+        const nextLine = updateCartLineQuantity(existing, existing.quantity + 1);
+        updatedLine = nextLine;
+        const nextLines = [...current];
+        nextLines[existingIndex] = nextLine;
+        return nextLines;
+      } else {
+        let newLine = createCartLine(product);
+        if (targetUnit && targetUnit.id !== newLine.unitId) {
+          newLine = updateCartLineUnit(newLine, targetUnit);
+        }
+        updatedLine = newLine;
+        return [...current, newLine];
+      }
+    });
+
     setNotice({ tone: "success", message: `${product.name} added to the cart.` });
-    await refreshBatchPreview(nextLine);
+    if (updatedLine) {
+      await refreshBatchPreview(updatedLine);
+    }
   };
 
   const changeQuantity = (lineId: string, quantity: number) => {
-    const line = lines.find((item) => item.id === lineId);
-    if (!line) return;
-    const nextLine = updateCartLineQuantity(line, quantity);
-    setLines((current) => current.map((item) => (item.id === lineId ? nextLine : item)));
-    void refreshBatchPreview(nextLine);
+    if (quantity <= 0) {
+      setLines((current) => current.filter((item) => item.id !== lineId));
+      return;
+    }
+
+    let updatedLine: PosCartLine | null = null;
+    setLines((current) => {
+      const line = current.find((item) => item.id === lineId);
+      if (!line) return current;
+      const nextLine = updateCartLineQuantity(line, quantity);
+      updatedLine = nextLine;
+      return current.map((item) => (item.id === lineId ? nextLine : item));
+    });
+
+    if (updatedLine) {
+      void refreshBatchPreview(updatedLine);
+    }
   };
 
   const changeUnit = (lineId: string, unit: PosUnitOption) => {
@@ -148,8 +181,10 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
 
   const clearCart = (preserveReceipt = false) => {
     setLines([]);
-    setNotice(null);
-    if (!preserveReceipt) setReceipt(null);
+    if (!preserveReceipt) {
+      setNotice(null);
+      setReceipt(null);
+    }
     setSelectedLine(null);
     clearTransactionState();
   };
@@ -157,7 +192,7 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
   const submitSale = async (payments: PosPaymentInput[], prescription?: PrescriptionDecisionInput) => {
     if (lines.length === 0 || saleSubmissionRef.current.inFlight) return;
 
-    const requestId = saleSubmissionRef.current.requestId ?? crypto.randomUUID();
+    const requestId = saleSubmissionRef.current.requestId ?? generateClientUuid();
     saleSubmissionRef.current = { requestId, inFlight: true };
     setIsCompletingSale(true);
     try {
@@ -208,9 +243,9 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
         };
       }));
       saleSubmissionRef.current.requestId = null;
+      clearCart(true);
       setReceipt(result.sale.receipt);
       setNotice({ tone: "success", message: `Sale ${result.sale.saleNumber} completed successfully.` });
-      clearCart(true);
     } catch {
       setNotice({ tone: "error", message: "Sale completion failed unexpectedly." });
     } finally {
@@ -266,6 +301,31 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
             <input
               className="min-w-0 flex-1 bg-transparent py-3 text-sm outline-none"
               onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={async (e) => {
+                if (e.key === "Enter" && query.trim()) {
+                  e.preventDefault();
+                  const trimmed = query.trim();
+                  const exactMatch =
+                    products.find(
+                      (p) => p.primaryBarcode?.toLowerCase() === trimmed.toLowerCase(),
+                    ) ?? products[0];
+
+                  if (exactMatch && exactMatch.hasActiveStock) {
+                    await addProduct(exactMatch);
+                    setQuery("");
+                  } else {
+                    try {
+                      const barcodeResult = await lookupProductByBarcodeAction(trimmed);
+                      if (barcodeResult && barcodeResult.product) {
+                        await addProduct(barcodeResult.product, barcodeResult.matchedUnit);
+                        setQuery("");
+                      }
+                    } catch {
+                      // ignore error
+                    }
+                  }
+                }
+              }}
               placeholder="Scan barcode, or search by name..."
               value={query}
             />

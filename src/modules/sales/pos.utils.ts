@@ -7,7 +7,7 @@ export function formatLkr(value: number) {
 }
 
 export function calculateLineTotal(quantity: number, unitPrice: number) {
-  return roundMoney(Math.max(1, quantity) * unitPrice);
+  return roundMoney(Math.max(0, quantity) * unitPrice);
 }
 
 export function createCartLine(product: PosProductSearchResult): PosCartLine {
@@ -30,7 +30,7 @@ export function createCartLine(product: PosProductSearchResult): PosCartLine {
 }
 
 export function updateCartLineQuantity(line: PosCartLine, quantity: number): PosCartLine {
-  const safeQuantity = Math.max(1, Math.floor(Number.isFinite(quantity) ? quantity : 1));
+  const safeQuantity = Math.max(0, Math.floor(Number.isFinite(quantity) ? quantity : 1));
   return { ...line, quantity: safeQuantity, lineTotal: calculateLineTotal(safeQuantity, line.unitPrice) };
 }
 

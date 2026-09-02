@@ -169,6 +169,18 @@ export default async function SalesPage({
                                   <p>{sale.voidRecord.reason}</p>
                                 </div>
                               )}
+                              {sale.status === "COMPLETED" && (
+                                <div className="mt-4 border-t border-neutral-border pt-3">
+                                  <a
+                                    className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-brand-default px-3 py-2 text-xs font-bold text-white transition hover:bg-brand-hover"
+                                    href={`/api/print/receipt/${sale.saleId}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    Print bill ⎙
+                                  </a>
+                                </div>
+                              )}
                             </div>
                           </details>
                         </div>

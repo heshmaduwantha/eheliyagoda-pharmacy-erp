@@ -130,21 +130,34 @@ export async function GET(
       return new NextResponse("Receipt not found", { status: 404 });
     }
 
+    const dateObj = new Date(receipt.completedAt);
+    const formattedDate = isNaN(dateObj.getTime()) ? receipt.completedAt : dateObj.toLocaleString();
+
     const data = {
       ...receipt,
-      completedAt: new Date(receipt.completedAt).toLocaleString(),
+      completedAt: formattedDate,
     };
 
     const jsreportUrl = process.env.JSREPORT_URL;
     
-    // If JSReport URL is configured, attempt to use it to generate the receipt
+    // If JSReport URL is configured, attempt to use it to generate the receipt with a strict timeout
     if (jsreportUrl) {
       try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 2500);
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+        };
+        const jsUser = process.env.JSREPORT_USERNAME;
+        const jsPass = process.env.JSREPORT_PASSWORD;
+        if (jsUser && jsPass) {
+          headers['Authorization'] = `Basic ${Buffer.from(`${jsUser}:${jsPass}`).toString('base64')}`;
+        }
+
         const response = await fetch(`${jsreportUrl}/api/report`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers,
+          signal: controller.signal,
           body: JSON.stringify({
             template: {
               content: receiptTemplate,
@@ -154,6 +167,7 @@ export async function GET(
             data
           })
         });
+        clearTimeout(timeoutId);
 
         if (!response.ok) {
           console.warn("JSReport returned non-ok status:", await response.text());

@@ -296,8 +296,9 @@ export async function voidSale(input: VoidSaleInput, actor: CurrentUser): Promis
     ? null
     : decimal(input.refundAmount, "refundAmount");
 
-  return prisma.$transaction(async (tx) => {
-    await lockSaleRow(tx, input.saleId);
+  return prisma.$transaction(
+    async (tx) => {
+      await lockSaleRow(tx, input.saleId);
 
     const sale = await tx.sale.findUnique({
       where: { id: input.saleId },
@@ -473,5 +474,5 @@ export async function voidSale(input: VoidSaleInput, actor: CurrentUser): Promis
       returnedStockMovements,
       auditStatus: "written",
     };
-  });
+  }, { timeout: 30000 });
 }

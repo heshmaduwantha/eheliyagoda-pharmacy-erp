@@ -26,25 +26,37 @@ export function ProductSearchPanel({ products, onAddProduct, isLoading = false }
           const unit = product.units.find((u) => u.id === product.defaultSaleUnitId) ?? product.units[0];
           const stockStatus = !product.hasActiveStock
             ? { label: "Out of stock", cls: "bg-status-danger-bg text-status-danger-text" }
-            : { label: "In stock", cls: "bg-status-success-bg text-status-success-text" }; // the mockup shows green for in-stock, and a separate expiring soon badge.
+            : { label: "In stock", cls: "bg-status-success-bg text-status-success-text" };
 
-          // Mocking "Popular" and "Expiring soon" just for the design feel matching the mockup
           const isPopular = product.name.includes("Amoxicillin") || product.name.includes("Diazepam");
           const isExpiringSoon = product.name.includes("Amoxicillin");
+          const isAvailable = Boolean(unit && product.hasActiveStock);
 
           return (
             <div
-              className="relative flex flex-col rounded-2xl bg-neutral-surface p-4 text-left shadow-[0_2px_12px_rgba(15,23,42,0.03)]"
+              className={`relative flex flex-col rounded-2xl bg-neutral-surface p-4 text-left shadow-[0_2px_12px_rgba(15,23,42,0.03)] border border-transparent transition-all ${
+                isAvailable
+                  ? "cursor-pointer hover:border-brand-default/40 hover:shadow-md active:scale-[0.99]"
+                  : "opacity-75"
+              }`}
               key={product.id}
+              onClick={() => {
+                if (isAvailable) onAddProduct(product);
+              }}
             >
               {/* Name */}
               <p className="line-clamp-2 text-sm font-black leading-snug text-neutral-text">
-                {product.name} {isPopular && <span className="ml-1 inline-flex rounded-full bg-brand-pale px-2 py-0.5 text-[9px] font-bold text-brand-default">Popular</span>}
+                {product.name}{" "}
+                {isPopular && (
+                  <span className="ml-1 inline-flex rounded-full bg-brand-pale px-2 py-0.5 text-[9px] font-bold text-brand-default">
+                    Popular
+                  </span>
+                )}
               </p>
               {product.genericName && (
                 <p className="mt-0.5 truncate text-xs text-neutral-muted">{product.genericName}</p>
               )}
-              
+
               {/* Badges Flow */}
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {product.prescriptionRule !== "NONE" && (
@@ -71,12 +83,18 @@ export function ProductSearchPanel({ products, onAddProduct, isLoading = false }
                   <p className="text-base font-black text-brand-default truncate">
                     {unit?.sellingPrice ? formatLkr(Number(unit.sellingPrice)) : "—"}
                   </p>
-                  <p className="text-[10px] font-semibold text-neutral-muted truncate">per {unit?.unitName ?? "unit"}</p>
+                  <p className="text-[10px] font-semibold text-neutral-muted truncate">
+                    per {unit?.unitName ?? "unit"}
+                  </p>
                 </div>
                 <button
-                  onClick={() => onAddProduct(product)}
-                  disabled={!unit || !product.hasActiveStock}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (isAvailable) onAddProduct(product);
+                  }}
+                  disabled={!isAvailable}
                   className="grid size-8 shrink-0 place-items-center rounded-lg bg-brand-default text-white transition hover:bg-brand-hover disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                  type="button"
                 >
                   <Plus className="size-5" />
                 </button>
