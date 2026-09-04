@@ -14,7 +14,7 @@ import { getControlledDrugRegister } from "@/modules/reports/controlled-drug-rep
 import { getExpiredQuarantinedReport, getLowStockReport, getNearExpiryReport, getStockValuationReport } from "@/modules/reports/inventory-report.service";
 import { getExpensesSummary, getSupplierPayablesSummary, getSupplierPaymentsReport } from "@/modules/reports/payables-report.service";
 import { normalizeReportDateRange, normalizeReportType } from "@/modules/reports/report.service";
-import { getCashCardReport, getDailySalesReport, getGrossProfitReport, getProductWiseSalesReport } from "@/modules/reports/sales-report.service";
+import { getCashCardReport, getDailySalesReport, getGrossProfitReport, getItemVelocityReport, getProductWiseSalesReport } from "@/modules/reports/sales-report.service";
 
 function todayRange() {
   const today = new Date().toISOString().slice(0, 10);
@@ -62,6 +62,7 @@ const reportTypeLabels: Record<string, string> = {
   "cash-card": "Cash vs card",
   "product-sales": "Sales by product",
   "gross-profit": "Gross profit",
+  "item-velocity": "Fast & slow moving items 🔥",
   "stock-valuation": "Stock value",
   "low-stock": "Low stock",
   "near-expiry": "Expiring soon",
@@ -112,6 +113,36 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
       <div className="grid gap-4">
         <CashCardSummary message={report.message} rows={report.rows} />
         <ReportMessage warnings={report.warnings} />
+      </div>
+    );
+  } else if (type === "item-velocity") {
+    const report = await getItemVelocityReport(range);
+    const fastCount = report.rows.filter((r) => r.velocityCategory === "FAST_MOVING").length;
+    const slowCount = report.rows.filter((r) => r.velocityCategory === "SLOW_MOVING").length;
+
+    content = (
+      <div className="grid gap-4">
+        <ReportMessage message={report.message} warnings={report.warnings} />
+        <FinanceSummaryCards
+          cards={[
+            { label: "Fast Moving Products", value: String(fastCount), hint: "Sold ≥ 100 units in range", tone: "teal" },
+            { label: "Slow Moving / Dead Stock", value: String(slowCount), hint: "Sold ≤ 10 units in range", tone: "amber" },
+            { label: "Tracked Catalog Items", value: String(report.rows.length), hint: "Total items evaluated", tone: "blue" },
+          ]}
+        />
+        <ReportTable
+          emptyMessage={report.message ?? "No product velocity data found."}
+          headers={["Product", "Base Unit", "Qty Sold", "Gross Sales", "Velocity Benchmark"]}
+          rows={report.rows.map((row) => [
+            row.productName,
+            row.baseUnit,
+            formatQty(row.qtyBaseSold),
+            formatMoney(row.grossSales),
+            <span className={`inline-flex rounded-full px-3 py-1 text-xs font-bold border ${row.benchmarkBadge}`} key={row.productId}>
+              {row.velocityLabel}
+            </span>,
+          ])}
+        />
       </div>
     );
   } else if (type === "product-sales" || type === "gross-profit") {

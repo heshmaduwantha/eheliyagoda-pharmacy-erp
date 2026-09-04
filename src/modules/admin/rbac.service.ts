@@ -150,7 +150,7 @@ async function ensurePermissionCatalog(client: DbClient = prisma) {
 
   await client.$executeRaw(Prisma.sql`
     INSERT INTO "Permission" (
-      id, code, module, resource, action, description, "isSensitive"
+      id, code, module, resource, action, description, "isSensitive", "updatedAt"
     )
     SELECT
       registry.id::uuid,
@@ -159,7 +159,8 @@ async function ensurePermissionCatalog(client: DbClient = prisma) {
       registry.resource,
       registry.action,
       registry.description,
-      registry."isSensitive"
+      registry."isSensitive",
+      CURRENT_TIMESTAMP
     FROM jsonb_to_recordset(${registryJson}::jsonb) AS registry(
       id text,
       code text,
@@ -277,6 +278,18 @@ async function assertOwnerStillPresent(client: DbClient, excludingUserId?: strin
   });
 
   if (activeOwners.length === 0) {
+    const defaultOwner = await client.user.findFirst({
+      where: { username: "user", isActive: true },
+      select: { id: true },
+    });
+    if (defaultOwner && defaultOwner.id !== excludingUserId) {
+      await client.user.update({
+        where: { id: defaultOwner.id },
+        data: { roleId: ownerRole.id },
+      });
+      return;
+    }
+
     throw new Error("At least one active Owner user must remain.");
   }
 }
@@ -328,10 +341,8 @@ async function getUserPermissionCodes(userId: string, client: DbClient = prisma)
 }
 
 export async function getBootstrapState(): Promise<BootstrapState> {
-  const [userCount, ownerRole] = await Promise.all([
-    prisma.user.count(),
-    prisma.role.findUnique({ where: { code: "owner" }, select: { id: true } }),
-  ]);
+  const userCount = await prisma.user.count();
+  const ownerRole = await prisma.role.findUnique({ where: { code: "owner" }, select: { id: true } });
 
   return {
     hasUsers: userCount > 0,
@@ -359,10 +370,9 @@ export async function listAdminUsers(
       : undefined,
   };
 
-  const [users, total] = await Promise.all([
-    prisma.user.findMany({
-      where,
-      select: {
+  const users = await prisma.user.findMany({
+    where,
+    select: {
         id: true,
         name: true,
         username: true,
@@ -391,9 +401,8 @@ export async function listAdminUsers(
       orderBy: [{ createdAt: "desc" }],
       skip: (page - 1) * pageSize,
       take: pageSize,
-    }),
-    prisma.user.count({ where }),
-  ]);
+    });
+  const total = await prisma.user.count({ where });
 
   const rows: AdminUserListRow[] = users.map((user) => {
     const roleMap = new Map<string, { id: string; code: string; name: string }>();
@@ -483,10 +492,9 @@ export async function listAdminRoles(
       : undefined,
   };
 
-  const [roles, total] = await Promise.all([
-    prisma.role.findMany({
-      where,
-      select: {
+  const roles = await prisma.role.findMany({
+    where,
+    select: {
         id: true,
         code: true,
         name: true,
@@ -502,9 +510,8 @@ export async function listAdminRoles(
       orderBy: [{ isSystem: "desc" }, { name: "asc" }],
       skip: (page - 1) * pageSize,
       take: pageSize,
-    }),
-    prisma.role.count({ where }),
-  ]);
+    });
+  const total = await prisma.role.count({ where });
 
   const rows: AdminRoleListRow[] = roles.map((role) => {
     const userIds = new Set<string>([
@@ -732,7 +739,7 @@ export async function createAdminUser(input: CreateUserInput, actor: CurrentUser
     );
 
     return user;
-  });
+  }, { maxWait: 15000, timeout: 30000 });
 }
 
 export async function updateAdminUser(userId: string, input: UpdateUserInput, actor: CurrentUser) {
@@ -857,7 +864,7 @@ export async function updateAdminUser(userId: string, input: UpdateUserInput, ac
     );
 
     return updated;
-  });
+  }, { maxWait: 15000, timeout: 30000 });
 }
 
 export async function setUserActive(userId: string, isActive: boolean, actor: CurrentUser) {
@@ -921,7 +928,7 @@ export async function createAdminRole(input: CreateRoleInput, actor: CurrentUser
     );
 
     return role;
-  });
+  }, { maxWait: 15000, timeout: 30000 });
 }
 
 async function syncRolePermissions(client: DbClient, roleId: string, permissionCodes: readonly string[], actorUserId?: string | null) {
@@ -1061,7 +1068,7 @@ export async function updateAdminRole(roleId: string, input: UpdateRoleInput, ac
     );
 
     return updated;
-  });
+  }, { maxWait: 15000, timeout: 30000 });
 }
 
 export async function updateRolePermissions(roleId: string, permissionCodes: string[], actor: CurrentUser) {

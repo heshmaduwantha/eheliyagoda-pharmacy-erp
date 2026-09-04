@@ -9,6 +9,7 @@ export type ReportType =
   | "cash-card"
   | "product-sales"
   | "gross-profit"
+  | "item-velocity"
   | "stock-valuation"
   | "low-stock"
   | "near-expiry"
@@ -56,6 +57,17 @@ export type ProductSalesRow = {
   netSales: MoneyString;
   batchAwareCogs: MoneyString;
   grossProfitEstimate: MoneyString;
+};
+
+export type ProductVelocityRow = {
+  productId: string;
+  productName: string;
+  baseUnit: string;
+  qtyBaseSold: QuantityString;
+  grossSales: MoneyString;
+  velocityCategory: "FAST_MOVING" | "MEDIUM_MOVING" | "SLOW_MOVING";
+  velocityLabel: string;
+  benchmarkBadge: string;
 };
 
 export type StockValuationRow = {

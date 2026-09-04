@@ -29,11 +29,9 @@ async function renderDashboardPage() {
   const user = await requireAuth();
   await requirePermission("dashboard.view");
 
-  const [metrics, weeklySales, topProducts] = await Promise.all([
-    getDashboardMetrics(),
-    getDashboardWeeklySales(),
-    getDashboardTopProducts(),
-  ]);
+  const metrics = await getDashboardMetrics();
+  const weeklySales = await getDashboardWeeklySales();
+  const topProducts = await getDashboardTopProducts();
 
   const maxTotal = Math.max(...weeklySales.map((d) => Number(d.total)), 1);
 

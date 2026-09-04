@@ -5,8 +5,8 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { type FormState, toFieldErrors } from "@/lib/forms";
 import { requirePermission } from "@/modules/auth/permissions";
-import { createSupplier, setSupplierActive } from "./supplier.service";
-import { confirmGrn, createGrnDraft, updateGrnDraft } from "./grn.service";
+import { createSupplier, setSupplierActive, updateSupplier } from "./supplier.service";
+import { confirmGrn, createGrnDraft, updateGrnDraft, voidGrn } from "./grn.service";
 
 const createSupplierSchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(200),
@@ -50,6 +50,45 @@ export async function createSupplierAction(_prev: FormState, formData: FormData)
   }
 }
 
+const updateSupplierSchema = createSupplierSchema.extend({
+  id: z.string().uuid("Invalid supplier ID"),
+});
+
+export async function updateSupplierAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const actor = await requirePermission("supplier.manage", { onDenied: "throw" });
+
+  const parsed = updateSupplierSchema.safeParse({
+    id: formData.get("id"),
+    name: formData.get("name"),
+    contactPerson: formData.get("contactPerson") || undefined,
+    phone: formData.get("phone") || undefined,
+    email: formData.get("email") || undefined,
+    address: formData.get("address") || undefined,
+    creditTermDays: formData.get("creditTermDays") || undefined,
+  });
+
+  if (!parsed.success) {
+    const flat = parsed.error.flatten();
+    return {
+      status: "error",
+      message: flat.formErrors[0] ?? "Please correct the highlighted fields.",
+      fieldErrors: toFieldErrors(flat.fieldErrors),
+    };
+  }
+
+  try {
+    const supplier = await updateSupplier(
+      parsed.data.id,
+      { ...parsed.data, email: parsed.data.email || undefined },
+      actor.id,
+    );
+    revalidatePath("/suppliers");
+    return { status: "success", message: `Supplier "${supplier.name}" updated successfully.` };
+  } catch (error) {
+    return { status: "error", message: error instanceof Error ? error.message : "Failed to update supplier." };
+  }
+}
+
 export async function setSupplierActiveAction(supplierId: string, isActive: boolean) {
   const actor = await requirePermission("supplier.manage", { onDenied: "throw" });
   const validSupplierId = z.string().uuid().parse(supplierId);
@@ -62,12 +101,12 @@ export async function setSupplierActiveAction(supplierId: string, isActive: bool
 const grnLineSchema = z.object({
   productId: z.string().uuid(),
   unitId: z.string().uuid(),
-  qtyInUnit: z.coerce.number().positive(),
+  qtyInUnit: z.coerce.number().positive("Quantity must be greater than 0"),
   supplierBatchNo: z.string().trim().max(80).optional(),
   expiryDate: z.string().trim().optional(),
   mrp: z.coerce.number().nonnegative().optional(),
-  costPrice: z.coerce.number().nonnegative(),
-  sellingPrice: z.coerce.number().nonnegative(),
+  costPrice: z.coerce.number().positive("Cost price must be greater than 0"),
+  sellingPrice: z.coerce.number().positive("Selling price must be greater than 0"),
 });
 
 const createGrnSchema = z.object({
@@ -158,5 +197,19 @@ export async function confirmGrnAction(grnId: string): Promise<FormState> {
     return { status: "success", message: "GRN confirmed. Stock and payable updated." };
   } catch (error) {
     return { status: "error", message: error instanceof Error ? error.message : "Failed to confirm GRN." };
+  }
+}
+
+export async function voidGrnAction(grnId: string, reason?: string): Promise<FormState> {
+  const actor = await requirePermission("grn.manage", { onDenied: "throw" });
+  try {
+    await voidGrn(grnId, actor.id, reason);
+    revalidatePath("/stock/grn");
+    revalidatePath(`/stock/grn/${grnId}`);
+    revalidatePath("/stock/batches");
+    revalidatePath("/reports/stock-movements");
+    return { status: "success", message: "GRN has been voided/cancelled successfully." };
+  } catch (error) {
+    return { status: "error", message: error instanceof Error ? error.message : "Failed to void GRN." };
   }
 }

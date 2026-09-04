@@ -202,6 +202,7 @@ test("deleted expense is excluded from reports", async () => {
     where: { entityType: "EXPENSE", entityId: expense.id, action: "expense.deleted" },
   });
   assert.ok(audit);
+  await cleanupExpense(expense.id);
 });
 
 test("permission guard blocks unauthorized expense create", async () => {

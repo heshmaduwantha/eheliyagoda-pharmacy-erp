@@ -17,13 +17,17 @@ const serverEnvSchema = z.object({
 });
 
 function buildDatabaseUrl(env: z.infer<typeof serverEnvSchema>) {
+  if (env.DATABASE_URL) return env.DATABASE_URL;
+
   const { PG_DB_HOST: host, PG_DB_PORT: port, PG_DB_NAME: name, PG_DB_USER: user, PG_DB_PASSWORD: password } = env;
   if (host && port && name && user && password != null) {
     const url = new URL(`postgresql://${encodeURIComponent(user)}:${encodeURIComponent(password)}@${host}:${port}/${encodeURIComponent(name)}`);
     url.searchParams.set("schema", "public");
+    url.searchParams.set("connect_timeout", "20");
+    url.searchParams.set("pool_timeout", "30");
+    url.searchParams.set("connection_limit", "1");
     return url.toString();
   }
-  if (env.DATABASE_URL) return env.DATABASE_URL;
 
   throw new Error(
     "Invalid server environment configuration. Provide DATABASE_URL or PG_DB_HOST, PG_DB_PORT, PG_DB_NAME, PG_DB_USER, and PG_DB_PASSWORD.",

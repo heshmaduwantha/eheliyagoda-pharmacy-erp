@@ -7,6 +7,7 @@ const movementStyle: Record<StockMovementType, string> = {
   RETURN_IN: "bg-cyan-50 text-cyan-700",
   WRITE_OFF: "bg-status-danger-bg text-status-danger-text",
   ADJUSTMENT: "bg-status-warning-bg text-status-warning-text",
+  SUPPLIER_RETURN: "bg-purple-50 text-purple-700 border border-purple-200",
 };
 
 const movementLabel: Record<StockMovementType, string> = {
@@ -15,6 +16,7 @@ const movementLabel: Record<StockMovementType, string> = {
   RETURN_IN: "RETURN_IN",
   WRITE_OFF: "Expired Stock",
   ADJUSTMENT: "ADJUSTMENT",
+  SUPPLIER_RETURN: "Supplier Return",
 };
 
 const directionStyle = {

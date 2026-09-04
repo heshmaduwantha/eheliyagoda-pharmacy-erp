@@ -79,7 +79,7 @@ export function GrnForm({
 
   const linesPayload = JSON.stringify(
     lines
-      .filter((l) => l.productId && l.unitId && l.qtyInUnit)
+      .filter((l) => l.productId && l.unitId && Number(l.qtyInUnit) > 0 && Number(l.costPrice) > 0 && Number(l.sellingPrice) > 0)
       .map((l) => ({
         productId: l.productId,
         unitId: l.unitId,
@@ -87,8 +87,8 @@ export function GrnForm({
         supplierBatchNo: l.supplierBatchNo.trim() || undefined,
         expiryDate: l.expiryDate || undefined,
         mrp: l.mrp ? Number(l.mrp) : undefined,
-        costPrice: Number(l.costPrice || 0),
-        sellingPrice: Number(l.sellingPrice || 0),
+        costPrice: Number(l.costPrice),
+        sellingPrice: Number(l.sellingPrice),
       })),
   );
 
@@ -143,8 +143,8 @@ export function GrnForm({
                 <th className="px-2 py-2">Supplier lot</th>
                 <th className="px-2 py-2">Expiry</th>
                 <th className="px-2 py-2">MRP</th>
-                <th className="px-2 py-2">Cost</th>
-                <th className="px-2 py-2">Price</th>
+                <th className="px-2 py-2 text-status-danger-text">Cost *</th>
+                <th className="px-2 py-2 text-status-danger-text">Price *</th>
                 <th className="px-2 py-2 text-right">Total</th>
                 <th className="px-2 py-2" />
               </tr>
@@ -175,8 +175,8 @@ export function GrnForm({
                     <td className={`${cell} w-[10%]`}><input aria-label="Supplier batch or lot number" className={inputClass} onChange={(e) => updateLine(index, { supplierBatchNo: e.target.value })} placeholder="Optional" value={line.supplierBatchNo} /></td>
                     <td className={`${cell} w-[12%]`}><input className={inputClass} onChange={(e) => updateLine(index, { expiryDate: e.target.value })} type="date" value={line.expiryDate} /></td>
                     <td className={`${cell} w-[9%]`}><input className={inputClass} min="0" onChange={(e) => updateLine(index, { mrp: e.target.value })} step="0.01" type="number" value={line.mrp} /></td>
-                    <td className={`${cell} w-[9%]`}><input className={inputClass} min="0" onChange={(e) => updateLine(index, { costPrice: e.target.value })} step="0.01" type="number" value={line.costPrice} /></td>
-                    <td className={`${cell} w-[9%]`}><input className={inputClass} min="0" onChange={(e) => updateLine(index, { sellingPrice: e.target.value })} step="0.01" type="number" value={line.sellingPrice} /></td>
+                    <td className={`${cell} w-[9%]`}><input className={`${inputClass} ${!line.costPrice || Number(line.costPrice) <= 0 ? "border-status-danger-text focus:ring-status-danger-text" : ""}`} min="0.01" onChange={(e) => updateLine(index, { costPrice: e.target.value })} placeholder="Required" required step="0.01" type="number" value={line.costPrice} /></td>
+                    <td className={`${cell} w-[9%]`}><input className={`${inputClass} ${!line.sellingPrice || Number(line.sellingPrice) <= 0 ? "border-status-danger-text focus:ring-status-danger-text" : ""}`} min="0.01" onChange={(e) => updateLine(index, { sellingPrice: e.target.value })} placeholder="Required" required step="0.01" type="number" value={line.sellingPrice} /></td>
                     <td className={`${cell} w-[9%] pt-3.5 text-right font-semibold text-neutral-text`}>{formatMoney(lineTotal(line))}</td>
                     <td className={`${cell} w-[4%] pt-2.5`}>
                       {lines.length > 1 && (

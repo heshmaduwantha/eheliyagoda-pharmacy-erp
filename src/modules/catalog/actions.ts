@@ -51,18 +51,27 @@ export async function createProductAction(_prev: FormState, formData: FormData):
 
   const baseUnitName = formData.get("baseUnitName")?.toString().trim() || "";
   
+  const isControlled = formData.get("isControlled") === "on" || formData.get("isControlled") === "true";
+  const rawRule = formData.get("prescriptionRule")?.toString();
+  const requiresPrescription = formData.get("requiresPrescription") === "on" || formData.get("requiresPrescription") === "true";
+
+  let prescriptionRule: PrescriptionRule = PrescriptionRule.NONE;
+  if (isControlled) {
+    prescriptionRule = PrescriptionRule.HARD_REQUIRED_CONTROLLED;
+  } else if (requiresPrescription || rawRule === "PROMPT_SKIPPABLE" || rawRule === "HARD_REQUIRED_CONTROLLED") {
+    prescriptionRule = rawRule === "HARD_REQUIRED_CONTROLLED" ? PrescriptionRule.HARD_REQUIRED_CONTROLLED : PrescriptionRule.PROMPT_SKIPPABLE;
+  }
+
   const parsed = createProductSchema.safeParse({
     name: formData.get("name"),
     genericName: formData.get("genericName") || undefined,
     strength: formData.get("strength") || undefined,
     form: formData.get("form") || undefined,
-    productType: formData.get("productType"),
+    productType: formData.get("productType") || "MEDICINE",
     category: formData.get("category") || undefined,
     baseUnitName,
-    prescriptionRule: (formData.get("isControlled") === "on" || formData.get("isControlled") === "true") 
-      ? "HARD_REQUIRED_CONTROLLED" 
-      : formData.get("prescriptionRule"),
-    isControlled: formData.get("isControlled") === "on" || formData.get("isControlled") === "true",
+    prescriptionRule,
+    isControlled,
     defaultSellingPrice: formData.get("defaultSellingPrice") || undefined,
     reorderLevel: formData.get("reorderLevel") || undefined,
     units,

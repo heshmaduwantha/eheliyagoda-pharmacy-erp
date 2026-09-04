@@ -182,27 +182,25 @@ function groupByProductId<T extends { productId: string }>(rows: T[]) {
 async function hydrateProductRows(products: ProductBaseRow[]): Promise<ProductReadRow[]> {
   if (products.length === 0) return [];
   const productIds = products.map((product) => product.id);
-  const [units, barcodes, batches] = await Promise.all([
-    prisma.productUnit.findMany({
-      where: { productId: { in: productIds } },
-      select: unitSelect,
-      orderBy: { factorToBase: "asc" },
-    }),
-    prisma.productBarcode.findMany({
-      where: { productId: { in: productIds } },
-      select: barcodeSelect,
-      orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }],
-    }),
-    prisma.batch.findMany({
-      where: {
-        productId: { in: productIds },
-        status: BatchStatus.ACTIVE,
-        qtyOnHandBase: { gt: 0 },
-      },
-      select: stockBatchSelect,
-      orderBy: [{ expiryDate: { sort: "asc", nulls: "last" } }, { createdAt: "asc" }],
-    }),
-  ]);
+  const units = await prisma.productUnit.findMany({
+    where: { productId: { in: productIds } },
+    select: unitSelect,
+    orderBy: { factorToBase: "asc" },
+  });
+  const barcodes = await prisma.productBarcode.findMany({
+    where: { productId: { in: productIds } },
+    select: barcodeSelect,
+    orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }],
+  });
+  const batches = await prisma.batch.findMany({
+    where: {
+      productId: { in: productIds },
+      status: BatchStatus.ACTIVE,
+      qtyOnHandBase: { gt: 0 },
+    },
+    select: stockBatchSelect,
+    orderBy: [{ expiryDate: { sort: "asc", nulls: "last" } }, { createdAt: "asc" }],
+  });
   const unitsByProduct = groupByProductId(units);
   const barcodesByProduct = groupByProductId(barcodes);
   const batchesByProduct = groupByProductId(batches);
@@ -217,9 +215,24 @@ async function hydrateProductRows(products: ProductBaseRow[]): Promise<ProductRe
 
 export async function searchProductsForPos(query: string): Promise<PosProductSearchResult[]> {
   const normalized = query.trim();
+  const today = startOfToday();
+
+  const stockCondition: Prisma.ProductWhereInput | undefined = !normalized
+    ? {
+        batches: {
+          some: {
+            status: BatchStatus.ACTIVE,
+            qtyOnHandBase: { gt: 0 },
+            OR: [{ expiryDate: null }, { expiryDate: { gte: today } }],
+          },
+        },
+      }
+    : undefined;
+
   const products = await prisma.product.findMany({
     where: {
       isActive: true,
+      ...stockCondition,
       OR: normalized
         ? [
             { name: { contains: normalized, mode: "insensitive" } },
@@ -230,9 +243,14 @@ export async function searchProductsForPos(query: string): Promise<PosProductSea
     },
     select: productSelect,
     orderBy: { name: "asc" },
-    take: normalized ? 40 : 10,
+    take: normalized ? 40 : 18,
   });
-  return (await hydrateProductRows(products)).map(serializeProduct);
+
+  const serialized = (await hydrateProductRows(products)).map(serializeProduct);
+  if (!normalized) {
+    return serialized.filter((product) => product.hasActiveStock);
+  }
+  return serialized;
 }
 
 export async function lookupProductByBarcode(barcode: string): Promise<PosBarcodeLookupResult | null> {

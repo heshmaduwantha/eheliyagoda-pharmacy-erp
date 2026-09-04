@@ -27,6 +27,7 @@ model User {
   expenses                      Expense[]  @relation("ExpenseCreatedBy")
   supplierPayments              SupplierPayment[] @relation("SupplierPaymentCreatedBy")
   capturedPrescriptions         Prescription[] @relation("PrescriptionCapturedBy")
+  supplierReturns               SupplierReturn[] @relation("SupplierReturnCreatedBy")
   trainingProgress              TrainingProgress[]
   createdAt                     DateTime   @default(now())
   updatedAt                     DateTime   @updatedAt
@@ -161,6 +162,7 @@ model Product {
   stockMovements      StockMovement[]
   saleLines           SaleLine[]
   prescriptionSaleLines PrescriptionSaleLine[]
+  supplierReturns     SupplierReturn[]
   createdAt           DateTime         @default(now())
   updatedAt           DateTime         @updatedAt
 
@@ -229,6 +231,7 @@ model Supplier {
   grns            Grn[]
   invoices        SupplierInvoice[]
   payments        SupplierPayment[]
+  supplierReturns SupplierReturn[]
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
 
@@ -315,6 +318,7 @@ enum StockMovementType {
   RETURN_IN
   WRITE_OFF
   ADJUSTMENT
+  SUPPLIER_RETURN
 }
 
 model Batch {
@@ -334,6 +338,7 @@ model Batch {
   stockMovements StockMovement[]
   saleLines      SaleLine[]
   prescriptionSaleLines PrescriptionSaleLine[]
+  supplierReturns SupplierReturn[]
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
 
@@ -356,6 +361,28 @@ model StockMovement {
 
   @@index([productId, createdAt])
   @@index([batchId])
+}
+
+model SupplierReturn {
+  id            String   @id @default(uuid()) @db.Uuid
+  returnNumber  String   @unique @db.VarChar(60)
+  supplierId    String   @db.Uuid
+  supplier      Supplier @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  batchId       String   @db.Uuid
+  batch         Batch    @relation(fields: [batchId], references: [id], onDelete: Restrict)
+  productId     String   @db.Uuid
+  product       Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+  qtyBase       Decimal  @db.Decimal(14, 3)
+  reason        String?  @db.VarChar(255)
+  notes         String?  @db.VarChar(500)
+  createdById   String   @db.Uuid
+  createdBy     User     @relation("SupplierReturnCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt     DateTime @default(now())
+
+  @@index([supplierId])
+  @@index([batchId])
+  @@index([productId])
+  @@index([createdAt])
 }
 
 // ---------------------------------------------------------------------------

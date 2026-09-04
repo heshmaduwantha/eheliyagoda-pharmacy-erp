@@ -1,7 +1,7 @@
 import type { ReportDateRange, ReportType } from "./report.types";
 
 const REPORT_TYPES = new Set<ReportType>([
-  "daily-sales", "cash-card", "product-sales", "gross-profit", "stock-valuation",
+  "daily-sales", "cash-card", "product-sales", "gross-profit", "item-velocity", "stock-valuation",
   "low-stock", "near-expiry", "expired-quarantined", "supplier-payables", "supplier-payments", "expenses",
   "controlled-drugs",
 ]);

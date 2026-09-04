@@ -3,6 +3,7 @@ import { Search, Plus } from "lucide-react";
 import { requirePermission } from "@/modules/auth/permissions";
 import { listSuppliers } from "@/modules/procurement/supplier.service";
 import { SupplierForm } from "@/modules/procurement/supplier-form";
+import { SupplierEditModal } from "@/modules/procurement/supplier-edit-modal";
 import { Pagination } from "@/components/ui/pagination";
 import { SupplierStatusToggle } from "@/components/suppliers/supplier-status-toggle";
 import { AutoSubmit } from "@/components/ui/auto-submit";
@@ -29,12 +30,20 @@ export default async function SuppliersPage({ searchParams }: { searchParams: Pr
           />
           <AutoSubmit />
         </form>
-        <Link
-          className="inline-flex items-center gap-2 rounded-lg border border-brand-default/20 bg-neutral-surface px-4 py-2 text-sm font-semibold text-brand-default shadow-sm transition hover:bg-brand-pale"
-          href="/suppliers/payments"
-        >
-          Pay suppliers →
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            className="inline-flex items-center gap-2 rounded-lg border border-neutral-border bg-neutral-surface px-4 py-2 text-sm font-semibold text-neutral-text shadow-sm transition hover:bg-neutral-bg"
+            href="/suppliers/returns"
+          >
+            Supplier Returns Log →
+          </Link>
+          <Link
+            className="inline-flex items-center gap-2 rounded-lg border border-brand-default/20 bg-neutral-surface px-4 py-2 text-sm font-semibold text-brand-default shadow-sm transition hover:bg-brand-pale"
+            href="/suppliers/payments"
+          >
+            Pay suppliers →
+          </Link>
+        </div>
       </div>
 
       {/* Add supplier — collapsible */}
@@ -91,7 +100,8 @@ export default async function SuppliersPage({ searchParams }: { searchParams: Pr
                         {supplier.isActive ? "Active" : "Inactive"}
                       </span>
                     </td>
-                    <td className="px-5 py-3.5 text-right">
+                    <td className="px-5 py-3.5 text-right flex items-center justify-end gap-2">
+                      <SupplierEditModal supplier={supplier} />
                       <SupplierStatusToggle supplierId={supplier.id} supplierName={supplier.name} isActive={supplier.isActive} />
                     </td>
                   </tr>

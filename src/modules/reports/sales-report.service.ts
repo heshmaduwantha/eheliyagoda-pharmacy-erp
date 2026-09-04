@@ -212,3 +212,85 @@ export async function getGrossProfitReport(range: ReportDateRange): Promise<Repo
 
   return { availability: "ready", summary: null, rows };
 }
+
+export async function getItemVelocityReport(range: ReportDateRange): Promise<ReportResult<null, import("./report.types").ProductVelocityRow>> {
+  const { start, endExclusive } = toDateWindow(range);
+  const [lines, activeProducts] = await Promise.all([
+    prisma.saleLine.findMany({
+      where: {
+        sale: {
+          status: SaleStatus.COMPLETED,
+          completedAt: { gte: start, lt: endExclusive },
+        },
+      },
+      select: {
+        productId: true,
+        productNameSnapshot: true,
+        qtyBase: true,
+        lineTotal: true,
+        product: { select: { baseUnitName: true } },
+      },
+    }),
+    prisma.product.findMany({
+      where: { isActive: true },
+      select: { id: true, name: true, baseUnitName: true },
+    }),
+  ]);
+
+  const salesByProduct = new Map<string, { productName: string; baseUnit: string; qtyBaseSold: Prisma.Decimal; grossSales: Prisma.Decimal }>();
+
+  // Seed with active products so slow/zero moving products are tracked
+  for (const product of activeProducts) {
+    salesByProduct.set(product.id, {
+      productName: product.name,
+      baseUnit: product.baseUnitName,
+      qtyBaseSold: new Prisma.Decimal(0),
+      grossSales: new Prisma.Decimal(0),
+    });
+  }
+
+  for (const line of lines) {
+    const current = salesByProduct.get(line.productId) ?? {
+      productName: line.productNameSnapshot,
+      baseUnit: line.product?.baseUnitName ?? "unit",
+      qtyBaseSold: new Prisma.Decimal(0),
+      grossSales: new Prisma.Decimal(0),
+    };
+
+    current.qtyBaseSold = current.qtyBaseSold.add(line.qtyBase);
+    current.grossSales = current.grossSales.add(line.lineTotal);
+    salesByProduct.set(line.productId, current);
+  }
+
+  const rows: import("./report.types").ProductVelocityRow[] = [...salesByProduct.entries()].map(([productId, item]) => {
+    const qtySoldNum = Number(item.qtyBaseSold);
+
+    let velocityCategory: "FAST_MOVING" | "MEDIUM_MOVING" | "SLOW_MOVING" = "MEDIUM_MOVING";
+    let velocityLabel = "Medium Moving";
+    let benchmarkBadge = "bg-blue-50 text-blue-700 border-blue-200";
+
+    if (qtySoldNum >= 100) {
+      velocityCategory = "FAST_MOVING";
+      velocityLabel = "🔥 Fast Moving (≥100 units)";
+      benchmarkBadge = "bg-amber-50 text-amber-700 border-amber-300 font-extrabold";
+    } else if (qtySoldNum <= 10) {
+      velocityCategory = "SLOW_MOVING";
+      velocityLabel = "🐢 Slow Moving (≤10 units)";
+      benchmarkBadge = "bg-slate-100 text-slate-700 border-slate-300";
+    }
+
+    return {
+      productId,
+      productName: item.productName,
+      baseUnit: item.baseUnit,
+      qtyBaseSold: item.qtyBaseSold.toFixed(3),
+      grossSales: item.grossSales.toFixed(2),
+      velocityCategory,
+      velocityLabel,
+      benchmarkBadge,
+    };
+  }).sort((a, b) => Number(b.qtyBaseSold) - Number(a.qtyBaseSold));
+
+  return { availability: "ready", summary: null, rows };
+}
+

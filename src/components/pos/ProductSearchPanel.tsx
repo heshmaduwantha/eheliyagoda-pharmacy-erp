@@ -22,14 +22,12 @@ export function ProductSearchPanel({ products, onAddProduct, isLoading = false }
 
       {/* Product tile grid */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-3">
-        {products.slice(0, 9).map((product) => {
+        {products.slice(0, 18).map((product) => {
           const unit = product.units.find((u) => u.id === product.defaultSaleUnitId) ?? product.units[0];
           const stockStatus = !product.hasActiveStock
             ? { label: "Out of stock", cls: "bg-status-danger-bg text-status-danger-text" }
             : { label: "In stock", cls: "bg-status-success-bg text-status-success-text" };
 
-          const isPopular = product.name.includes("Amoxicillin") || product.name.includes("Diazepam");
-          const isExpiringSoon = product.name.includes("Amoxicillin");
           const isAvailable = Boolean(unit && product.hasActiveStock);
 
           return (
@@ -46,12 +44,7 @@ export function ProductSearchPanel({ products, onAddProduct, isLoading = false }
             >
               {/* Name */}
               <p className="line-clamp-2 text-sm font-black leading-snug text-neutral-text">
-                {product.name}{" "}
-                {isPopular && (
-                  <span className="ml-1 inline-flex rounded-full bg-brand-pale px-2 py-0.5 text-[9px] font-bold text-brand-default">
-                    Popular
-                  </span>
-                )}
+                {product.name}
               </p>
               {product.genericName && (
                 <p className="mt-0.5 truncate text-xs text-neutral-muted">{product.genericName}</p>
@@ -67,9 +60,9 @@ export function ProductSearchPanel({ products, onAddProduct, isLoading = false }
                 <span className={`inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-bold ${stockStatus.cls}`}>
                   {stockStatus.label}
                 </span>
-                {isExpiringSoon && (
+                {product.nextExpiryDate && (
                   <span className="inline-flex rounded-full bg-status-orange-bg px-2.5 py-0.5 text-[10px] font-bold text-status-orange-text">
-                    Expiring soon
+                    Exp. {product.nextExpiryDate}
                   </span>
                 )}
               </div>

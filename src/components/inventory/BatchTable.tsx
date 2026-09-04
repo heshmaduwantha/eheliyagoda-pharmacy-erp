@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Trash2 } from "lucide-react";
+import { Printer, Trash2 } from "lucide-react";
 import { removeExpiredBatchAction } from "@/modules/inventory/inventory.actions";
 import type { InventoryBatchRecord, InventoryBatchStatus } from "@/modules/inventory/inventory.types";
 import { formatInventoryDate, formatInventoryMoney, formatInventoryQty } from "@/modules/inventory/inventory.utils";
@@ -62,10 +62,17 @@ export function BatchTable({ rows }: { rows: InventoryBatchRecord[] }) {
               const isExpired = daysLeft !== null && daysLeft < 0;
               const isNearExpiry = daysLeft !== null && daysLeft >= 0 && daysLeft <= 180;
 
+              let statusLabel: string = batch.status;
+              let statusClass: string = statusStyle[batch.status] ?? "bg-slate-100 text-neutral-muted";
+
               if (batch.status === "ACTIVE" || batch.status === "QUARANTINED") {
                 if (isExpired) {
+                  statusLabel = "EXPIRED";
+                  statusClass = "bg-status-danger-bg text-status-danger-text";
                   dateColorClass = "font-bold text-status-danger-text";
                 } else if (isNearExpiry) {
+                  statusLabel = "NEAR EXPIRY";
+                  statusClass = "bg-amber-100 text-amber-800 border border-amber-200";
                   dateColorClass = "font-bold text-status-orange-text";
                 }
               }
@@ -93,25 +100,34 @@ export function BatchTable({ rows }: { rows: InventoryBatchRecord[] }) {
                     <span className="ml-1 text-xs text-neutral-muted">{batch.baseUnit}</span>
                   </td>
                   <td className="px-5 py-4">
-                    <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${statusStyle[batch.status]}`}>
-                      {batch.status}
+                    <span className={`inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-bold ${statusClass}`}>
+                      {statusLabel}
                     </span>
                   </td>
                   <td className="px-5 py-4">
-                    {canRemove ? (
+                    <div className="flex items-center gap-2">
                       <button
                         type="button"
-                        onClick={() => setWriteOffBatchId(batch.id)}
-                        disabled={isPending}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-status-danger-bg px-3 py-1.5 text-xs font-semibold text-status-danger-text transition-colors hover:bg-red-100 disabled:opacity-50"
-                        title="Remove expired stock"
+                        onClick={() => window.open(`/api/print/batch-label/${batch.id}`, "_blank", "width=400,height=300")}
+                        className="inline-flex items-center justify-center rounded-lg border border-sky-200 bg-sky-50 p-2 text-sky-700 transition-colors hover:bg-sky-100"
+                        title="Print batch thermal label"
                       >
-                        <Trash2 className="size-3.5" />
-                        Remove
+                        <Printer className="size-4" />
                       </button>
-                    ) : (
-                      <span className="text-slate-300">—</span>
-                    )}
+
+                      {canRemove ? (
+                        <button
+                          type="button"
+                          onClick={() => setWriteOffBatchId(batch.id)}
+                          disabled={isPending}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-status-danger-bg px-3 py-1.5 text-xs font-semibold text-status-danger-text transition-colors hover:bg-red-100 disabled:opacity-50"
+                          title="Remove expired stock"
+                        >
+                          <Trash2 className="size-3.5" />
+                          Remove
+                        </button>
+                      ) : null}
+                    </div>
                   </td>
                 </tr>
               );

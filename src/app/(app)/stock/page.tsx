@@ -10,10 +10,8 @@ export const metadata: Metadata = { title: "Stock" };
 
 export default async function StockPage() {
   await requirePermission("stock.access");
-  const [summary, productOverview] = await Promise.all([
-    getStockSummary(),
-    getStockProductOverview(20),
-  ]);
+  const summary = await getStockSummary();
+  const productOverview = await getStockProductOverview(20);
 
 
   return (

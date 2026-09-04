@@ -71,7 +71,8 @@ export const permissionRegistry: PermissionDefinition[] = [
   { code: "admin.roles.manage", module: "admin", resource: "roles", action: "manage", description: "Manage roles" },
   { code: "admin.permissions.read", module: "admin", resource: "permissions", action: "read", description: "View permissions" },
   { code: "admin.settings.manage", module: "admin", resource: "settings", action: "manage", description: "Manage settings" },
-  { code: "audit.read", module: "audit", resource: "log", action: "read", description: "View audit logs", isSensitive: true },
+  // System / Maintenance
+  { code: "system.under_construction", module: "system", resource: "app", action: "under_construction", description: "Lock user to Under Construction screen" },
 ];
 
 export const permissionRegistryByCode = new Map(permissionRegistry.map((permission) => [permission.code, permission]));
@@ -97,6 +98,7 @@ export const legacyPermissionAliases: Record<string, string> = {
   "audit.view": "audit.read",
   "settings.manage": "admin.settings.manage",
   "controlled_drug.sell": "controlled_drugs.sale.create",
+  "under_construction": "system.under_construction",
 };
 
 export const canonicalPermissionAliases = Object.entries(legacyPermissionAliases).reduce<Record<string, string[]>>((acc, [legacyCode, canonicalCode]) => {

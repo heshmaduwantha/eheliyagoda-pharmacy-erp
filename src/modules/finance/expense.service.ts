@@ -83,28 +83,26 @@ export async function listExpenses(filters: ExpenseListFilters = {}): Promise<{ 
   const { page = 1, pageSize = 10 } = filters;
   const where = expenseWhere(filters);
 
-  const [expenses, total] = await Promise.all([
-    prisma.expense.findMany({
-      where,
-      select: {
-        id: true,
-        expenseNumber: true,
-        date: true,
-        category: true,
-        description: true,
-        amount: true,
-        paymentMethod: true,
-        reference: true,
-        notes: true,
-        deletedAt: true,
-        createdBy: { select: { name: true } },
-      },
-      orderBy: [{ date: "desc" }, { createdAt: "desc" }],
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-    }),
-    prisma.expense.count({ where }),
-  ]);
+  const expenses = await prisma.expense.findMany({
+    where,
+    select: {
+      id: true,
+      expenseNumber: true,
+      date: true,
+      category: true,
+      description: true,
+      amount: true,
+      paymentMethod: true,
+      reference: true,
+      notes: true,
+      deletedAt: true,
+      createdBy: { select: { name: true } },
+    },
+    orderBy: [{ date: "desc" }, { createdAt: "desc" }],
+    skip: (page - 1) * pageSize,
+    take: pageSize,
+  });
+  const total = await prisma.expense.count({ where });
 
   const rows = expenses.map((expense) => ({
     id: expense.id,
@@ -210,7 +208,7 @@ export async function createExpense(input: CreateExpenseInput, actor: CurrentUse
     );
 
     return expense;
-  });
+  }, { maxWait: 10000, timeout: 20000 });
 }
 
 export async function updateExpense(id: string, input: UpdateExpenseInput, actor: CurrentUser) {
@@ -262,7 +260,7 @@ export async function updateExpense(id: string, input: UpdateExpenseInput, actor
     );
 
     return expense;
-  });
+  }, { maxWait: 10000, timeout: 20000 });
 }
 
 export async function deleteExpense(id: string, actor: CurrentUser) {
@@ -296,7 +294,7 @@ export async function deleteExpense(id: string, actor: CurrentUser) {
     );
 
     return expense;
-  });
+  }, { maxWait: 10000, timeout: 20000 });
 }
 
 export { EXPENSE_CATEGORIES };

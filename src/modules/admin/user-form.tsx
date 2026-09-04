@@ -4,7 +4,6 @@ import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import type { AdminRoleListRow, AdminUserDetail } from "./rbac.service";
 import { saveUserAction } from "./rbac.actions";
 import { idleFormState } from "@/lib/forms";
-import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Field, FormAlert, SubmitButton, inputClass } from "@/components/ui/form";
 
 type UserFormProps = {
@@ -15,15 +14,31 @@ type UserFormProps = {
 export function UserForm({ user, roles }: UserFormProps) {
   const [state, formAction] = useActionState(saveUserAction, idleFormState);
   const formRef = useRef<HTMLFormElement>(null);
-  const defaultPrimaryRoleId = useMemo(() => user?.primaryRoleId ?? roles.find((role) => role.isActive)?.id ?? roles[0]?.id ?? "", [roles, user?.primaryRoleId]);
-  const [selectedRole, setSelectedRole] = useState(defaultPrimaryRoleId);
+  const initialRoleIds = useMemo(
+    () => new Set(user?.roleIds ?? (roles.length > 0 ? [roles[0].id] : [])),
+    [user?.roleIds, roles]
+  );
+
+  const [selectedRoleIds, setSelectedRoleIds] = useState<Set<string>>(initialRoleIds);
 
   useEffect(() => {
     if (state.status === "success") {
       formRef.current?.reset();
-      setSelectedRole(defaultPrimaryRoleId);
+      setSelectedRoleIds(initialRoleIds);
     }
-  }, [state, defaultPrimaryRoleId]);
+  }, [state, initialRoleIds]);
+
+  const handleRoleToggle = (roleId: string, checked: boolean) => {
+    setSelectedRoleIds((prev) => {
+      const next = new Set(prev);
+      if (checked) {
+        next.add(roleId);
+      } else {
+        next.delete(roleId);
+      }
+      return next;
+    });
+  };
 
   return (
     <form action={formAction} className="grid gap-5" ref={formRef}>
@@ -56,23 +71,49 @@ export function UserForm({ user, roles }: UserFormProps) {
         </div>
       </div>
 
-      <div className="grid gap-4">
-        <Field error={state.status === "error" ? state.fieldErrors?.primaryRoleId : undefined} htmlFor="primaryRoleId" label="Role">
-          <SearchableSelect
-            id="primaryRoleId"
-            name="primaryRoleId"
-            defaultValue={defaultPrimaryRoleId}
-            onChange={setSelectedRole}
-            required
-            placeholder="Select a role..."
-            options={roles.map((role) => ({
-              value: role.id,
-              label: `${role.name} ${role.isActive ? "" : "(inactive)"}`,
-            }))}
-          />
-          {/* We pass the same role as the roleIds array for the backend */}
-          <input type="hidden" name="roleIds" value={selectedRole} />
-        </Field>
+      {/* Role Selection Grid */}
+      <div className="rounded-2xl border border-neutral-border bg-neutral-surface p-5 shadow-sm">
+        <div className="mb-3">
+          <p className="text-xs font-bold uppercase tracking-wide text-neutral-muted">Assigned Roles</p>
+          <p className="mt-0.5 text-xs text-neutral-muted">Check all roles that apply to this user account.</p>
+          {state.status === "error" && state.fieldErrors?.roleIds && (
+            <p className="mt-1 text-xs font-semibold text-status-danger-text">{state.fieldErrors.roleIds[0]}</p>
+          )}
+        </div>
+
+        <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+          {roles.map((role) => {
+            const isChecked = selectedRoleIds.has(role.id);
+
+            return (
+              <label
+                key={role.id}
+                className={`flex items-center justify-between rounded-xl border p-3.5 text-sm transition-all cursor-pointer ${
+                  isChecked
+                    ? "border-brand-default bg-brand-pale/40 text-neutral-text font-bold shadow-sm"
+                    : "border-neutral-border/80 bg-neutral-bg/50 text-neutral-muted hover:border-neutral-border"
+                }`}
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <input
+                    type="checkbox"
+                    name="roleIds"
+                    value={role.id}
+                    checked={isChecked}
+                    onChange={(e) => handleRoleToggle(role.id, e.target.checked)}
+                    className="size-4 rounded border-neutral-border text-brand-default focus:ring-brand-default"
+                  />
+                  <span className="truncate">{role.name}</span>
+                </div>
+                {!role.isActive && (
+                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-neutral-muted">
+                    inactive
+                  </span>
+                )}
+              </label>
+            );
+          })}
+        </div>
       </div>
 
       <FormAlert state={state} />

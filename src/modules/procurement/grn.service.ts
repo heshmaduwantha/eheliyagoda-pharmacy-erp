@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { GrnStatus, Prisma, ProductType, StockMovementType, SupplierInvoiceStatus } from "@prisma/client";
+import { BatchStatus, GrnStatus, Prisma, ProductType, StockMovementType, SupplierInvoiceStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAuditLog } from "@/modules/audit/audit.service";
 import { serverOnly } from "@/lib/server-only";
@@ -89,7 +89,7 @@ export function getGrn(id: string) {
     where: { id },
     include: {
       supplier: true,
-      lines: { include: { product: { select: { name: true, productType: true } }, unit: true } },
+      lines: { include: { product: { select: { name: true, productType: true } }, unit: true, batch: { select: { id: true } } } },
       invoice: true,
     },
   });
@@ -340,5 +340,127 @@ export async function confirmGrn(grnId: string, actorUserId: string) {
     );
 
     return confirmed;
+  }, GRN_TRANSACTION_OPTIONS);
+}
+
+export async function voidGrn(grnId: string, actorUserId: string, reason?: string) {
+  return prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT id FROM "Grn" WHERE id = ${grnId}::uuid FOR UPDATE`;
+
+    const grn = await tx.grn.findUnique({
+      where: { id: grnId },
+      include: {
+        supplier: true,
+        lines: {
+          include: {
+            batch: true,
+          },
+        },
+        invoice: {
+          include: {
+            payments: true,
+          },
+        },
+      },
+    });
+
+    if (!grn) throw new Error("GRN not found.");
+    if (grn.status === GrnStatus.CANCELLED) throw new Error("This GRN is already voided.");
+
+    if (grn.status === GrnStatus.DRAFT) {
+      const updated = await tx.grn.update({
+        where: { id: grnId },
+        data: { status: GrnStatus.CANCELLED },
+      });
+
+      await writeAuditLog(
+        {
+          actorUserId,
+          action: "grn.voided",
+          entityType: "GRN",
+          entityId: grnId,
+          beforeData: { status: GrnStatus.DRAFT },
+          afterData: { status: GrnStatus.CANCELLED, reason: reason || "Voided draft GRN" },
+        },
+        tx,
+      );
+
+      return updated;
+    }
+
+    if (grn.status === GrnStatus.CONFIRMED) {
+      if (grn.invoice) {
+        if (grn.invoice.payments && grn.invoice.payments.length > 0) {
+          throw new Error("Cannot void GRN because payments have already been recorded for its supplier invoice.");
+        }
+        if (grn.invoice.status === SupplierInvoiceStatus.PAID) {
+          throw new Error("Cannot void GRN with a paid invoice.");
+        }
+      }
+
+      const batchIds: string[] = [];
+      for (const line of grn.lines) {
+        if (line.batch) {
+          if (line.batch.qtyOnHandBase.lt(line.qtyBase)) {
+            throw new Error(`Cannot void GRN because stock from batch ${line.batch.batchNo ?? "item"} has already been sold or transferred.`);
+          }
+          batchIds.push(line.batch.id);
+        }
+      }
+
+      if (batchIds.length > 0) {
+        await tx.stockMovement.createMany({
+          data: grn.lines
+            .filter((line) => line.batch)
+            .map((line) => ({
+              id: randomUUID(),
+              productId: line.productId,
+              batchId: line.batch!.id,
+              movementType: StockMovementType.SUPPLIER_RETURN,
+              qtyBase: line.qtyBase,
+              refType: "GRN_VOID",
+              refId: grn.id,
+              note: `Void GRN ${grn.grnNo}${reason ? `: ${reason}` : ""}`,
+              createdById: actorUserId,
+            })),
+        });
+
+        await tx.batch.updateMany({
+          where: { id: { in: batchIds } },
+          data: {
+            qtyOnHandBase: 0,
+            status: BatchStatus.DEPLETED,
+          },
+        });
+      }
+
+      if (grn.invoice) {
+        await tx.supplierInvoice.update({
+          where: { id: grn.invoice.id },
+          data: { status: SupplierInvoiceStatus.CANCELLED },
+        });
+      }
+
+      const updated = await tx.grn.update({
+        where: { id: grnId },
+        data: { status: GrnStatus.CANCELLED },
+      });
+
+      await writeAuditLog(
+        {
+          actorUserId,
+          action: "grn.voided",
+          entityType: "GRN",
+          entityId: grnId,
+          beforeData: { status: GrnStatus.CONFIRMED },
+          afterData: { status: GrnStatus.CANCELLED, reason: reason || "Voided confirmed GRN" },
+        },
+        tx,
+      );
+
+      return updated;
+    }
+
+    throw new Error("Invalid GRN status for void operation.");
   }, GRN_TRANSACTION_OPTIONS);
 }

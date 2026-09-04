@@ -1,5 +1,6 @@
 import { BatchStatus, Prisma, StockMovementType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { formatMoney } from "@/lib/money";
 import type {
   ExpiryAlertRecord,
   InventoryBatchRecord,
@@ -114,32 +115,30 @@ export async function getStockSummary(): Promise<StockSummary> {
   const today = startOfToday();
   const nearExpiryDate = addDays(today, DEFAULT_NEAR_EXPIRY_DAYS);
 
-  const [totalActiveProducts, productsWithReorderLevels, nearExpiryCount, expiredOrQuarantinedCount] = await Promise.all([
-    prisma.product.count({ where: { isActive: true } }),
-    prisma.product.findMany({
-      where: { isActive: true, reorderLevel: { gt: 0 } },
-      select: {
-        reorderLevel: true,
-        batches: {
-          where: { status: BatchStatus.ACTIVE, qtyOnHandBase: { gt: 0 } },
-          select: { qtyOnHandBase: true },
-        },
+  const totalActiveProducts = await prisma.product.count({ where: { isActive: true } });
+  const productsWithReorderLevels = await prisma.product.findMany({
+    where: { isActive: true, reorderLevel: { gt: 0 } },
+    select: {
+      reorderLevel: true,
+      batches: {
+        where: { status: BatchStatus.ACTIVE, qtyOnHandBase: { gt: 0 } },
+        select: { qtyOnHandBase: true },
       },
-    }),
-    prisma.batch.count({
-      where: {
-        status: BatchStatus.ACTIVE,
-        qtyOnHandBase: { gt: 0 },
-        expiryDate: { gte: today, lte: nearExpiryDate },
-      },
-    }),
-    prisma.batch.count({
-      where: {
-        qtyOnHandBase: { gt: 0 },
-        OR: [{ status: BatchStatus.QUARANTINED }, { expiryDate: { lt: today } }],
-      },
-    }),
-  ]);
+    },
+  });
+  const nearExpiryCount = await prisma.batch.count({
+    where: {
+      status: BatchStatus.ACTIVE,
+      qtyOnHandBase: { gt: 0 },
+      expiryDate: { gte: today, lte: nearExpiryDate },
+    },
+  });
+  const expiredOrQuarantinedCount = await prisma.batch.count({
+    where: {
+      qtyOnHandBase: { gt: 0 },
+      OR: [{ status: BatchStatus.QUARANTINED }, { expiryDate: { lt: today } }],
+    },
+  });
 
   const lowStockCount = productsWithReorderLevels.reduce((count, product) => {
     const available = product.batches.reduce(
@@ -440,3 +439,264 @@ export async function removeExpiredBatch(batchId: string, actorUserId: string) {
     });
   });
 }
+
+export type CreateSupplierReturnInput = {
+  batchId: string;
+  supplierId?: string;
+  qtyBase: number;
+  reason?: string;
+  notes?: string;
+};
+
+export async function createSupplierReturn(input: CreateSupplierReturnInput, actorUserId: string) {
+  return prisma.$transaction(async (tx) => {
+    const batch = await tx.batch.findUnique({
+      where: { id: input.batchId },
+      include: {
+        product: true,
+        grnLine: { include: { grn: { select: { supplierId: true } } } },
+      },
+    });
+
+    if (!batch) throw new Error("Batch not found.");
+    if (batch.qtyOnHandBase.lte(0)) throw new Error("Batch has no remaining stock.");
+
+    const qtyToReturn = new Prisma.Decimal(input.qtyBase);
+    if (qtyToReturn.lte(0)) throw new Error("Return quantity must be greater than 0.");
+    if (qtyToReturn.gt(batch.qtyOnHandBase)) {
+      throw new Error(`Return quantity (${qtyToReturn}) exceeds available stock (${batch.qtyOnHandBase}).`);
+    }
+
+    const supplierId = input.supplierId || batch.grnLine?.grn.supplierId;
+    if (!supplierId) {
+      throw new Error("Supplier could not be identified for this batch. Please select a supplier.");
+    }
+
+    const nextQty = batch.qtyOnHandBase.sub(qtyToReturn);
+    const nextStatus = nextQty.eq(0) ? BatchStatus.DEPLETED : batch.status;
+
+    await tx.batch.update({
+      where: { id: batch.id },
+      data: {
+        qtyOnHandBase: nextQty,
+        status: nextStatus,
+      },
+    });
+
+    const returnNumber = `RET-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.floor(1000 + Math.random() * 9000)}`;
+
+    const supplierReturn = await tx.supplierReturn.create({
+      data: {
+        returnNumber,
+        supplierId,
+        batchId: batch.id,
+        productId: batch.productId,
+        qtyBase: qtyToReturn,
+        reason: input.reason || "Near Expiry / Supplier Return",
+        notes: input.notes || null,
+        createdById: actorUserId,
+      },
+    });
+
+    await tx.stockMovement.create({
+      data: {
+        productId: batch.productId,
+        batchId: batch.id,
+        movementType: StockMovementType.SUPPLIER_RETURN,
+        qtyBase: qtyToReturn.negated(),
+        refType: "SUPPLIER_RETURN",
+        refId: supplierReturn.returnNumber,
+        note: input.reason || "Returned to supplier",
+        createdById: actorUserId,
+      },
+    });
+
+    return supplierReturn;
+  }, { maxWait: 10000, timeout: 20000 });
+}
+
+export async function getSupplierReturnLogs(options: { page?: number; pageSize?: number; search?: string } = {}) {
+  const { page = 1, pageSize = 10, search } = options;
+  const query = search?.trim();
+
+  const where: Prisma.SupplierReturnWhereInput = query
+    ? {
+        OR: [
+          { returnNumber: { contains: query, mode: "insensitive" } },
+          { supplier: { name: { contains: query, mode: "insensitive" } } },
+          { product: { name: { contains: query, mode: "insensitive" } } },
+          { batch: { batchNo: { contains: query, mode: "insensitive" } } },
+        ],
+      }
+    : {};
+
+  if (!("supplierReturn" in prisma) || !(prisma as any).supplierReturn) {
+    return { data: [], total: 0 };
+  }
+
+  const [rows, total] = await Promise.all([
+    prisma.supplierReturn.findMany({
+      where,
+      include: {
+        supplier: { select: { id: true, name: true } },
+        product: { select: { id: true, name: true, baseUnitName: true } },
+        batch: { select: { id: true, batchNo: true, supplierBatchNo: true, expiryDate: true } },
+        createdBy: { select: { id: true, name: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
+    prisma.supplierReturn.count({ where }),
+  ]);
+
+  const data = rows.map((row) => ({
+    id: row.id,
+    returnNumber: row.returnNumber,
+    supplierName: row.supplier.name,
+    productName: row.product.name,
+    baseUnit: row.product.baseUnitName,
+    batchNo: row.batch.batchNo,
+    supplierBatchNo: row.batch.supplierBatchNo,
+    expiryDate: toDateOnly(row.batch.expiryDate),
+    qtyBase: row.qtyBase.toFixed(3),
+    reason: row.reason,
+    notes: row.notes,
+    returnedBy: row.createdBy.name,
+    returnedAt: row.createdAt.toISOString(),
+  }));
+
+  return { data, total };
+}
+
+export async function depriveExpiredBatches(actorUserId: string) {
+  const today = startOfToday();
+  const expiredBatches = await prisma.batch.findMany({
+    where: {
+      status: BatchStatus.ACTIVE,
+      qtyOnHandBase: { gt: 0 },
+      expiryDate: { lt: today },
+    },
+    include: { product: true },
+  });
+
+  if (expiredBatches.length === 0) return { deprivedCount: 0 };
+
+  await prisma.$transaction(async (tx) => {
+    for (const batch of expiredBatches) {
+      await tx.stockMovement.create({
+        data: {
+          productId: batch.productId,
+          batchId: batch.id,
+          movementType: StockMovementType.WRITE_OFF,
+          qtyBase: batch.qtyOnHandBase.negated(),
+          refType: "WRITE_OFF",
+          refId: "EXPIRED_DEPRIVED",
+          note: "Full batch deprived due to expiry",
+          createdById: actorUserId,
+        },
+      });
+
+      await tx.batch.update({
+        where: { id: batch.id },
+        data: {
+          qtyOnHandBase: 0,
+          status: BatchStatus.QUARANTINED,
+        },
+      });
+    }
+  });
+
+  return { deprivedCount: expiredBatches.length };
+}
+
+export async function getBatchPrintDetails(id: string) {
+  // Check if id is a GRN ID first
+  const grn = await prisma.grn.findUnique({
+    where: { id },
+    include: {
+      supplier: { select: { name: true } },
+      lines: {
+        include: {
+          product: { select: { name: true, strength: true } },
+          unit: { select: { unitName: true } },
+        },
+      },
+    },
+  });
+
+  const now = new Date();
+  const printedAt = now.toLocaleString("en-LK", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+
+  if (grn) {
+    let printedBy = "Admin";
+    if (grn.receivedById) {
+      const user = await prisma.user.findUnique({
+        where: { id: grn.receivedById },
+        select: { name: true, username: true },
+      });
+      if (user) {
+        printedBy = user.name || user.username;
+      }
+    }
+
+    const items = grn.lines.map((l) => ({
+      name: `${l.product.name}${l.product.strength ? ` (${l.product.strength})` : ""}`,
+      qty: Number(l.qtyInUnit),
+      unit: l.unit.unitName,
+    }));
+
+    return {
+      isGrn: true,
+      grnNo: grn.grnNo,
+      supplierName: grn.supplier.name,
+      printedAt,
+      printedBy,
+      items,
+      barcode: grn.grnNo,
+    };
+  }
+
+  // Fallback to single batch if requested
+  const batch = await prisma.batch.findUnique({
+    where: { id },
+    include: {
+      product: {
+        select: {
+          name: true,
+          strength: true,
+          baseUnitName: true,
+          barcodes: {
+            where: { isPrimary: true },
+            select: { barcode: true },
+            take: 1,
+          },
+        },
+      },
+    },
+  });
+
+  if (!batch) return null;
+
+  const barcode = batch.product.barcodes[0]?.barcode ?? batch.batchNo ?? batch.id.slice(0, 8);
+
+  return {
+    isGrn: false,
+    grnNo: batch.batchNo ?? "BATCH",
+    supplierName: "Eheliyagoda Pharmacy",
+    printedAt,
+    printedBy: "Admin",
+    items: [
+      {
+        name: `${batch.product.name}${batch.product.strength ? ` (${batch.product.strength})` : ""}`,
+        qty: Number(batch.qtyOnHandBase),
+        unit: batch.product.baseUnitName,
+      },
+    ],
+    barcode,
+  };
+}
+

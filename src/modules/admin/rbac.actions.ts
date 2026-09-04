@@ -45,6 +45,7 @@ export async function saveUserAction(_prev: FormState, formData: FormData): Prom
   try {
     const actor = await requirePermission("admin.users.manage", { onDenied: "throw" });
     const roleIds = formData.getAll("roleIds").map((value) => String(value));
+    const primaryRoleId = formData.get("primaryRoleId") ? String(formData.get("primaryRoleId")) : roleIds[0];
     const parsed = userFormSchema.safeParse({
       userId: formData.get("userId") ? String(formData.get("userId")) : undefined,
       name: formData.get("name"),
@@ -52,7 +53,7 @@ export async function saveUserAction(_prev: FormState, formData: FormData): Prom
       phone: formData.get("phone") || undefined,
       password: formData.get("password") || undefined,
       isActive: formData.get("isActive") ? "on" : undefined,
-      primaryRoleId: formData.get("primaryRoleId"),
+      primaryRoleId,
       roleIds,
     });
 

@@ -1,16 +1,18 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Ban, CheckCircle2 } from "lucide-react";
 import { PageHeader } from "@/components/ui/form";
 import { formatMoney, formatQty } from "@/lib/money";
 import { requirePermission } from "@/modules/auth/permissions";
 import { getGrn } from "@/modules/procurement/grn.service";
 import { ConfirmGrnButton } from "@/modules/procurement/confirm-grn-button";
+import { VoidGrnButton } from "@/modules/procurement/void-grn-button";
+import { PrintGrnLabelsButton } from "@/components/inventory/PrintGrnLabelsButton";
 
 const statusStyle: Record<string, string> = {
   DRAFT: "bg-status-warning-bg text-status-warning-text",
   CONFIRMED: "bg-status-success-bg text-status-success-text",
-  CANCELLED: "bg-slate-100 text-neutral-muted",
+  CANCELLED: "bg-status-danger-bg text-status-danger-text",
 };
 
 export default async function GrnDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -23,14 +25,12 @@ export default async function GrnDetailPage({ params }: { params: Promise<{ id: 
     <div className="grid gap-7">
       <PageHeader
         action={
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
             <Link className="inline-flex items-center gap-2 rounded-xl border border-neutral-border bg-neutral-surface px-4 py-2 text-sm font-semibold text-neutral-muted" href="/stock/grn">
               <ArrowLeft className="size-4" /> Back
             </Link>
-            {grn.status === "DRAFT" && (
-              <Link className="inline-flex items-center gap-2 rounded-xl border border-neutral-border bg-neutral-surface px-4 py-2 text-sm font-semibold text-neutral-muted" href={`/stock/grn/${grn.id}/edit`}>
-                Edit draft
-              </Link>
+            {grn.status !== "CANCELLED" && (
+              <VoidGrnButton grnId={grn.id} />
             )}
           </div>
         }
@@ -48,8 +48,9 @@ export default async function GrnDetailPage({ params }: { params: Promise<{ id: 
       </section>
 
       <section className="overflow-hidden rounded-xl border border-neutral-border bg-neutral-surface shadow-sm">
-        <div className="border-b border-neutral-border bg-neutral-bg px-5 py-4">
+        <div className="border-b border-neutral-border bg-neutral-bg px-5 py-4 flex items-center justify-between">
           <h2 className="text-sm font-black uppercase tracking-[.18em] text-brand-default">Lines ({grn.lines.length})</h2>
+          <PrintGrnLabelsButton grnId={grn.id} label="Print GRN Batch Label" variant="secondary" />
         </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[820px] text-left text-sm text-neutral-muted">
@@ -95,13 +96,21 @@ export default async function GrnDetailPage({ params }: { params: Promise<{ id: 
 
       <section className="rounded-xl border border-neutral-border bg-neutral-surface p-5 shadow-sm sm:p-6">
         {grn.status === "DRAFT" ? (
-          <ConfirmGrnButton grnId={grn.id} />
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <ConfirmGrnButton grnId={grn.id} />
+            <VoidGrnButton grnId={grn.id} />
+          </div>
         ) : grn.status === "CONFIRMED" ? (
-          <p className="flex items-center gap-2 text-sm font-semibold text-status-success-text">
-            <CheckCircle2 className="size-4" /> This GRN is confirmed. Stock and payable have been recorded.
-          </p>
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <p className="flex items-center gap-2 text-sm font-semibold text-status-success-text">
+              <CheckCircle2 className="size-4" /> This GRN is confirmed. Stock and payable have been recorded.
+            </p>
+            <VoidGrnButton grnId={grn.id} />
+          </div>
         ) : (
-          <p className="text-sm font-semibold text-neutral-muted">This GRN is cancelled.</p>
+          <p className="flex items-center gap-2 text-sm font-semibold text-status-danger-text">
+            <Ban className="size-4" /> This GRN has been voided/cancelled. Stock movements and supplier invoice have been reversed.
+          </p>
         )}
       </section>
     </div>

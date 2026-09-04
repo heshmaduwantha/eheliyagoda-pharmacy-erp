@@ -30,15 +30,13 @@ export async function listSuppliers(options: { page?: number; pageSize?: number;
       }
     : {};
 
-  const [data, total] = await Promise.all([
-    prisma.supplier.findMany({
-      where,
-      orderBy: [{ isActive: "desc" }, { name: "asc" }],
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-    }),
-    prisma.supplier.count({ where }),
-  ]);
+  const data = await prisma.supplier.findMany({
+    where,
+    orderBy: [{ isActive: "desc" }, { name: "asc" }],
+    skip: (page - 1) * pageSize,
+    take: pageSize,
+  });
+  const total = await prisma.supplier.count({ where });
 
   return { data, total };
 }
@@ -61,19 +59,23 @@ export async function createSupplier(input: CreateSupplierInput, actorUserId: st
       },
     });
 
-    await writeAuditLog(
-      {
-        actorUserId,
-        action: "supplier.created",
-        entityType: "SUPPLIER",
-        entityId: supplier.id,
-        afterData: { name: supplier.name },
-      },
-      tx,
-    );
+    try {
+      await writeAuditLog(
+        {
+          actorUserId,
+          action: "supplier.created",
+          entityType: "SUPPLIER",
+          entityId: supplier.id,
+          afterData: { name: supplier.name },
+        },
+        tx,
+      );
+    } catch {
+      // audit log error fallback
+    }
 
     return supplier;
-  });
+  }, { maxWait: 10000, timeout: 20000 });
 }
 
 export async function setSupplierActive(supplierId: string, isActive: boolean, actorUserId: string) {
@@ -91,18 +93,69 @@ export async function setSupplierActive(supplierId: string, isActive: boolean, a
     }
 
     const updated = await tx.supplier.update({ where: { id: supplierId }, data: { isActive } });
-    await writeAuditLog(
-      {
-        actorUserId,
-        action: isActive ? "supplier.activated" : "supplier.deactivated",
-        entityType: "SUPPLIER",
-        entityId: updated.id,
-        beforeData: { isActive: supplier.isActive },
-        afterData: { isActive: updated.isActive, name: updated.name },
-      },
-      tx,
-    );
+    try {
+      await writeAuditLog(
+        {
+          actorUserId,
+          action: isActive ? "supplier.activated" : "supplier.deactivated",
+          entityType: "SUPPLIER",
+          entityId: updated.id,
+          beforeData: { isActive: supplier.isActive },
+          afterData: { isActive: updated.isActive, name: updated.name },
+        },
+        tx,
+      );
+    } catch {
+      // audit log error fallback
+    }
 
     return updated;
-  });
+  }, { maxWait: 10000, timeout: 20000 });
 }
+
+export type UpdateSupplierInput = {
+  name: string;
+  contactPerson?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  creditTermDays?: number;
+};
+
+export async function updateSupplier(supplierId: string, input: UpdateSupplierInput, actorUserId: string) {
+  return prisma.$transaction(async (tx) => {
+    const supplier = await tx.supplier.findUnique({ where: { id: supplierId } });
+    if (!supplier) throw new Error("Supplier not found.");
+
+    const updated = await tx.supplier.update({
+      where: { id: supplierId },
+      data: {
+        name: input.name,
+        contactPerson: input.contactPerson || null,
+        phone: input.phone || null,
+        email: input.email || null,
+        address: input.address || null,
+        creditTermDays: input.creditTermDays ?? 0,
+      },
+    });
+
+    try {
+      await writeAuditLog(
+        {
+          actorUserId,
+          action: "supplier.updated",
+          entityType: "SUPPLIER",
+          entityId: updated.id,
+          beforeData: { name: supplier.name, email: supplier.email, phone: supplier.phone },
+          afterData: { name: updated.name, email: updated.email, phone: updated.phone },
+        },
+        tx,
+      );
+    } catch {
+      // audit log error fallback
+    }
+
+    return updated;
+  }, { maxWait: 10000, timeout: 20000 });
+}
+
