@@ -71,6 +71,8 @@ export const permissionRegistry: PermissionDefinition[] = [
   { code: "admin.roles.manage", module: "admin", resource: "roles", action: "manage", description: "Manage roles" },
   { code: "admin.permissions.read", module: "admin", resource: "permissions", action: "read", description: "View permissions" },
   { code: "admin.settings.manage", module: "admin", resource: "settings", action: "manage", description: "Manage settings" },
+  // Audit
+  { code: "audit.read", module: "audit", resource: "log", action: "read", description: "View system audit logs", isSensitive: true },
   // System / Maintenance
   { code: "system.under_construction", module: "system", resource: "app", action: "under_construction", description: "Lock user to Under Construction screen" },
 ];

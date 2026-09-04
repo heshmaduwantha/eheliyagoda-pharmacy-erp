@@ -353,7 +353,7 @@ async function main() {
           afterData: { grnNo: seedGrnNo, batchesCreated: stockLines.length },
         },
       });
-    });
+    }, { maxWait: 15000, timeout: 30000 });
   }
 
   if (process.env.UAT_RESET === "CONFIRM_TRUNCATE_ALL") {
