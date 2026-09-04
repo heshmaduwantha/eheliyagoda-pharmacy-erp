@@ -248,7 +248,6 @@ const fetchInitialPosCatalogFromDb = unstable_cache(
 
 export async function searchProductsForPos(query: string): Promise<PosProductSearchResult[]> {
   const normalized = query.trim();
-  const today = startOfToday();
   const now = Date.now();
 
   if (!normalized) {

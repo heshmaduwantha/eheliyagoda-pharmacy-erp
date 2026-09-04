@@ -1,10 +1,7 @@
 import {
   TrendingUp,
-  CreditCard,
-  BarChart2,
   AlertTriangle,
   CalendarClock,
-  Truck,
   Receipt,
   Clock,
   Plus,
@@ -43,29 +40,10 @@ async function renderDashboardPage() {
   const salesTodayHint =
     Number(metrics.salesTotal) === 0 ? "Sale model is live" : `${metrics.saleCount} transactions`;
 
-  // Cash vs card
-  const cashVsCardValue =
-    metrics.paymentCount === 0
-      ? "No completed payments yet"
-      : `${formatMoney(metrics.cashTotal)} / ${formatMoney(metrics.cardTotal)}`;
-  const cashVsCardHint = metrics.paymentCount === 0 ? "Payment records are empty" : "Cash / Card split";
-
-  // Gross profit
-  const grossProfitValue =
-    metrics.profitLineCount === 0
-      ? "No completed sales yet"
-      : formatMoney(metrics.grossProfitTotal);
-  const grossProfitHint =
-    metrics.profitLineCount === 0 ? "Historical sale cost is pending" : "Revenue minus cost";
-
   // Expenses this month
   const expensesValue =
     metrics.expenseCount === 0 ? "No expenses yet" : formatMoney(metrics.expenseTotal);
   const expensesHint = metrics.expenseCount === 0 ? "Expense records are empty" : `${metrics.expenseCount} entries`;
-
-  // Supplier payables
-  const payablesValue = formatMoney(metrics.outstandingTotal);
-  const payablesHint = "Separate from expenses";
 
   return (
     <div className="mx-auto max-w-7xl min-w-0 pb-12 pt-2">

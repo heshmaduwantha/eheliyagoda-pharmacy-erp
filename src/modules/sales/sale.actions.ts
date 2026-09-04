@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { withPerformanceTrace } from "@/lib/performance";
 import { ForbiddenError, UnauthorizedError, requirePermission } from "@/modules/auth/permissions";

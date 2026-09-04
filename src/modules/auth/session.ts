@@ -1,4 +1,3 @@
-import { Prisma } from "@prisma/client";
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import { cache } from "react";
@@ -66,18 +65,6 @@ export async function createSession(userId: string) {
 export async function clearSession() {
   (await cookies()).delete(sessionCookieName);
 }
-
-type AuthorizationRow = {
-  id: string;
-  name: string;
-  username: string;
-  primaryRoleCode: string;
-  primaryRoleName: string;
-  effectiveRoleCode: string | null;
-  effectiveRoleName: string | null;
-  effectiveRoleActive: boolean | null;
-  permissionCode: string | null;
-};
 
 import { unstable_cache } from "next/cache";
 

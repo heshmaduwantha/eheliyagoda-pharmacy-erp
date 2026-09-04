@@ -1,6 +1,5 @@
 import { BatchStatus, Prisma, StockMovementType, SupplierInvoiceStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { formatMoney } from "@/lib/money";
 import type {
   ExpiryAlertRecord,
   InventoryBatchRecord,
@@ -591,6 +590,16 @@ export async function processSupplierReturnSettlement(input: ProcessSupplierRetu
       });
     }
 
+    await tx.auditLog.create({
+      data: {
+        actorUserId,
+        action: "supplier_return.settled",
+        entityType: "SUPPLIER_RETURN",
+        entityId: supplierReturn.id,
+        afterData: { action: input.action, totalCost: supplierReturn.totalCost },
+      },
+    });
+
     return { ok: true };
   }, { maxWait: 10000, timeout: 20000 });
 }
@@ -610,7 +619,7 @@ export async function getSupplierReturnLogs(options: { page?: number; pageSize?:
       }
     : {};
 
-  if (!("supplierReturn" in prisma) || !(prisma as any).supplierReturn) {
+  if (!("supplierReturn" in prisma) || !prisma.supplierReturn) {
     return { data: [], total: 0 };
   }
 
