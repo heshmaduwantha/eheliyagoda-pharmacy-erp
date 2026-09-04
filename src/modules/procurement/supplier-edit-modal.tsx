@@ -29,12 +29,13 @@ export function SupplierEditModal({ supplier }: { supplier: SupplierData }) {
   if (!open) {
     return (
       <button
-        className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-border bg-neutral-surface px-3 py-1.5 text-xs font-semibold text-neutral-text hover:bg-neutral-bg hover:border-brand-default"
+        aria-label="Edit supplier"
+        className="grid size-8 place-items-center rounded-lg border border-neutral-border bg-neutral-surface text-neutral-muted transition hover:bg-neutral-bg hover:text-neutral-text hover:border-brand-default"
         onClick={() => setOpen(true)}
+        title="Edit supplier"
         type="button"
       >
-        <Edit className="size-3.5 text-neutral-muted" />
-        Edit
+        <Edit className="size-4" />
       </button>
     );
   }

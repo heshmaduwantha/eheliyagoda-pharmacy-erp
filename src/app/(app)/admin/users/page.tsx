@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus, Search } from "lucide-react";
+import { Edit, Plus, Search, ToggleLeft, ToggleRight } from "lucide-react";
 import { requirePermission } from "@/modules/auth/permissions";
 import { toggleUserActiveSubmitAction } from "@/modules/admin/rbac.actions";
 import { listAdminUsers } from "@/modules/admin/rbac.service";
@@ -60,15 +60,15 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
       <section className="overflow-hidden rounded-xl border border-neutral-border bg-neutral-surface shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[1100px] text-left text-sm text-neutral-muted">
-            <thead className="bg-neutral-bg border-b border-neutral-border">
+            <thead className="bg-brand-pale text-xs uppercase tracking-wider font-extrabold text-brand-hover border-b border-brand-default/15">
               <tr>
-                <th className="px-5 py-3 font-semibold text-neutral-text">Name</th>
-                <th className="px-5 py-3 font-semibold text-neutral-text">Username</th>
-                <th className="px-5 py-3 font-semibold text-neutral-text">Roles</th>
-                <th className="px-5 py-3 font-semibold text-neutral-text">Status</th>
-                <th className="px-5 py-3 font-semibold text-neutral-text">Created</th>
-                <th className="px-5 py-3 font-semibold text-neutral-text">Updated</th>
-                <th className="px-5 py-3" />
+                <th className="px-5 py-3.5 font-extrabold">Name</th>
+                <th className="px-5 py-3.5 font-extrabold">Username</th>
+                <th className="px-5 py-3.5 font-extrabold">Roles</th>
+                <th className="px-5 py-3.5 font-extrabold">Status</th>
+                <th className="px-5 py-3.5 font-extrabold">Created</th>
+                <th className="px-5 py-3.5 font-extrabold">Updated</th>
+                <th className="px-5 py-3.5" />
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -102,14 +102,28 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
                     <td className="px-5 py-3.5 text-neutral-muted">{user.updatedAt.slice(0, 10)}</td>
                     <td className="px-5 py-3.5 text-right">
                       <div className="flex justify-end gap-2">
-                        <Link className="rounded-lg border border-neutral-border bg-neutral-surface px-3 py-2 text-sm font-semibold text-neutral-text hover:bg-neutral-bg" href={`/admin/users/${user.id}`}>
-                          Edit
+                        <Link
+                          aria-label="Edit user"
+                          className="grid size-8 place-items-center rounded-lg border border-neutral-border bg-neutral-surface text-neutral-muted transition hover:bg-neutral-bg hover:text-neutral-text hover:border-brand-default"
+                          href={`/admin/users/${user.id}`}
+                          title="Edit user"
+                        >
+                          <Edit className="size-4" />
                         </Link>
                         <form action={toggleUserActiveFormAction}>
                           <input name="userId" type="hidden" value={user.id} />
                           <input name="nextActive" type="hidden" value={user.isActive ? "false" : "true"} />
-                          <button className={`rounded-lg px-3 py-2 text-sm font-semibold ${user.isActive ? "border border-status-danger-bg bg-status-danger-bg text-status-danger-text hover:bg-status-danger-bg" : "border border-status-success-bg bg-status-success-bg text-status-success-text hover:bg-status-success-bg"}`} type="submit">
-                            {user.isActive ? "Deactivate" : "Activate"}
+                          <button
+                            aria-label={user.isActive ? "Deactivate user" : "Activate user"}
+                            className={`grid size-8 place-items-center rounded-lg border transition shadow-xs ${
+                              user.isActive
+                                ? "border-red-200 bg-rose-50 text-rose-700 hover:bg-rose-100"
+                                : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                            }`}
+                            title={user.isActive ? "Deactivate user" : "Activate user"}
+                            type="submit"
+                          >
+                            {user.isActive ? <ToggleRight className="size-5 text-rose-600" /> : <ToggleLeft className="size-5 text-emerald-600" />}
                           </button>
                         </form>
                       </div>

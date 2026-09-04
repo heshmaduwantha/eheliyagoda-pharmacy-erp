@@ -40,10 +40,10 @@ export function BatchTable({ rows }: { rows: InventoryBatchRecord[] }) {
     <section className="overflow-hidden rounded-2xl border border-neutral-border bg-neutral-surface shadow-[0_8px_30px_rgba(15,51,58,.05)]">
       <div className="overflow-x-auto">
         <table className="w-full min-w-[1200px] border-collapse text-left text-sm">
-          <thead className="bg-neutral-bg text-xs uppercase tracking-wider text-neutral-muted">
+          <thead className="bg-brand-pale text-xs uppercase tracking-wider font-extrabold text-brand-hover border-b border-brand-default/15">
             <tr>
               {["Product", "System Batch", "Supplier Lot", "Expiry Date", "MRP", "Cost Price", "Selling Price", "Qty On Hand Base", "Status", "Actions"].map((heading) => (
-                <th className="border-b border-neutral-border px-5 py-4 font-bold" key={heading}>
+                <th className="px-5 py-3.5 font-extrabold" key={heading}>
                   {heading}
                 </th>
               ))}

@@ -34,14 +34,14 @@ export default async function AdminPermissionsPage() {
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[960px] text-left text-sm text-neutral-muted">
-                  <thead className="bg-neutral-bg border-b border-neutral-border">
+                  <thead className="bg-brand-pale text-xs uppercase tracking-wider font-extrabold text-brand-hover border-b border-brand-default/15">
                     <tr>
-                      <th className="px-5 py-3 font-semibold text-neutral-text">Code</th>
-                      <th className="px-5 py-3 font-semibold text-neutral-text">Resource</th>
-                      <th className="px-5 py-3 font-semibold text-neutral-text">Action</th>
-                      <th className="px-5 py-3 font-semibold text-neutral-text">Description</th>
-                      <th className="px-5 py-3 font-semibold text-neutral-text">Sensitive</th>
-                      <th className="px-5 py-3 font-semibold text-neutral-text">Roles</th>
+                      <th className="px-5 py-3.5 font-extrabold">Code</th>
+                      <th className="px-5 py-3.5 font-extrabold">Resource</th>
+                      <th className="px-5 py-3.5 font-extrabold">Action</th>
+                      <th className="px-5 py-3.5 font-extrabold">Description</th>
+                      <th className="px-5 py-3.5 font-extrabold">Sensitive</th>
+                      <th className="px-5 py-3.5 font-extrabold">Roles</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">

@@ -40,7 +40,7 @@
 
 html { 
   background: var(--color-neutral-bg); 
-  font-size: 14px; 
+  font-size: 15.5px; 
 }
 
 @layer base {
@@ -51,7 +51,7 @@ html {
     @apply !bg-brand-pale !text-xs !uppercase !tracking-wider !text-brand-hover;
   }
   th {
-    @apply !border-b !border-brand-default/20 !px-5 !py-3 !font-black;
+    @apply !border-b !border-brand-default/20 !px-5 !py-3 !font-medium;
   }
   td {
     @apply !px-5 !py-3;
@@ -62,6 +62,18 @@ html {
   tbody tr:hover {
     @apply !bg-brand-pale/30;
   }
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 600 !important;
+  }
+}
+
+/* Global Poppins softness overrides: scale down heavy 800/900 weights to clean 600/500 */
+.font-black, .font-extrabold {
+  font-weight: 600 !important;
+}
+
+.font-bold {
+  font-weight: 500 !important;
 }
 
 body {
@@ -69,8 +81,10 @@ body {
   margin: 0;
   background: var(--color-neutral-bg);
   color: var(--color-neutral-text);
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: var(--font-poppins), "Poppins", ui-sans-serif, system-ui, -apple-system, sans-serif;
   text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 button, input { font: inherit; }
@@ -82,3 +96,11 @@ button, a { -webkit-tap-highlight-color: transparent; }
 ::-webkit-scrollbar { width: 9px; height: 9px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { border: 2px solid transparent; border-radius: 999px; background: #b8cece; background-clip: padding-box; }
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

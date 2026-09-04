@@ -1,7 +1,7 @@
 /** Shared shape returned by form server actions for useActionState consumers. */
 export type FormState =
   | { status: "idle" }
-  | { status: "success"; message: string }
+  | { status: "success"; message: string; paymentId?: string }
   | { status: "error"; message: string; fieldErrors?: Record<string, string> };
 
 export const idleFormState: FormState = { status: "idle" };

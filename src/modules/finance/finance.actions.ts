@@ -150,7 +150,7 @@ export async function recordSupplierPaymentAction(_prev: FormState, formData: Fo
   }
 
   try {
-    await recordSupplierPayment({
+    const payment = await recordSupplierPayment({
       supplierInvoiceId: parsed.data.supplierInvoiceId,
       amount: parsed.data.amount,
       paymentMethod: parsed.data.paymentMethod,
@@ -162,7 +162,7 @@ export async function recordSupplierPaymentAction(_prev: FormState, formData: Fo
     revalidatePath("/suppliers/payments");
     revalidatePath("/reports");
     revalidatePath("/dashboard");
-    return { status: "success", message: "Supplier payment recorded." };
+    return { status: "success", message: "Supplier payment recorded.", paymentId: payment.id };
   } catch (error) {
     return { status: "error", message: financeErrorMessage(error, "Failed to record supplier payment.") };
   }

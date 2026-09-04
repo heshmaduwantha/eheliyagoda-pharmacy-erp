@@ -268,5 +268,40 @@ export async function recordSupplierPayment(input: CreateSupplierPaymentInput, a
     );
 
     return payment;
+  }, { maxWait: 10000, timeout: 20000 });
+}
+
+export async function getSupplierPaymentReceiptById(id: string) {
+  const payment = await prisma.supplierPayment.findUnique({
+    where: { id },
+    include: {
+      supplier: true,
+      supplierInvoice: true,
+      createdBy: { select: { name: true } },
+    },
   });
+
+  if (!payment) return null;
+
+  const currentOutstanding = Prisma.Decimal.max(
+    payment.supplierInvoice.totalAmount.sub(payment.supplierInvoice.paidAmount),
+    0
+  );
+
+  return {
+    id: payment.id,
+    paymentNumber: payment.paymentNumber,
+    paidAt: payment.paidAt.toISOString(),
+    amount: payment.amount.toFixed(2),
+    paymentMethod: payment.paymentMethod,
+    reference: payment.reference,
+    notes: payment.notes,
+    supplierName: payment.supplier.name,
+    supplierPhone: payment.supplier.phone,
+    invoiceNumber: payment.supplierInvoice.invoiceNo,
+    invoiceTotal: payment.supplierInvoice.totalAmount.toFixed(2),
+    invoicePaid: payment.supplierInvoice.paidAmount.toFixed(2),
+    outstandingAfter: currentOutstanding.toFixed(2),
+    createdBy: payment.createdBy?.name ?? "System Administrator",
+  };
 }

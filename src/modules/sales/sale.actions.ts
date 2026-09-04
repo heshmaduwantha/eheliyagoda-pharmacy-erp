@@ -5,6 +5,7 @@ import { z } from "zod";
 import { withPerformanceTrace } from "@/lib/performance";
 import { ForbiddenError, UnauthorizedError, requirePermission } from "@/modules/auth/permissions";
 import { PrescriptionValidationError } from "@/modules/prescriptions/prescription.types";
+import { invalidateAlertCountsCache } from "@/modules/dashboard/dashboard.service";
 import { completeSale } from "./sale.service";
 import { SaleCompletionError } from "./sale.types";
 
@@ -67,14 +68,7 @@ export async function completeSaleAction(rawInput: unknown) {
       const actor = await requirePermission("sale.create", { onDenied: "throw" });
       const input = completeSaleSchema.parse(rawInput);
       const sale = await completeSale(input, actor);
-      revalidatePath("/sales");
-      revalidatePath("/dashboard");
-      revalidatePath("/reports");
-      revalidatePath("/stock");
-      revalidatePath("/stock/batches");
-      revalidatePath("/stock/movements");
-      revalidatePath("/stock/expiry");
-      revalidatePath("/admin/audit");
+      invalidateAlertCountsCache();
       return { ok: true as const, sale };
     } catch (error) {
       console.error("[completeSaleAction] error", error);

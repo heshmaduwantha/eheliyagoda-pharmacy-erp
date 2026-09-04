@@ -98,11 +98,7 @@ export function GrnForm({
     <form action={formAction} className="grid gap-6">
       <input name="lines" type="hidden" value={linesPayload} />
 
-      <p className="rounded-xl border border-brand-default/20 bg-brand-pale px-4 py-2.5 text-sm font-medium text-brand-hover">
-        The invoice number and total are generated automatically (e.g. <span className="font-bold">INV-{new Date().toISOString().slice(0, 10).replace(/-/g, "")}-0001</span>) — no need to type them.
-      </p>
-
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2 items-start">
         <Field error={state.status === "error" ? state.fieldErrors?.supplierId : undefined} htmlFor="supplierId" label="Supplier">
           <SearchableSelect
             id="supplierId"
@@ -134,19 +130,19 @@ export function GrnForm({
         )}
 
         <div className="overflow-x-auto rounded-2xl border border-neutral-border">
-          <table className="w-full min-w-[900px] border-collapse text-sm">
+          <table className="w-full min-w-[1000px] border-collapse text-sm">
             <thead>
-              <tr className="bg-neutral-bg text-left text-xs font-bold uppercase tracking-wide text-neutral-muted">
-                <th className="px-2 py-2">Product</th>
-                <th className="px-2 py-2">Unit</th>
-                <th className="px-2 py-2">Qty</th>
-                <th className="px-2 py-2">Supplier lot</th>
-                <th className="px-2 py-2">Expiry</th>
-                <th className="px-2 py-2">MRP</th>
-                <th className="px-2 py-2 text-status-danger-text">Cost *</th>
-                <th className="px-2 py-2 text-status-danger-text">Price *</th>
-                <th className="px-2 py-2 text-right">Total</th>
-                <th className="px-2 py-2" />
+              <tr className="bg-brand-pale text-left text-xs font-extrabold uppercase tracking-wider text-brand-hover border-b border-brand-default/15">
+                <th className="px-3 py-3 font-extrabold">Product</th>
+                <th className="px-3 py-3 font-extrabold">Unit</th>
+                <th className="px-3 py-3 font-extrabold">Qty</th>
+                <th className="px-3 py-3 font-extrabold">Supplier lot</th>
+                <th className="px-3 py-3 font-extrabold">Expiry</th>
+                <th className="px-3 py-3 font-extrabold">MRP</th>
+                <th className="px-3 py-3 text-status-danger-text font-extrabold">Cost *</th>
+                <th className="px-3 py-3 text-status-danger-text font-extrabold">Price *</th>
+                <th className="px-3 py-3 text-right font-extrabold">Total</th>
+                <th className="px-3 py-3" />
               </tr>
             </thead>
             <tbody>
@@ -154,7 +150,7 @@ export function GrnForm({
                 const product = productById.get(line.productId);
                 return (
                   <tr className="border-t border-neutral-border" key={index}>
-                    <td className={`${cell} w-[20%] min-w-[200px]`}>
+                    <td className={`${cell} min-w-[210px]`}>
                       <SearchableSelect
                         name={`productId_${index}`}
                         defaultValue={line.productId}
@@ -163,7 +159,7 @@ export function GrnForm({
                         options={products.map((p) => ({ value: p.id, label: p.name }))}
                       />
                     </td>
-                    <td className={`${cell} w-[10%]`}>
+                    <td className={`${cell} min-w-[110px]`}>
                       <select className={inputClass} onChange={(e) => updateLine(index, { unitId: e.target.value })} value={line.unitId}>
                         <option disabled value="">—</option>
                         {product?.units.map((u) => (
@@ -171,13 +167,25 @@ export function GrnForm({
                         ))}
                       </select>
                     </td>
-                    <td className={`${cell} w-[8%]`}><input className={inputClass} min="0" onChange={(e) => updateLine(index, { qtyInUnit: e.target.value })} step="0.001" type="number" value={line.qtyInUnit} /></td>
-                    <td className={`${cell} w-[10%]`}><input aria-label="Supplier batch or lot number" className={inputClass} onChange={(e) => updateLine(index, { supplierBatchNo: e.target.value })} placeholder="Optional" value={line.supplierBatchNo} /></td>
-                    <td className={`${cell} w-[12%]`}><input className={inputClass} onChange={(e) => updateLine(index, { expiryDate: e.target.value })} type="date" value={line.expiryDate} /></td>
-                    <td className={`${cell} w-[9%]`}><input className={inputClass} min="0" onChange={(e) => updateLine(index, { mrp: e.target.value })} step="0.01" type="number" value={line.mrp} /></td>
-                    <td className={`${cell} w-[9%]`}><input className={`${inputClass} ${!line.costPrice || Number(line.costPrice) <= 0 ? "border-status-danger-text focus:ring-status-danger-text" : ""}`} min="0.01" onChange={(e) => updateLine(index, { costPrice: e.target.value })} placeholder="Required" required step="0.01" type="number" value={line.costPrice} /></td>
-                    <td className={`${cell} w-[9%]`}><input className={`${inputClass} ${!line.sellingPrice || Number(line.sellingPrice) <= 0 ? "border-status-danger-text focus:ring-status-danger-text" : ""}`} min="0.01" onChange={(e) => updateLine(index, { sellingPrice: e.target.value })} placeholder="Required" required step="0.01" type="number" value={line.sellingPrice} /></td>
-                    <td className={`${cell} w-[9%] pt-3.5 text-right font-semibold text-neutral-text`}>{formatMoney(lineTotal(line))}</td>
+                    <td className={`${cell} min-w-[100px]`}>
+                      <input className={`${inputClass} px-3`} min="0" onChange={(e) => updateLine(index, { qtyInUnit: e.target.value })} placeholder="Qty" step="0.001" type="number" value={line.qtyInUnit} />
+                    </td>
+                    <td className={`${cell} min-w-[110px]`}>
+                      <input aria-label="Supplier batch or lot number" className={inputClass} onChange={(e) => updateLine(index, { supplierBatchNo: e.target.value })} placeholder="Optional" value={line.supplierBatchNo} />
+                    </td>
+                    <td className={`${cell} min-w-[130px]`}>
+                      <input className={inputClass} onChange={(e) => updateLine(index, { expiryDate: e.target.value })} type="date" value={line.expiryDate} />
+                    </td>
+                    <td className={`${cell} min-w-[95px]`}>
+                      <input className={inputClass} min="0" onChange={(e) => updateLine(index, { mrp: e.target.value })} placeholder="MRP" step="0.01" type="number" value={line.mrp} />
+                    </td>
+                    <td className={`${cell} min-w-[95px]`}>
+                      <input className={`${inputClass} ${!line.costPrice || Number(line.costPrice) <= 0 ? "border-status-danger-text focus:ring-status-danger-text" : ""}`} min="0.01" onChange={(e) => updateLine(index, { costPrice: e.target.value })} placeholder="Cost" required step="0.01" type="number" value={line.costPrice} />
+                    </td>
+                    <td className={`${cell} min-w-[95px]`}>
+                      <input className={`${inputClass} ${!line.sellingPrice || Number(line.sellingPrice) <= 0 ? "border-status-danger-text focus:ring-status-danger-text" : ""}`} min="0.01" onChange={(e) => updateLine(index, { sellingPrice: e.target.value })} placeholder="Price" required step="0.01" type="number" value={line.sellingPrice} />
+                    </td>
+                    <td className={`${cell} min-w-[110px] pt-3.5 text-right font-semibold text-neutral-text`}>{formatMoney(lineTotal(line))}</td>
                     <td className={`${cell} w-[4%] pt-2.5`}>
                       {lines.length > 1 && (
                         <button className="grid size-8 place-items-center rounded-lg text-neutral-muted hover:bg-status-danger-bg hover:text-status-danger-text" onClick={() => setLines((rows) => rows.filter((_, i) => i !== index))} type="button">
@@ -191,14 +199,13 @@ export function GrnForm({
             </tbody>
             <tfoot>
               <tr className="border-t border-neutral-border bg-neutral-bg">
-                <td className="px-2 py-2 text-right text-sm font-bold text-neutral-muted" colSpan={7}>Invoice total</td>
-                <td className="px-2 py-2 text-right text-base font-black text-brand-default">{formatMoney(grandTotal)}</td>
+                <td className="px-3 py-2.5 text-right text-sm font-bold text-neutral-muted" colSpan={8}>Invoice total</td>
+                <td className="px-3 py-2.5 text-right text-base font-black text-brand-default">{formatMoney(grandTotal)}</td>
                 <td />
               </tr>
             </tfoot>
           </table>
         </div>
-        <p className="text-xs text-neutral-muted">A system batch number is always generated and used for stock tracking. Supplier batch/lot is optional, but enter the value printed on the supplier invoice or medicine pack when available. Medicine items still require an expiry date and MRP; selling price cannot exceed MRP.</p>
       </div>
 
       <FormAlert state={state} />

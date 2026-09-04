@@ -84,15 +84,30 @@ export async function listGrns(options: { page?: number; pageSize?: number; sear
   return { data, total };
 }
 
-export function getGrn(id: string) {
-  return prisma.grn.findUnique({
+export async function getGrn(id: string) {
+  const grn = await prisma.grn.findUnique({
     where: { id },
     include: {
       supplier: true,
-      lines: { include: { product: { select: { name: true, productType: true } }, unit: true, batch: { select: { id: true } } } },
+      lines: { include: { product: { select: { name: true, genericName: true, productType: true } }, unit: true, batch: { select: { id: true } } } },
       invoice: true,
     },
   });
+
+  if (!grn) return null;
+
+  let receivedByUser: { name: string } | null = null;
+  if (grn.receivedById) {
+    receivedByUser = await prisma.user.findUnique({
+      where: { id: grn.receivedById },
+      select: { name: true },
+    });
+  }
+
+  return {
+    ...grn,
+    receivedBy: receivedByUser,
+  };
 }
 
 /**
@@ -274,8 +289,7 @@ export async function confirmGrn(grnId: string, actorUserId: string) {
       if (isMedicine) {
         if (!line.batchNo) throw new Error("Medicine lines require a batch number.");
         if (!line.expiryDate) throw new Error("Medicine lines require an expiry date.");
-        if (line.mrp == null) throw new Error("Medicine lines require an MRP.");
-        if (line.sellingPrice.gt(line.mrp)) {
+        if (line.mrp != null && line.sellingPrice.gt(line.mrp)) {
           throw new Error("Selling price cannot exceed the batch MRP for a medicine.");
         }
       }
@@ -417,7 +431,7 @@ export async function voidGrn(grnId: string, actorUserId: string, reason?: strin
               productId: line.productId,
               batchId: line.batch!.id,
               movementType: StockMovementType.SUPPLIER_RETURN,
-              qtyBase: line.qtyBase,
+              qtyBase: line.qtyBase.negated(),
               refType: "GRN_VOID",
               refId: grn.id,
               note: `Void GRN ${grn.grnNo}${reason ? `: ${reason}` : ""}`,
@@ -425,13 +439,18 @@ export async function voidGrn(grnId: string, actorUserId: string, reason?: strin
             })),
         });
 
-        await tx.batch.updateMany({
-          where: { id: { in: batchIds } },
-          data: {
-            qtyOnHandBase: 0,
-            status: BatchStatus.DEPLETED,
-          },
-        });
+        for (const line of grn.lines) {
+          if (line.batch) {
+            const nextQty = Prisma.Decimal.max(0, line.batch.qtyOnHandBase.sub(line.qtyBase));
+            await tx.batch.update({
+              where: { id: line.batch.id },
+              data: {
+                qtyOnHandBase: nextQty,
+                status: nextQty.eq(0) ? BatchStatus.DEPLETED : line.batch.status,
+              },
+            });
+          }
+        }
       }
 
       if (grn.invoice) {

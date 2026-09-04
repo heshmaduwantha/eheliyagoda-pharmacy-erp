@@ -35,13 +35,13 @@ export default async function SuppliersPage({ searchParams }: { searchParams: Pr
             className="inline-flex items-center gap-2 rounded-lg border border-neutral-border bg-neutral-surface px-4 py-2 text-sm font-semibold text-neutral-text shadow-sm transition hover:bg-neutral-bg"
             href="/suppliers/returns"
           >
-            Supplier Returns Log →
+            Supplier Returns Log
           </Link>
           <Link
             className="inline-flex items-center gap-2 rounded-lg border border-brand-default/20 bg-neutral-surface px-4 py-2 text-sm font-semibold text-brand-default shadow-sm transition hover:bg-brand-pale"
             href="/suppliers/payments"
           >
-            Pay suppliers →
+            Pay suppliers
           </Link>
         </div>
       </div>
@@ -64,13 +64,13 @@ export default async function SuppliersPage({ searchParams }: { searchParams: Pr
       <section className="overflow-hidden rounded-xl border border-neutral-border bg-neutral-surface shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[600px] text-left text-sm text-neutral-muted">
-            <thead className="bg-neutral-bg border-b border-neutral-border">
+            <thead className="bg-brand-pale text-xs uppercase tracking-wider font-extrabold text-brand-hover border-b border-brand-default/15">
               <tr>
-                <th className="px-5 py-3 font-semibold text-neutral-text">Supplier</th>
-                <th className="px-5 py-3 font-semibold text-neutral-text">Contact</th>
-                <th className="px-5 py-3 font-semibold text-neutral-text">Terms</th>
-                <th className="px-5 py-3 font-semibold text-neutral-text">Status</th>
-                <th className="px-5 py-3 font-semibold text-neutral-text text-right">Actions</th>
+                <th className="px-5 py-3.5 font-extrabold">Supplier</th>
+                <th className="px-5 py-3.5 font-extrabold">Contact</th>
+                <th className="px-5 py-3.5 font-extrabold">Terms</th>
+                <th className="px-5 py-3.5 font-extrabold">Status</th>
+                <th className="px-5 py-3.5 font-extrabold text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">

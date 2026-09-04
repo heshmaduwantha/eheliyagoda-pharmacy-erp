@@ -51,15 +51,15 @@ export default async function AdminRolesPage({ searchParams }: { searchParams: P
       <section className="overflow-hidden rounded-xl border border-neutral-border bg-neutral-surface shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[1100px] text-left text-sm text-neutral-muted">
-            <thead className="bg-neutral-bg border-b border-neutral-border">
+            <thead className="bg-brand-pale text-xs uppercase tracking-wider font-extrabold text-brand-hover border-b border-brand-default/15">
               <tr>
-                <th className="px-5 py-3 font-semibold text-neutral-text">Role</th>
-                <th className="px-5 py-3 font-semibold text-neutral-text">Code</th>
-                <th className="px-5 py-3 font-semibold text-neutral-text">Description</th>
-                <th className="px-5 py-3 font-semibold text-neutral-text">Users</th>
-                <th className="px-5 py-3 font-semibold text-neutral-text">Permissions</th>
-                <th className="px-5 py-3 font-semibold text-neutral-text">Status</th>
-                <th className="px-5 py-3" />
+                <th className="px-5 py-3.5 font-extrabold">Role</th>
+                <th className="px-5 py-3.5 font-extrabold">Code</th>
+                <th className="px-5 py-3.5 font-extrabold">Description</th>
+                <th className="px-5 py-3.5 font-extrabold">Users</th>
+                <th className="px-5 py-3.5 font-extrabold">Permissions</th>
+                <th className="px-5 py-3.5 font-extrabold">Status</th>
+                <th className="px-5 py-3.5" />
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">

@@ -60,6 +60,15 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
   const promptedProductCount = lines.filter((line) => line.prescriptionRule === "PROMPT_SKIPPABLE").length;
   const controlledProductCount = lines.filter((line) => line.prescriptionRule === "HARD_REQUIRED_CONTROLLED").length;
 
+  // Auto-dismiss notice toasts after 3.5 seconds
+  useEffect(() => {
+    if (!notice) return;
+    const timer = window.setTimeout(() => {
+      setNotice(null);
+    }, 3500);
+    return () => window.clearTimeout(timer);
+  }, [notice]);
+
   useEffect(() => {
     if (deferredQuery === "") {
       setProducts(initialProducts);
@@ -289,17 +298,17 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
 
   return (
     <div className="flex flex-col h-[calc(100vh-170px)] overflow-hidden">
-      <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between shrink-0">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between shrink-0 mb-1">
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-neutral-text sm:text-4xl">
+          <h1 className="text-2xl font-bold tracking-tight text-neutral-text">
             Point of Sale
           </h1>
         </div>
-        <div className="w-full max-w-xl p-0.5">
-          <label className="flex items-center gap-3 rounded-2xl bg-neutral-surface px-4 py-1.5 shadow-[0_2px_8px_rgba(15,23,42,0.04)] focus-within:ring-2 focus-within:ring-inset focus-within:ring-brand-default border border-neutral-border/50">
-            <Search className="size-5 shrink-0 text-neutral-muted" />
+        <div className="w-full sm:w-auto sm:min-w-[320px] max-w-md">
+          <label className="flex items-center gap-2 rounded-xl bg-neutral-surface px-3 py-1 shadow-xs border border-neutral-border focus-within:border-neutral-400 focus-within:bg-white transition-all">
+            <Search className="size-4 shrink-0 text-neutral-muted" />
             <input
-              className="min-w-0 flex-1 bg-transparent py-3 text-sm outline-none"
+              className="min-w-0 flex-1 bg-transparent py-1.5 text-xs sm:text-sm outline-none text-neutral-text placeholder:text-neutral-muted"
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={async (e) => {
                 if (e.key === "Enter" && query.trim()) {

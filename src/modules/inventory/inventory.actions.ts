@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requirePermission } from "@/modules/auth/permissions";
-import { createSupplierReturn, depriveExpiredBatches, removeExpiredBatch } from "./inventory.service";
+import { createSupplierReturn, depriveExpiredBatches, processSupplierReturnSettlement, removeExpiredBatch } from "./inventory.service";
 
 export async function removeExpiredBatchAction(batchId: string) {
   const user = await requirePermission("inventory.stock.writeoff");
@@ -54,4 +54,38 @@ export async function createSupplierReturnAction(input: {
   revalidatePath("/dashboard");
 
   return { ok: true, returnNumber: supplierReturn.returnNumber };
+}
+
+const processSettlementSchema = z.object({
+  returnId: z.string().uuid(),
+  action: z.enum(["REFUND_RECEIVED", "DEDUCT_INVOICE"]),
+  invoiceId: z.string().uuid().optional().or(z.literal("")),
+  paymentMethod: z.enum(["CASH", "CARD"]).optional(),
+  notes: z.string().trim().max(500).optional(),
+});
+
+export async function processSupplierReturnSettlementAction(input: {
+  returnId: string;
+  action: "REFUND_RECEIVED" | "DEDUCT_INVOICE";
+  invoiceId?: string;
+  paymentMethod?: "CASH" | "CARD";
+  notes?: string;
+}) {
+  const user = await requirePermission("supplier.manage");
+  const parsed = processSettlementSchema.parse(input);
+
+  await processSupplierReturnSettlement(
+    {
+      ...parsed,
+      invoiceId: parsed.invoiceId || undefined,
+    },
+    user.id,
+  );
+
+  revalidatePath("/suppliers/returns");
+  revalidatePath("/suppliers");
+  revalidatePath("/reports");
+  revalidatePath("/dashboard");
+
+  return { ok: true };
 }

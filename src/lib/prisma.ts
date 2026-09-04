@@ -4,24 +4,15 @@ import { isPerformanceLoggingEnabled, recordDatabaseQuery } from "./performance"
 
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;
-  prismaRaw?: PrismaClient;
 };
 
-function getPrismaClient(): PrismaClient {
-  if (globalForPrisma.prisma) {
-    return globalForPrisma.prisma;
-  }
-
+function createPrismaClient(): PrismaClient {
   const rawClient = new PrismaClient({
     datasourceUrl: env.DATABASE_URL,
   });
 
-  globalForPrisma.prismaRaw = rawClient;
-
-  let client: PrismaClient = rawClient;
-
   if (isPerformanceLoggingEnabled()) {
-    client = rawClient.$extends({
+    return rawClient.$extends({
       query: {
         async $allOperations({ model, operation, args, query }) {
           const startedAt = performance.now();
@@ -35,12 +26,12 @@ function getPrismaClient(): PrismaClient {
     }) as unknown as PrismaClient;
   }
 
-  if (env.NODE_ENV !== "production") {
-    globalForPrisma.prisma = client;
-  }
-
-  return client;
+  return rawClient;
 }
 
-/** Reuses the exact same Prisma client singleton across hot reloads in development. */
-export const prisma = globalForPrisma.prisma ?? getPrismaClient();
+export const prisma = globalForPrisma.prisma ?? createPrismaClient();
+
+if (env.NODE_ENV !== "production") {
+  globalForPrisma.prisma = prisma;
+}
+

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { ToggleLeft, ToggleRight } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { setSupplierActiveAction } from "@/modules/procurement/actions";
 import { toast } from "sonner";
@@ -31,12 +32,18 @@ export function SupplierStatusToggle({ supplierId, supplierName, isActive }: Sup
   return (
     <>
       <button
-        className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${isActive ? "border border-status-danger-bg bg-status-danger-bg text-status-danger-text hover:bg-status-danger-bg" : "border border-status-success-bg bg-status-success-bg text-status-success-text hover:bg-status-success-bg"}`}
+        aria-label={isActive ? "Deactivate supplier" : "Activate supplier"}
+        className={`grid size-8 place-items-center rounded-lg border transition shadow-xs ${
+          isActive
+            ? "border-red-200 bg-rose-50 text-rose-700 hover:bg-rose-100"
+            : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+        }`}
         disabled={isPending}
         onClick={() => setIsOpen(true)}
+        title={isActive ? "Deactivate supplier" : "Activate supplier"}
         type="button"
       >
-        {isActive ? "Deactivate" : "Activate"}
+        {isActive ? <ToggleRight className="size-5 text-rose-600" /> : <ToggleLeft className="size-5 text-emerald-600" />}
       </button>
 
       <ConfirmDialog

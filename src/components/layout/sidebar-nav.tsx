@@ -24,10 +24,19 @@ const items: NavItem[] = [
   { label: "Users", href: "/admin/users", permission: "admin.users.manage", icon: UsersRound, group: "Admin" },
   { label: "Roles", href: "/admin/roles", permission: "admin.roles.manage", icon: ClipboardList, group: "Admin" },
   { label: "Permissions", href: "/admin/permissions", permission: "admin.permissions.read", icon: Settings, group: "Admin" },
-  { label: "Audit logs", href: "/admin/audit", permission: "audit.read", icon: ClipboardList, group: "Admin" },
 ];
 
-export function SidebarNav({ permissions, mobile = false }: { permissions: string[]; mobile?: boolean }) {
+export function SidebarNav({
+  permissions,
+  mobile = false,
+  collapsed = false,
+  onNavigate,
+}: {
+  permissions: string[];
+  mobile?: boolean;
+  collapsed?: boolean;
+  onNavigate?: () => void;
+}) {
   const pathname = usePathname();
   const available = items.filter((item) => permissions.includes(item.permission));
   const activeHref = available
@@ -45,10 +54,41 @@ export function SidebarNav({ permissions, mobile = false }: { permissions: strin
               className={`grid min-w-14 place-items-center gap-1 rounded-xl px-2 py-1.5 text-[10px] font-semibold ${active ? "bg-brand-pale text-brand-default" : "text-neutral-muted"}`}
               href={href}
               key={href}
+              onClick={onNavigate}
             >
               <Icon className="size-5" />
               <span>{label === "Billing" ? "POS" : label}</span>
             </Link>
+          );
+        })}
+      </nav>
+    );
+  }
+
+  // Collapsed desktop sidebar view (Icons only with hover tooltips)
+  if (collapsed) {
+    return (
+      <nav className="flex flex-col items-center gap-2 py-2">
+        {available.map(({ label, href, icon: Icon }) => {
+          const active = activeHref === href;
+          return (
+            <div key={href} className="relative group/tooltip">
+              <Link
+                className={`flex size-10 items-center justify-center rounded-xl transition-all duration-150 ${
+                  active
+                    ? "bg-brand-default text-white shadow-md"
+                    : "text-neutral-muted hover:bg-white hover:text-brand-hover"
+                }`}
+                href={href}
+                aria-label={label}
+                onClick={onNavigate}
+              >
+                <Icon className="size-5" strokeWidth={active ? 2.5 : 2} />
+              </Link>
+              <div className="pointer-events-none absolute left-full top-1/2 ml-2 -translate-y-1/2 z-50 hidden group-hover/tooltip:block whitespace-nowrap rounded-lg bg-neutral-text px-2.5 py-1 text-xs font-semibold text-white shadow-lg">
+                {label}
+              </div>
+            </div>
           );
         })}
       </nav>
@@ -80,6 +120,7 @@ export function SidebarNav({ permissions, mobile = false }: { permissions: strin
                 }`}
                 href={href}
                 key={href}
+                onClick={onNavigate}
               >
                 <Icon className="size-[18px]" strokeWidth={active ? 2.5 : 2} />
                 <span>{label}</span>

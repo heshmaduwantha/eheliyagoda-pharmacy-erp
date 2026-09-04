@@ -146,6 +146,13 @@ export function SupplierPaymentForm({ invoices }: { invoices: SupplierInvoiceBal
         </p>
       )}
       <FormAlert state={state} />
+
+      {state.status === "success" && state.paymentId && (
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-bold text-emerald-900">
+          <span>Supplier Payment recorded successfully!</span>
+        </div>
+      )}
+
       <div>
         <SubmitButton disabled={completeDisabled}>Record payment</SubmitButton>
       </div>

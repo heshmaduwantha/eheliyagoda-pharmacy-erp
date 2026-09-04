@@ -72,10 +72,10 @@ export function ExpiryAlertTable({ rows }: { rows: ExpiryAlertRecord[] }) {
       <section className="overflow-hidden rounded-2xl border border-neutral-border bg-neutral-surface shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[960px] border-collapse text-left text-sm">
-            <thead className="bg-neutral-bg text-xs uppercase tracking-wider text-neutral-muted">
+            <thead className="bg-brand-pale text-xs uppercase tracking-wider font-extrabold text-brand-hover border-b border-brand-default/15">
               <tr>
                 {["Product", "System Batch", "Supplier Lot", "Expiry Date", "Days Left", "Qty On Hand", "Status", "Actions"].map((heading) => (
-                  <th className="border-b border-neutral-border px-5 py-4 font-bold" key={heading}>
+                  <th className="px-5 py-3.5 font-extrabold" key={heading}>
                     {heading}
                   </th>
                 ))}
@@ -119,12 +119,12 @@ export function ExpiryAlertTable({ rows }: { rows: ExpiryAlertRecord[] }) {
                     <td className="px-5 py-4">
                       {canReturn ? (
                         <button
-                          className="inline-flex items-center gap-1.5 rounded-lg border border-brand-default/20 bg-brand-pale px-3 py-1.5 text-xs font-bold text-brand-default transition hover:bg-brand-default hover:text-white"
+                          className="inline-flex items-center justify-center whitespace-nowrap gap-1.5 rounded-lg border border-brand-default/20 bg-brand-pale px-3 py-1.5 text-xs font-bold text-brand-default transition hover:bg-brand-default hover:text-white"
                           onClick={() => setReturnTarget(alert)}
                           type="button"
                         >
                           <RotateCcw className="size-3.5" />
-                          Return to Supplier
+                          Return Stock
                         </button>
                       ) : (
                         <span className="text-xs text-neutral-muted italic">Depleted</span>

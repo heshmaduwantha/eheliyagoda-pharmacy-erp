@@ -6,17 +6,17 @@ export function SupplierPaymentTable({ payments }: { payments: SupplierPaymentRo
     <section className="overflow-hidden rounded-2xl border border-neutral-border bg-neutral-surface shadow-[0_8px_30px_rgba(15,51,58,.05)]">
       <div className="overflow-x-auto">
         <table className="w-full min-w-[1100px] border-collapse text-left text-sm">
-          <thead className="bg-neutral-bg text-xs uppercase tracking-wider text-neutral-muted">
+          <thead className="bg-brand-pale text-xs uppercase tracking-wider font-extrabold text-brand-hover border-b border-brand-default/15">
             <tr>
-              <th className="border-b border-neutral-border px-5 py-4 font-bold">Paid at</th>
-              <th className="border-b border-neutral-border px-5 py-4 font-bold">Payment no.</th>
-              <th className="border-b border-neutral-border px-5 py-4 font-bold">Supplier</th>
-              <th className="border-b border-neutral-border px-5 py-4 font-bold">Invoice</th>
-              <th className="border-b border-neutral-border px-5 py-4 font-bold">Amount</th>
-              <th className="border-b border-neutral-border px-5 py-4 font-bold">Method</th>
-              <th className="border-b border-neutral-border px-5 py-4 font-bold">Reference</th>
-              <th className="border-b border-neutral-border px-5 py-4 font-bold">Created by</th>
-              <th className="border-b border-neutral-border px-5 py-4 font-bold">Current outstanding</th>
+              <th className="px-5 py-3.5 font-extrabold">Paid at</th>
+              <th className="px-5 py-3.5 font-extrabold">Payment no.</th>
+              <th className="px-5 py-3.5 font-extrabold">Supplier</th>
+              <th className="px-5 py-3.5 font-extrabold">Invoice</th>
+              <th className="px-5 py-3.5 font-extrabold">Amount</th>
+              <th className="px-5 py-3.5 font-extrabold">Method</th>
+              <th className="px-5 py-3.5 font-extrabold">Reference</th>
+              <th className="px-5 py-3.5 font-extrabold">Created by</th>
+              <th className="px-5 py-3.5 font-extrabold">Current outstanding</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">

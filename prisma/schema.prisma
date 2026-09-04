@@ -364,24 +364,30 @@ model StockMovement {
 }
 
 model SupplierReturn {
-  id            String   @id @default(uuid()) @db.Uuid
-  returnNumber  String   @unique @db.VarChar(60)
-  supplierId    String   @db.Uuid
-  supplier      Supplier @relation(fields: [supplierId], references: [id], onDelete: Restrict)
-  batchId       String   @db.Uuid
-  batch         Batch    @relation(fields: [batchId], references: [id], onDelete: Restrict)
-  productId     String   @db.Uuid
-  product       Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
-  qtyBase       Decimal  @db.Decimal(14, 3)
-  reason        String?  @db.VarChar(255)
-  notes         String?  @db.VarChar(500)
-  createdById   String   @db.Uuid
-  createdBy     User     @relation("SupplierReturnCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
-  createdAt     DateTime @default(now())
+  id            String    @id @default(uuid()) @db.Uuid
+  returnNumber  String    @unique @db.VarChar(60)
+  supplierId    String    @db.Uuid
+  supplier      Supplier  @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  batchId       String    @db.Uuid
+  batch         Batch     @relation(fields: [batchId], references: [id], onDelete: Restrict)
+  productId     String    @db.Uuid
+  product       Product   @relation(fields: [productId], references: [id], onDelete: Restrict)
+  qtyBase       Decimal   @db.Decimal(14, 3)
+  unitCost      Decimal   @default(0) @db.Decimal(12, 2)
+  totalCost     Decimal   @default(0) @db.Decimal(12, 2)
+  status        String    @default("PENDING") @db.VarChar(40)
+  reason        String?   @db.VarChar(255)
+  notes         String?   @db.VarChar(500)
+  settledAt     DateTime?
+  settledNotes  String?   @db.VarChar(500)
+  createdById   String    @db.Uuid
+  createdBy     User      @relation("SupplierReturnCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt     DateTime  @default(now())
 
   @@index([supplierId])
   @@index([batchId])
   @@index([productId])
+  @@index([status])
   @@index([createdAt])
 }
 

@@ -25,8 +25,8 @@ export default async function GrnDetailPage({ params }: { params: Promise<{ id: 
     <div className="grid gap-7">
       <PageHeader
         action={
-          <div className="flex items-center gap-2">
-            <Link className="inline-flex items-center gap-2 rounded-xl border border-neutral-border bg-neutral-surface px-4 py-2 text-sm font-semibold text-neutral-muted" href="/stock/grn">
+          <div className="flex flex-wrap items-center gap-2">
+            <Link className="inline-flex items-center gap-2 rounded-xl border border-neutral-border bg-neutral-surface px-4 py-2 text-sm font-semibold text-neutral-muted hover:bg-neutral-bg" href="/stock/grn">
               <ArrowLeft className="size-4" /> Back
             </Link>
             {grn.status !== "CANCELLED" && (
@@ -54,18 +54,18 @@ export default async function GrnDetailPage({ params }: { params: Promise<{ id: 
         </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[820px] text-left text-sm text-neutral-muted">
-            <thead className="bg-neutral-bg border-b border-neutral-border">
+            <thead className="bg-brand-pale text-xs uppercase tracking-wider font-extrabold text-brand-hover border-b border-brand-default/15">
               <tr>
-                <th className="px-5 py-3 font-semibold text-neutral-text">Product</th>
-                <th className="px-5 py-3 font-semibold text-neutral-text">Qty</th>
-                <th className="px-5 py-3 font-semibold text-neutral-text">Base qty</th>
-                <th className="px-5 py-3 font-semibold text-neutral-text">System batch</th>
-                <th className="px-5 py-3 font-semibold text-neutral-text">Supplier lot</th>
-                <th className="px-5 py-3 font-semibold text-neutral-text">Expiry</th>
-                <th className="px-5 py-3 font-semibold text-neutral-text">MRP</th>
-                <th className="px-5 py-3 font-semibold text-neutral-text">Cost</th>
-                <th className="px-5 py-3 font-semibold text-neutral-text">Price</th>
-                <th className="px-5 py-3 font-semibold text-neutral-text text-right">Total</th>
+                <th className="px-5 py-3.5 font-extrabold">Product</th>
+                <th className="px-5 py-3.5 font-extrabold">Qty</th>
+                <th className="px-5 py-3.5 font-extrabold">Base qty</th>
+                <th className="px-5 py-3.5 font-extrabold">System batch</th>
+                <th className="px-5 py-3.5 font-extrabold">Supplier lot</th>
+                <th className="px-5 py-3.5 font-extrabold">Expiry</th>
+                <th className="px-5 py-3.5 font-extrabold">MRP</th>
+                <th className="px-5 py-3.5 font-extrabold">Cost</th>
+                <th className="px-5 py-3.5 font-extrabold">Price</th>
+                <th className="px-5 py-3.5 font-extrabold text-right">Total</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -98,15 +98,11 @@ export default async function GrnDetailPage({ params }: { params: Promise<{ id: 
         {grn.status === "DRAFT" ? (
           <div className="flex flex-wrap items-center justify-between gap-4">
             <ConfirmGrnButton grnId={grn.id} />
-            <VoidGrnButton grnId={grn.id} />
           </div>
         ) : grn.status === "CONFIRMED" ? (
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <p className="flex items-center gap-2 text-sm font-semibold text-status-success-text">
-              <CheckCircle2 className="size-4" /> This GRN is confirmed. Stock and payable have been recorded.
-            </p>
-            <VoidGrnButton grnId={grn.id} />
-          </div>
+          <p className="flex items-center gap-2 text-sm font-semibold text-status-success-text">
+            <CheckCircle2 className="size-4" /> This GRN is confirmed. Stock and payable have been recorded.
+          </p>
         ) : (
           <p className="flex items-center gap-2 text-sm font-semibold text-status-danger-text">
             <Ban className="size-4" /> This GRN has been voided/cancelled. Stock movements and supplier invoice have been reversed.

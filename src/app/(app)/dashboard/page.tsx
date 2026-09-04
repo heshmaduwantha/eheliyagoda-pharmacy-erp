@@ -90,9 +90,8 @@ async function renderDashboardPage() {
         </div>
       </div>
 
-      {/* ── KPI Cards 4×2 grid ── */}
-      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {/* Row 1 */}
+      {/* ── KPI Cards grid ── */}
+      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <KpiCard
           href="/sales"
           icon={<TrendingUp className="size-5" />}
@@ -103,24 +102,6 @@ async function renderDashboardPage() {
           hint={salesTodayHint}
         />
         <KpiCard
-          href="/sales"
-          icon={<CreditCard className="size-5" />}
-          iconBg="bg-indigo-100"
-          iconColor="text-indigo-500"
-          label="Cash vs card"
-          value={cashVsCardValue}
-          hint={cashVsCardHint}
-        />
-        <KpiCard
-          href="/reports"
-          icon={<BarChart2 className="size-5" />}
-          iconBg="bg-purple-100"
-          iconColor="text-purple-500"
-          label="Gross profit"
-          value={grossProfitValue}
-          hint={grossProfitHint}
-        />
-        <KpiCard
           href="/stock"
           icon={<AlertTriangle className="size-5" />}
           iconBg="bg-amber-100"
@@ -129,8 +110,6 @@ async function renderDashboardPage() {
           value={String(metrics.lowStockCount)}
           hint="At or below reorder level"
         />
-
-        {/* Row 2 */}
         <KpiCard
           href="/stock"
           icon={<CalendarClock className="size-5" />}
@@ -139,15 +118,6 @@ async function renderDashboardPage() {
           label="Near expiry"
           value={String(metrics.nearExpiryCount)}
           hint="Active batches within 6 months"
-        />
-        <KpiCard
-          href="/suppliers"
-          icon={<Truck className="size-5" />}
-          iconBg="bg-emerald-100"
-          iconColor="text-emerald-500"
-          label="Supplier payables"
-          value={payablesValue}
-          hint={payablesHint}
         />
         <KpiCard
           href="/expenses"

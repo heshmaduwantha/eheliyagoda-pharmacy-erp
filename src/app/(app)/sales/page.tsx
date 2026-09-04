@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { Printer } from "lucide-react";
 import { SaleVoidButton } from "@/components/sales/SaleVoidButton";
 import { formatMoney } from "@/lib/money";
 import { hasPermission, requirePermission } from "@/modules/auth/permissions";
@@ -64,7 +65,7 @@ export default async function SalesPage({
           className="inline-flex items-center gap-2 rounded-lg bg-brand-default px-4 py-2 text-sm font-bold text-white transition hover:bg-brand-default"
           href="/pos"
         >
-          Start a sale →
+          Start a sale
         </Link>
       </div>
 
@@ -100,13 +101,13 @@ export default async function SalesPage({
       <section className="overflow-hidden rounded-xl border border-neutral-border bg-neutral-surface shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[700px] text-left text-sm text-neutral-muted">
-            <thead className="bg-neutral-bg border-b border-neutral-border">
+            <thead className="bg-brand-pale text-xs uppercase tracking-wider font-extrabold text-brand-hover border-b border-brand-default/15">
               <tr>
-                <th className="px-5 py-3 font-semibold text-neutral-text">Sale No.</th>
-                <th className="px-5 py-3 font-semibold text-neutral-text">Date & Cashier</th>
-                <th className="px-5 py-3 font-semibold text-neutral-text">Total</th>
-                <th className="px-5 py-3 font-semibold text-neutral-text">Status</th>
-                <th className="px-5 py-3 font-semibold text-neutral-text">Action</th>
+                <th className="px-5 py-3.5 font-extrabold">Sale No.</th>
+                <th className="px-5 py-3.5 font-extrabold">Date & Cashier</th>
+                <th className="px-5 py-3.5 font-extrabold">Total</th>
+                <th className="px-5 py-3.5 font-extrabold">Status</th>
+                <th className="px-5 py-3.5 font-extrabold">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -177,7 +178,8 @@ export default async function SalesPage({
                                     target="_blank"
                                     rel="noopener noreferrer"
                                   >
-                                    Print bill ⎙
+                                    <Printer className="size-3.5" />
+                                    Print bill
                                   </a>
                                 </div>
                               )}

@@ -1,4 +1,5 @@
 import { BatchStatus, Prisma, ProductType } from "@prisma/client";
+import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import type {
   PosBarcodeLookupResult,
@@ -213,12 +214,18 @@ async function hydrateProductRows(products: ProductBaseRow[]): Promise<ProductRe
   }));
 }
 
-export async function searchProductsForPos(query: string): Promise<PosProductSearchResult[]> {
-  const normalized = query.trim();
-  const today = startOfToday();
+let initialPosCatalogCache: { data: PosProductSearchResult[]; expiresAt: number } | null = null;
 
-  const stockCondition: Prisma.ProductWhereInput | undefined = !normalized
-    ? {
+export function invalidatePosInitialCatalogCache() {
+  initialPosCatalogCache = null;
+}
+
+const fetchInitialPosCatalogFromDb = unstable_cache(
+  async () => {
+    const today = startOfToday();
+    const products = await prisma.product.findMany({
+      where: {
+        isActive: true,
         batches: {
           some: {
             status: BatchStatus.ACTIVE,
@@ -226,31 +233,48 @@ export async function searchProductsForPos(query: string): Promise<PosProductSea
             OR: [{ expiryDate: null }, { expiryDate: { gte: today } }],
           },
         },
-      }
-    : undefined;
+      },
+      select: productSelect,
+      orderBy: { name: "asc" },
+      take: 18,
+    });
+
+    const serialized = (await hydrateProductRows(products)).map(serializeProduct);
+    return serialized.filter((product) => product.hasActiveStock);
+  },
+  ["pos-initial-catalog"],
+  { revalidate: 30, tags: ["pos-catalog"] },
+);
+
+export async function searchProductsForPos(query: string): Promise<PosProductSearchResult[]> {
+  const normalized = query.trim();
+  const today = startOfToday();
+  const now = Date.now();
+
+  if (!normalized) {
+    if (initialPosCatalogCache && initialPosCatalogCache.expiresAt > now) {
+      return initialPosCatalogCache.data;
+    }
+    const result = await fetchInitialPosCatalogFromDb();
+    initialPosCatalogCache = { data: result, expiresAt: now + 30000 };
+    return result;
+  }
 
   const products = await prisma.product.findMany({
     where: {
       isActive: true,
-      ...stockCondition,
-      OR: normalized
-        ? [
-            { name: { contains: normalized, mode: "insensitive" } },
-            { genericName: { contains: normalized, mode: "insensitive" } },
-            { barcodes: { some: { barcode: { contains: normalized } } } },
-          ]
-        : undefined,
+      OR: [
+        { name: { contains: normalized, mode: "insensitive" } },
+        { genericName: { contains: normalized, mode: "insensitive" } },
+        { barcodes: { some: { barcode: { contains: normalized } } } },
+      ],
     },
     select: productSelect,
     orderBy: { name: "asc" },
-    take: normalized ? 40 : 18,
+    take: 40,
   });
 
-  const serialized = (await hydrateProductRows(products)).map(serializeProduct);
-  if (!normalized) {
-    return serialized.filter((product) => product.hasActiveStock);
-  }
-  return serialized;
+  return (await hydrateProductRows(products)).map(serializeProduct);
 }
 
 export async function lookupProductByBarcode(barcode: string): Promise<PosBarcodeLookupResult | null> {

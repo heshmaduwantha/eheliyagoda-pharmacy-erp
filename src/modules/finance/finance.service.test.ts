@@ -160,20 +160,20 @@ test("update expense persists change and writes audit", async () => {
 test("expense summary groups by category and payment method and excludes deleted rows", async () => {
   const actor = await getFinanceActor("expenses.create");
   const expense1 = await createExpense(
-    { date: "2026-06-23", category: "RENT", amount: "5000.00", paymentMethod: PaymentMethod.CASH },
+    { date: "2099-06-23", category: "RENT", amount: "5000.00", paymentMethod: PaymentMethod.CASH },
     actor,
   );
   const expense2 = await createExpense(
-    { date: "2026-06-23", category: "RENT", amount: "1200.00", paymentMethod: PaymentMethod.CARD },
+    { date: "2099-06-23", category: "RENT", amount: "1200.00", paymentMethod: PaymentMethod.CARD },
     actor,
   );
   const expense3 = await createExpense(
-    { date: "2026-06-23", category: "WATER", amount: "300.00", paymentMethod: PaymentMethod.CASH },
+    { date: "2099-06-23", category: "WATER", amount: "300.00", paymentMethod: PaymentMethod.CASH },
     actor,
   );
   await deleteExpense(expense3.id, actor);
 
-  const summary = await getExpenseSummary({ from: "2026-06-01", to: "2026-06-30" });
+  const summary = await getExpenseSummary({ from: "2099-06-01", to: "2099-06-30" });
   assert.equal(summary.availability, "ready");
   assert.equal(summary.summary?.totalAmount, "6200.00");
   assert.equal(summary.summary?.expenseCount, 2);
@@ -181,7 +181,7 @@ test("expense summary groups by category and payment method and excludes deleted
   assert.ok(summary.rows.some((row) => row.category === "RENT" && row.paymentMethod === PaymentMethod.CASH && row.totalAmount === "5000.00"));
   assert.ok(summary.rows.some((row) => row.category === "RENT" && row.paymentMethod === PaymentMethod.CARD && row.totalAmount === "1200.00"));
 
-  const listed = await listExpenses({ from: "2026-06-01", to: "2026-06-30" });
+  const listed = await listExpenses({ from: "2099-06-01", to: "2099-06-30" });
   assert.equal(listed.data.length, 2);
   await cleanupExpense(expense1.id);
   await cleanupExpense(expense2.id);
@@ -191,11 +191,11 @@ test("expense summary groups by category and payment method and excludes deleted
 test("deleted expense is excluded from reports", async () => {
   const actor = await getFinanceActor("expenses.create");
   const expense = await createExpense(
-    { date: "2026-06-23", category: "OTHER", amount: "77.00", paymentMethod: PaymentMethod.CASH },
+    { date: "2099-06-23", category: "OTHER", amount: "77.00", paymentMethod: PaymentMethod.CASH },
     actor,
   );
   await deleteExpense(expense.id, actor);
-  const summary = await getExpenseSummary({ from: "2026-06-01", to: "2026-06-30" });
+  const summary = await getExpenseSummary({ from: "2099-06-01", to: "2099-06-30" });
   assert.equal(summary.availability, "empty");
   assert.equal(summary.rows.length, 0);
   const audit = await prisma.auditLog.findFirst({

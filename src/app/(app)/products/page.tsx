@@ -79,14 +79,14 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
           <div className="overflow-hidden rounded-xl border border-neutral-border bg-neutral-surface shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm text-neutral-muted">
-                <thead className="bg-neutral-bg border-b border-neutral-border">
+                <thead className="bg-brand-pale text-xs uppercase tracking-wider font-extrabold text-brand-hover border-b border-brand-default/15">
                   <tr>
-                    <th className="px-5 py-3 font-semibold text-neutral-text">Product Name</th>
-                    <th className="px-5 py-3 font-semibold text-neutral-text">Generic</th>
-                    <th className="px-5 py-3 font-semibold text-neutral-text">Type &amp; Form</th>
-                    <th className="px-5 py-3 font-semibold text-neutral-text">Sold in &amp; unit pricing</th>
-                    <th className="px-5 py-3 font-semibold text-neutral-text">Barcode</th>
-                    <th className="px-5 py-3 text-right font-semibold text-neutral-text">Selling Price</th>
+                    <th className="px-5 py-3.5 font-extrabold">Product Name</th>
+                    <th className="px-5 py-3.5 font-extrabold">Generic</th>
+                    <th className="px-5 py-3.5 font-extrabold">Type &amp; Form</th>
+                    <th className="px-5 py-3.5 font-extrabold">Sold in &amp; unit pricing</th>
+                    <th className="px-5 py-3.5 font-extrabold">Barcode</th>
+                    <th className="px-5 py-3.5 text-right font-extrabold">Selling Price</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">

@@ -1,4 +1,4 @@
-import { BatchStatus, Prisma, StockMovementType } from "@prisma/client";
+import { BatchStatus, Prisma, StockMovementType, SupplierInvoiceStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { formatMoney } from "@/lib/money";
 import type {
@@ -115,38 +115,35 @@ export async function getStockSummary(): Promise<StockSummary> {
   const today = startOfToday();
   const nearExpiryDate = addDays(today, DEFAULT_NEAR_EXPIRY_DAYS);
 
-  const totalActiveProducts = await prisma.product.count({ where: { isActive: true } });
-  const productsWithReorderLevels = await prisma.product.findMany({
-    where: { isActive: true, reorderLevel: { gt: 0 } },
-    select: {
-      reorderLevel: true,
-      batches: {
-        where: { status: BatchStatus.ACTIVE, qtyOnHandBase: { gt: 0 } },
-        select: { qtyOnHandBase: true },
+  const [totalActiveProducts, nearExpiryCount, expiredOrQuarantinedCount, lowStockRows] = await Promise.all([
+    prisma.product.count({ where: { isActive: true } }),
+    prisma.batch.count({
+      where: {
+        status: BatchStatus.ACTIVE,
+        qtyOnHandBase: { gt: 0 },
+        expiryDate: { gte: today, lte: nearExpiryDate },
       },
-    },
-  });
-  const nearExpiryCount = await prisma.batch.count({
-    where: {
-      status: BatchStatus.ACTIVE,
-      qtyOnHandBase: { gt: 0 },
-      expiryDate: { gte: today, lte: nearExpiryDate },
-    },
-  });
-  const expiredOrQuarantinedCount = await prisma.batch.count({
-    where: {
-      qtyOnHandBase: { gt: 0 },
-      OR: [{ status: BatchStatus.QUARANTINED }, { expiryDate: { lt: today } }],
-    },
-  });
+    }),
+    prisma.batch.count({
+      where: {
+        qtyOnHandBase: { gt: 0 },
+        OR: [{ status: BatchStatus.QUARANTINED }, { expiryDate: { lt: today } }],
+      },
+    }),
+    prisma.$queryRaw<{ count: number }[]>(Prisma.sql`
+      SELECT COUNT(*)::int AS count
+      FROM (
+        SELECT p.id
+        FROM "Product" p
+        LEFT JOIN "Batch" b ON b."productId" = p.id AND b.status = 'ACTIVE' AND b."qtyOnHandBase" > 0
+        WHERE p."isActive" = TRUE AND p."reorderLevel" > 0
+        GROUP BY p.id, p."reorderLevel"
+        HAVING COALESCE(SUM(b."qtyOnHandBase"), 0) <= p."reorderLevel"
+      ) sub
+    `),
+  ]);
 
-  const lowStockCount = productsWithReorderLevels.reduce((count, product) => {
-    const available = product.batches.reduce(
-      (sum, batch) => sum.add(batch.qtyOnHandBase),
-      new Prisma.Decimal(0),
-    );
-    return available.lte(product.reorderLevel) ? count + 1 : count;
-  }, 0);
+  const lowStockCount = lowStockRows[0]?.count ?? 0;
 
   return { totalActiveProducts, lowStockCount, nearExpiryCount, expiredOrQuarantinedCount };
 }
@@ -212,8 +209,9 @@ export async function getStockProductOverview(limit = 20): Promise<InventoryProd
   const today = startOfToday();
   const products = await prisma.product.findMany({
     where: {
+      isActive: true,
       OR: [
-        { batches: { some: {} } },
+        { batches: { some: { status: { in: [BatchStatus.ACTIVE, BatchStatus.QUARANTINED] } } } },
         { stockMovements: { some: { movementType: StockMovementType.WRITE_OFF } } },
       ],
     },
@@ -223,6 +221,12 @@ export async function getStockProductOverview(limit = 20): Promise<InventoryProd
       baseUnitName: true,
       barcodes: { where: { isPrimary: true }, select: { barcode: true }, take: 1 },
       batches: {
+        where: {
+          OR: [
+            { qtyOnHandBase: { gt: 0 } },
+            { stockMovements: { some: { movementType: StockMovementType.WRITE_OFF } } },
+          ],
+        },
         select: {
           id: true,
           status: true,
@@ -236,6 +240,7 @@ export async function getStockProductOverview(limit = 20): Promise<InventoryProd
       },
     },
     orderBy: { name: "asc" },
+    take: Math.min(limit * 3, 100),
   });
 
   return products.map((product) => {
@@ -454,7 +459,7 @@ export async function createSupplierReturn(input: CreateSupplierReturnInput, act
       where: { id: input.batchId },
       include: {
         product: true,
-        grnLine: { include: { grn: { select: { supplierId: true } } } },
+        grnLine: { include: { grn: { include: { invoice: true } } } },
       },
     });
 
@@ -485,6 +490,9 @@ export async function createSupplierReturn(input: CreateSupplierReturnInput, act
 
     const returnNumber = `RET-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.floor(1000 + Math.random() * 9000)}`;
 
+    const returnUnitCost = batch.costPrice ?? batch.grnLine?.costPrice ?? new Prisma.Decimal(0);
+    const returnTotalCost = qtyToReturn.mul(returnUnitCost);
+
     const supplierReturn = await tx.supplierReturn.create({
       data: {
         returnNumber,
@@ -492,6 +500,9 @@ export async function createSupplierReturn(input: CreateSupplierReturnInput, act
         batchId: batch.id,
         productId: batch.productId,
         qtyBase: qtyToReturn,
+        unitCost: returnUnitCost,
+        totalCost: returnTotalCost,
+        status: "PENDING",
         reason: input.reason || "Near Expiry / Supplier Return",
         notes: input.notes || null,
         createdById: actorUserId,
@@ -511,7 +522,76 @@ export async function createSupplierReturn(input: CreateSupplierReturnInput, act
       },
     });
 
+    // NOTE: Supplier invoice total is NOT automatically reduced here.
+    // The return is logged as PENDING so it can be refunded or adjusted on the Supplier Returns screen.
+
     return supplierReturn;
+  }, { maxWait: 10000, timeout: 20000 });
+}
+
+export type ProcessSupplierReturnInput = {
+  returnId: string;
+  action: "REFUND_RECEIVED" | "DEDUCT_INVOICE";
+  invoiceId?: string;
+  paymentMethod?: "CASH" | "CARD";
+  notes?: string;
+};
+
+export async function processSupplierReturnSettlement(input: ProcessSupplierReturnInput, actorUserId: string) {
+  return prisma.$transaction(async (tx) => {
+    const supplierReturn = await tx.supplierReturn.findUnique({
+      where: { id: input.returnId },
+      include: { supplier: true },
+    });
+
+    if (!supplierReturn) throw new Error("Supplier return record not found.");
+    if (supplierReturn.status !== "PENDING") {
+      throw new Error(`This return is already marked as ${supplierReturn.status.toLowerCase()}.`);
+    }
+
+    if (input.action === "DEDUCT_INVOICE") {
+      if (!input.invoiceId) throw new Error("Please select an open supplier invoice to deduct from.");
+      const invoice = await tx.supplierInvoice.findUnique({ where: { id: input.invoiceId } });
+      if (!invoice) throw new Error("Supplier invoice not found.");
+      if (invoice.status === SupplierInvoiceStatus.CANCELLED) throw new Error("Cannot deduct from a cancelled invoice.");
+
+      const nextTotal = Prisma.Decimal.max(0, invoice.totalAmount.sub(supplierReturn.totalCost));
+      let nextStatus = invoice.status;
+      if (nextTotal.lte(invoice.paidAmount)) {
+        nextStatus = SupplierInvoiceStatus.PAID;
+      } else if (invoice.paidAmount.gt(0)) {
+        nextStatus = SupplierInvoiceStatus.PARTIALLY_PAID;
+      }
+
+      await tx.supplierInvoice.update({
+        where: { id: invoice.id },
+        data: {
+          totalAmount: nextTotal,
+          status: nextStatus,
+        },
+      });
+
+      const invoiceLabel = invoice.invoiceNo ? `Invoice #${invoice.invoiceNo}` : `Invoice ${invoice.id.slice(0, 8)}`;
+      await tx.supplierReturn.update({
+        where: { id: supplierReturn.id },
+        data: {
+          status: "ADJUSTED",
+          settledAt: new Date(),
+          settledNotes: input.notes ? `Deducted from ${invoiceLabel}: ${input.notes}` : `Deducted from ${invoiceLabel}`,
+        },
+      });
+    } else if (input.action === "REFUND_RECEIVED") {
+      await tx.supplierReturn.update({
+        where: { id: supplierReturn.id },
+        data: {
+          status: "REFUNDED",
+          settledAt: new Date(),
+          settledNotes: input.notes ? `Refund received (${input.paymentMethod ?? "CASH"}): ${input.notes}` : `Refund received via ${input.paymentMethod ?? "CASH"}`,
+        },
+      });
+    }
+
+    return { ok: true };
   }, { maxWait: 10000, timeout: 20000 });
 }
 
@@ -538,7 +618,16 @@ export async function getSupplierReturnLogs(options: { page?: number; pageSize?:
     prisma.supplierReturn.findMany({
       where,
       include: {
-        supplier: { select: { id: true, name: true } },
+        supplier: {
+          select: {
+            id: true,
+            name: true,
+            invoices: {
+              where: { status: { in: [SupplierInvoiceStatus.OPEN, SupplierInvoiceStatus.PARTIALLY_PAID] } },
+              select: { id: true, invoiceNo: true, totalAmount: true, paidAmount: true },
+            },
+          },
+        },
         product: { select: { id: true, name: true, baseUnitName: true } },
         batch: { select: { id: true, batchNo: true, supplierBatchNo: true, expiryDate: true } },
         createdBy: { select: { id: true, name: true } },
@@ -553,15 +642,28 @@ export async function getSupplierReturnLogs(options: { page?: number; pageSize?:
   const data = rows.map((row) => ({
     id: row.id,
     returnNumber: row.returnNumber,
+    supplierId: row.supplier.id,
     supplierName: row.supplier.name,
+    supplierOpenInvoices: row.supplier.invoices.map((inv) => ({
+      id: inv.id,
+      invoiceNo: inv.invoiceNo ?? inv.id.slice(0, 8),
+      totalAmount: inv.totalAmount.toFixed(2),
+      paidAmount: inv.paidAmount.toFixed(2),
+      balanceDue: inv.totalAmount.sub(inv.paidAmount).toFixed(2),
+    })),
     productName: row.product.name,
     baseUnit: row.product.baseUnitName,
     batchNo: row.batch.batchNo,
     supplierBatchNo: row.batch.supplierBatchNo,
     expiryDate: toDateOnly(row.batch.expiryDate),
     qtyBase: row.qtyBase.toFixed(3),
+    unitCost: row.unitCost ? row.unitCost.toFixed(2) : "0.00",
+    totalCost: row.totalCost ? row.totalCost.toFixed(2) : "0.00",
+    status: row.status ?? "PENDING",
     reason: row.reason,
     notes: row.notes,
+    settledAt: row.settledAt ? row.settledAt.toISOString() : null,
+    settledNotes: row.settledNotes ?? null,
     returnedBy: row.createdBy.name,
     returnedAt: row.createdAt.toISOString(),
   }));
