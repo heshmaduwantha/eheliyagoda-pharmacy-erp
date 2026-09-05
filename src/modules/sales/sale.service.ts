@@ -255,6 +255,10 @@ function allocateProductGroup(group: PreparedProductGroup) {
         );
       }
 
+      const costPriceAtSale = batch.sourceUnitFactor?.gt(0)
+        ? batch.costPrice.div(batch.sourceUnitFactor)
+        : batch.costPrice;
+
       const saleLineId = randomUUID();
       allocations.push({
         saleLineId,
@@ -270,8 +274,8 @@ function allocateProductGroup(group: PreparedProductGroup) {
         qtyBase: allocBase,
         unitPrice,
         lineTotal,
-        costPriceAtSale: batch.costPrice,
-        mrpAtSale: batch.mrp != null ? batch.mrp.mul(line.unit.factorToBase) : null,
+        costPriceAtSale,
+        mrpAtSale: batch.mrp != null ? batchPriceForUnit(batch, line.unit, batch.mrp) : null,
         barcodeUsed: line.input.barcodeUsed?.trim() || null,
         lineGrossDiscount: new Prisma.Decimal(0),
       });

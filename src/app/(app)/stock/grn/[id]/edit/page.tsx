@@ -58,7 +58,14 @@ export default async function EditGrnDraftPage({ params }: { params: Promise<{ i
             id: p.id,
             name: p.name,
             productType: p.productType,
-            units: p.units.map((u) => ({ id: u.id, unitName: u.unitName, isPurchaseDefault: u.isPurchaseDefault })),
+            baseUnitName: p.baseUnitName,
+            defaultSellingPrice: p.defaultSellingPrice != null ? Number(p.defaultSellingPrice) : null,
+            units: p.units.map((u) => ({
+              id: u.id,
+              unitName: u.unitName,
+              factorToBase: Number(u.factorToBase) || 1,
+              isPurchaseDefault: u.isPurchaseDefault,
+            })),
           }))}
           suppliers={suppliers.map((s) => ({ id: s.id, name: s.name }))}
         />

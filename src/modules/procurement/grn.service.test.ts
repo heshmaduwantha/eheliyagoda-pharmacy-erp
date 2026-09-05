@@ -83,3 +83,75 @@ test("GRN confirmation creates stock and payable exactly once in one transaction
     await prisma.supplier.deleteMany({ where: { id: supplier.id } });
   }
 });
+
+test("GRN confirmation normalizes cost and selling price per base unit when factorToBase > 1", async () => {
+  const actor = await prisma.user.findFirst({ where: { isActive: true }, select: { id: true } });
+  assert.ok(actor, "Expected an active seeded user.");
+
+  const suffix = randomUUID().slice(0, 8);
+  const supplier = await prisma.supplier.create({ data: { name: `GRN Box Supplier ${suffix}`, creditTermDays: 30 } });
+  const product = await prisma.product.create({
+    data: {
+      name: `GRN Box Medicine ${suffix}`,
+      productType: ProductType.MEDICINE,
+      baseUnitName: "Tablet",
+      defaultSellingPrice: new Prisma.Decimal("600.00"),
+      units: {
+        create: [
+          { unitName: "Tablet", factorToBase: new Prisma.Decimal(1), isPurchaseDefault: false, isSaleDefault: false },
+          { unitName: "Box", factorToBase: new Prisma.Decimal(100), isPurchaseDefault: true, isSaleDefault: true },
+        ],
+      },
+    },
+    include: { units: true },
+  });
+
+  const boxUnit = product.units.find((u) => u.unitName === "Box")!;
+
+  const grn = await prisma.grn.create({
+    data: {
+      grnNo: `BOX-GRN-${suffix}`,
+      supplierId: supplier.id,
+      supplierInvoiceNo: `BOX-INV-${suffix}`,
+      invoiceTotal: new Prisma.Decimal("500.00"),
+      status: GrnStatus.DRAFT,
+      receivedById: actor.id,
+      lines: {
+        create: [{
+          productId: product.id,
+          unitId: boxUnit.id,
+          qtyInUnit: new Prisma.Decimal("1.000"),
+          qtyBase: new Prisma.Decimal("100.000"),
+          batchNo: `BOX-B-${suffix}`,
+          expiryDate: new Date("2028-12-31"),
+          mrp: new Prisma.Decimal("700.00"),
+          costPrice: new Prisma.Decimal("500.00"),
+          sellingPrice: new Prisma.Decimal("600.00"),
+        }],
+      },
+    },
+  });
+
+  try {
+    const confirmed = await confirmGrn(grn.id, actor.id);
+    assert.equal(confirmed.status, GrnStatus.CONFIRMED);
+
+    const batch = await prisma.batch.findFirst({ where: { grnLine: { grnId: grn.id } } });
+    assert.ok(batch);
+    assert.equal(batch?.qtyOnHandBase.toFixed(3), "100.000");
+    // Verify per-base-unit prices (500 / 100 = 5.00, 600 / 100 = 6.00, 700 / 100 = 7.00)
+    assert.equal(batch?.costPrice.toFixed(2), "5.00");
+    assert.equal(batch?.sellingPrice.toFixed(2), "6.00");
+    assert.equal(batch?.mrp?.toFixed(2), "7.00");
+  } finally {
+    await prisma.auditLog.deleteMany({ where: { entityType: "GRN", entityId: grn.id } });
+    await prisma.stockMovement.deleteMany({ where: { refType: "GRN", refId: grn.id } });
+    await prisma.supplierInvoice.deleteMany({ where: { grnId: grn.id } });
+    await prisma.batch.deleteMany({ where: { grnLine: { grnId: grn.id } } });
+    await prisma.grn.deleteMany({ where: { id: grn.id } });
+    await prisma.productUnit.deleteMany({ where: { productId: product.id } });
+    await prisma.product.deleteMany({ where: { id: product.id } });
+    await prisma.supplier.deleteMany({ where: { id: supplier.id } });
+  }
+});
+

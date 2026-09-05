@@ -41,22 +41,32 @@ export async function getStockValuationReport(): Promise<ReportResult<{ totalVal
     select: {
       id: true, batchNo: true, qtyOnHandBase: true, costPrice: true,
       product: { select: { name: true } },
+      grnLine: { select: { unit: { select: { factorToBase: true } } } },
     },
     orderBy: [{ product: { name: "asc" } }, { expiryDate: "asc" }],
     take: 1000,
   });
+
+  const getBaseCost = (batch: (typeof batches)[number]) => {
+    const factor = batch.grnLine?.unit.factorToBase;
+    return factor && factor.gt(0) ? batch.costPrice.div(factor) : batch.costPrice;
+  };
+
   const totalValuation = batches.reduce(
-    (sum, batch) => sum.add(batch.qtyOnHandBase.mul(batch.costPrice)),
+    (sum, batch) => sum.add(batch.qtyOnHandBase.mul(getBaseCost(batch))),
     new Prisma.Decimal(0),
   );
-  const rows = batches.map((batch) => ({
-    batchId: batch.id,
-    productName: batch.product.name,
-    batchNumber: batch.batchNo,
-    qtyOnHandBase: batch.qtyOnHandBase.toFixed(3),
-    costPrice: batch.costPrice.toFixed(2),
-    valuation: batch.qtyOnHandBase.mul(batch.costPrice).toFixed(2),
-  }));
+  const rows = batches.map((batch) => {
+    const baseCost = getBaseCost(batch);
+    return {
+      batchId: batch.id,
+      productName: batch.product.name,
+      batchNumber: batch.batchNo,
+      qtyOnHandBase: batch.qtyOnHandBase.toFixed(3),
+      costPrice: baseCost.toFixed(2),
+      valuation: batch.qtyOnHandBase.mul(baseCost).toFixed(2),
+    };
+  });
   return {
     availability: rows.length ? "ready" : "empty",
     summary: { totalValuation: totalValuation.toFixed(2) },
@@ -104,20 +114,30 @@ export async function getNearExpiryReport(nearExpiryDays = DEFAULT_NEAR_EXPIRY_D
     select: {
       id: true, batchNo: true, expiryDate: true, qtyOnHandBase: true, status: true, costPrice: true,
       product: { select: { name: true } },
+      grnLine: { select: { unit: { select: { factorToBase: true } } } },
     },
     orderBy: { expiryDate: "asc" },
     take: 1000,
   });
-  const rows = batches.map((batch) => ({
-    batchId: batch.id,
-    productName: batch.product.name,
-    batchNumber: batch.batchNo,
-    expiryDate: toDateOnly(batch.expiryDate),
-    daysLeft: daysLeft(today, batch.expiryDate),
-    qtyOnHandBase: batch.qtyOnHandBase.toFixed(3),
-    status: batch.status,
-    valuation: batch.qtyOnHandBase.mul(batch.costPrice).toFixed(2),
-  }));
+
+  const getBaseCost = (batch: (typeof batches)[number]) => {
+    const factor = batch.grnLine?.unit.factorToBase;
+    return factor && factor.gt(0) ? batch.costPrice.div(factor) : batch.costPrice;
+  };
+
+  const rows = batches.map((batch) => {
+    const baseCost = getBaseCost(batch);
+    return {
+      batchId: batch.id,
+      productName: batch.product.name,
+      batchNumber: batch.batchNo,
+      expiryDate: toDateOnly(batch.expiryDate),
+      daysLeft: daysLeft(today, batch.expiryDate),
+      qtyOnHandBase: batch.qtyOnHandBase.toFixed(3),
+      status: batch.status,
+      valuation: batch.qtyOnHandBase.mul(baseCost).toFixed(2),
+    };
+  });
   return {
     availability: rows.length ? "ready" : "empty",
     summary: { batchCount: rows.length },
@@ -136,24 +156,34 @@ export async function getExpiredQuarantinedReport(): Promise<ReportResult<{ batc
     select: {
       id: true, batchNo: true, expiryDate: true, qtyOnHandBase: true, status: true, costPrice: true,
       product: { select: { name: true } },
+      grnLine: { select: { unit: { select: { factorToBase: true } } } },
     },
     orderBy: [{ expiryDate: "asc" }, { product: { name: "asc" } }],
     take: 1000,
   });
+
+  const getBaseCost = (batch: (typeof batches)[number]) => {
+    const factor = batch.grnLine?.unit.factorToBase;
+    return factor && factor.gt(0) ? batch.costPrice.div(factor) : batch.costPrice;
+  };
+
   const totalValuation = batches.reduce(
-    (sum, batch) => sum.add(batch.qtyOnHandBase.mul(batch.costPrice)),
+    (sum, batch) => sum.add(batch.qtyOnHandBase.mul(getBaseCost(batch))),
     new Prisma.Decimal(0),
   );
-  const rows = batches.map((batch) => ({
-    batchId: batch.id,
-    productName: batch.product.name,
-    batchNumber: batch.batchNo,
-    expiryDate: toDateOnly(batch.expiryDate),
-    daysLeft: daysLeft(today, batch.expiryDate),
-    qtyOnHandBase: batch.qtyOnHandBase.toFixed(3),
-    status: batch.status,
-    valuation: batch.qtyOnHandBase.mul(batch.costPrice).toFixed(2),
-  }));
+  const rows = batches.map((batch) => {
+    const baseCost = getBaseCost(batch);
+    return {
+      batchId: batch.id,
+      productName: batch.product.name,
+      batchNumber: batch.batchNo,
+      expiryDate: toDateOnly(batch.expiryDate),
+      daysLeft: daysLeft(today, batch.expiryDate),
+      qtyOnHandBase: batch.qtyOnHandBase.toFixed(3),
+      status: batch.status,
+      valuation: batch.qtyOnHandBase.mul(baseCost).toFixed(2),
+    };
+  });
   return {
     availability: rows.length ? "ready" : "empty",
     summary: { batchCount: rows.length, totalValuation: totalValuation.toFixed(2) },

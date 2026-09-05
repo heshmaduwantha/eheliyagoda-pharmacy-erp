@@ -32,6 +32,7 @@ const unitSelect = {
   productId: true,
   unitName: true,
   factorToBase: true,
+  sellingPrice: true,
   isPurchaseDefault: true,
   isSaleDefault: true,
 } satisfies Prisma.ProductUnitSelect;
@@ -113,11 +114,12 @@ function serializeUnit(
   preferredBatch: StockBatchRow | null,
 ): PosUnitOption {
   const barcode = product.barcodes.find((item) => item.unitId === unit.id)?.barcode ?? null;
-  const sellingPrice = preferredBatch
+  const customPrice = unit.sellingPrice ? unit.sellingPrice.toFixed(2) : null;
+  const sellingPrice = customPrice ?? (preferredBatch
     ? batchPriceForUnit(preferredBatch, unit.factorToBase, preferredBatch.sellingPrice).toFixed(2)
     : product.defaultSellingPrice
     ? product.defaultSellingPrice.mul(unit.factorToBase).toFixed(2)
-    : null;
+    : null);
   return {
     id: unit.id,
     productId: unit.productId,
@@ -220,6 +222,33 @@ export function invalidatePosInitialCatalogCache() {
   initialPosCatalogCache = null;
 }
 
+function deduplicateProductsByName(products: PosProductSearchResult[]): PosProductSearchResult[] {
+  const map = new Map<string, PosProductSearchResult>();
+  for (const product of products) {
+    const key = product.name.trim().toLowerCase();
+    const existing = map.get(key);
+    if (!existing) {
+      map.set(key, { ...product, units: [...product.units] });
+    } else {
+      const existingUnits = new Set(existing.units.map((u) => u.unitName.toLowerCase()));
+      for (const unit of product.units) {
+        if (!existingUnits.has(unit.unitName.toLowerCase())) {
+          existing.units.push(unit);
+          existingUnits.add(unit.unitName.toLowerCase());
+        }
+      }
+      const existingQty = new Prisma.Decimal(existing.availableQtyBase || "0");
+      const addQty = new Prisma.Decimal(product.availableQtyBase || "0");
+      existing.availableQtyBase = existingQty.add(addQty).toFixed(3);
+      existing.hasActiveStock = existing.hasActiveStock || product.hasActiveStock;
+      if (!existing.nextExpiryDate || (product.nextExpiryDate && product.nextExpiryDate < existing.nextExpiryDate)) {
+        existing.nextExpiryDate = product.nextExpiryDate;
+      }
+    }
+  }
+  return Array.from(map.values());
+}
+
 const fetchInitialPosCatalogFromDb = unstable_cache(
   async () => {
     const today = startOfToday();
@@ -235,12 +264,13 @@ const fetchInitialPosCatalogFromDb = unstable_cache(
         },
       },
       select: productSelect,
-      orderBy: { name: "asc" },
-      take: 18,
+      orderBy: { createdAt: "desc" },
+      take: 36,
     });
 
     const serialized = (await hydrateProductRows(products)).map(serializeProduct);
-    return serialized.filter((product) => product.hasActiveStock);
+    const activeWithStock = serialized.filter((product) => product.hasActiveStock);
+    return deduplicateProductsByName(activeWithStock);
   },
   ["pos-initial-catalog"],
   { revalidate: 30, tags: ["pos-catalog"] },
@@ -269,11 +299,12 @@ export async function searchProductsForPos(query: string): Promise<PosProductSea
       ],
     },
     select: productSelect,
-    orderBy: { name: "asc" },
+    orderBy: { createdAt: "desc" },
     take: 40,
   });
 
-  return (await hydrateProductRows(products)).map(serializeProduct);
+  const serialized = (await hydrateProductRows(products)).map(serializeProduct);
+  return deduplicateProductsByName(serialized);
 }
 
 export async function lookupProductByBarcode(barcode: string): Promise<PosBarcodeLookupResult | null> {

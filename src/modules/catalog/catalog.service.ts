@@ -9,6 +9,7 @@ serverOnly();
 export type ProductUnitInput = {
   unitName: string;
   factorToBase: number;
+  sellingPrice?: number;
   isPurchaseDefault?: boolean;
   isSaleDefault?: boolean;
   barcode?: string;
@@ -116,6 +117,7 @@ export async function createProduct(input: CreateProductInput, actorUserId: stri
           create: input.units.map((unit) => ({
             unitName: unit.unitName,
             factorToBase: new Prisma.Decimal(unit.factorToBase),
+            sellingPrice: unit.sellingPrice != null && unit.sellingPrice > 0 ? new Prisma.Decimal(unit.sellingPrice) : null,
             isPurchaseDefault: unit.isPurchaseDefault ?? false,
             isSaleDefault: unit.isSaleDefault ?? false,
           })),

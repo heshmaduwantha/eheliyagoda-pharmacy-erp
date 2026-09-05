@@ -1,93 +1,38 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState } from "react";
-import { Check, ChevronDown, Sparkles, X } from "lucide-react";
+import { Sparkles, X } from "lucide-react";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Field, FormAlert, SubmitButton, inputClass } from "@/components/ui/form";
 import { idleFormState } from "@/lib/forms";
 import { createProductAction } from "./actions";
-import { UNIT_OPTIONS, type UnitOption } from "./unit-options";
+import { UNIT_OPTIONS, DOSAGE_FORM_OPTIONS, type UnitOption } from "./unit-options";
 
-type UnitDetails = {
+type SecondaryUnitRow = {
+  id: string;
+  unitName: UnitOption;
   factorToBase: string;
+  sellingPrice?: string;
   isPurchaseDefault: boolean;
   barcode: string;
 };
-
-const emptyUnitDetails = (): UnitDetails => ({ factorToBase: "", isPurchaseDefault: false, barcode: "" });
-
-function SoldInMultiSelect({ selectedUnits, onChange }: { selectedUnits: UnitOption[]; onChange: (units: UnitOption[]) => void }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [query, setQuery] = useState("");
-  const containerRef = useRef<HTMLDivElement>(null);
-  const visibleOptions = UNIT_OPTIONS.filter((unit) => unit.toLowerCase().includes(query.trim().toLowerCase()));
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    }
-    if (isOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [isOpen]);
-
-  const toggleUnit = (unit: UnitOption) => {
-    onChange(selectedUnits.includes(unit) ? selectedUnits.filter((value) => value !== unit) : [...selectedUnits, unit]);
-  };
-
-  return (
-    <div className="relative" ref={containerRef}>
-      <div className="flex min-h-10 flex-wrap items-center gap-2 rounded-xl border border-neutral-border bg-neutral-surface px-3 py-1.5 focus-within:border-brand-default">
-        {selectedUnits.map((unit) => (
-          <span className="inline-flex items-center gap-1 rounded-full bg-brand-pale px-2.5 py-0.5 text-xs font-semibold text-brand-default" key={unit}>
-            {unit}
-            <button aria-label={`Remove ${unit}`} className="rounded-full p-0.5 hover:bg-brand-pale" onClick={() => toggleUnit(unit)} type="button">
-              <X className="size-3" />
-            </button>
-          </span>
-        ))}
-        <input
-          aria-label="Search units"
-          className="min-w-28 flex-1 bg-transparent py-1 text-sm outline-none"
-          onChange={(event) => setQuery(event.target.value)}
-          onFocus={() => setIsOpen(true)}
-          onKeyDown={(event) => { if (event.key === "Escape") setIsOpen(false); }}
-          placeholder={selectedUnits.length === 0 ? "Select units..." : "Add unit"}
-          value={query}
-        />
-        {selectedUnits.length > 0 ? <button className="text-xs font-semibold text-neutral-muted hover:text-neutral-text" onClick={() => onChange([])} type="button">Clear</button> : null}
-        <button aria-expanded={isOpen} aria-label="Toggle unit options" className="rounded p-1 text-neutral-muted hover:bg-slate-100" onClick={() => setIsOpen((open) => !open)} type="button">
-          <ChevronDown className="size-4" />
-        </button>
-      </div>
-      {isOpen ? (
-        <div className="absolute z-20 mt-1 max-h-48 w-full overflow-y-auto rounded-xl border border-neutral-border bg-neutral-surface p-1 shadow-lg" role="listbox" aria-label="Sold in units">
-          {visibleOptions.length > 0 ? visibleOptions.map((unit) => {
-            const selected = selectedUnits.includes(unit);
-            return (
-              <button aria-selected={selected} className={`flex w-full items-center justify-between rounded-lg px-3 py-1.5 text-left text-sm ${selected ? "bg-brand-pale font-semibold text-brand-default" : "text-neutral-text hover:bg-neutral-bg"}`} key={unit} onClick={() => toggleUnit(unit)} role="option" type="button">
-                {unit}
-                {selected ? <Check className="size-4" /> : null}
-              </button>
-            );
-          }) : <p className="px-3 py-2 text-sm text-neutral-muted">No matching units.</p>}
-        </div>
-      ) : null}
-    </div>
-  );
-}
 
 export function ProductForm() {
   const [state, formAction] = useActionState(createProductAction, idleFormState);
   const [isControlled, setIsControlled] = useState(false);
   const [requiresPrescription, setRequiresPrescription] = useState(false);
-  const [baseUnitName, setBaseUnitName] = useState<UnitOption>("Tablet");
-  const [selectedUnits, setSelectedUnits] = useState<UnitOption[]>(["Tablet"]);
-  const [unitDetails, setUnitDetails] = useState<Partial<Record<UnitOption, UnitDetails>>>({
-    Tablet: { factorToBase: "1", isPurchaseDefault: true, barcode: "" }
-  });
+  
+  // Units state
+  const [primaryUnit, setPrimaryUnit] = useState<UnitOption | "">("");
+  const [primaryBarcode, setPrimaryBarcode] = useState<string>("");
+  const [hasSecondaryUnits, setHasSecondaryUnits] = useState(false);
+  const [secondaryUnits, setSecondaryUnits] = useState<SecondaryUnitRow[]>([]);
+
+  const [sellingPrice, setSellingPrice] = useState<string>("");
+  const [showPkgCalc, setShowPkgCalc] = useState<boolean>(false);
+  const [pkgPriceInput, setPkgPriceInput] = useState<string>("");
+  const [pkgUnitSelect, setPkgUnitSelect] = useState<string>("");
+
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
@@ -95,51 +40,74 @@ export function ProductForm() {
       formRef.current?.reset();
       setIsControlled(false);
       setRequiresPrescription(false);
-      setBaseUnitName("Tablet");
-      setSelectedUnits(["Tablet"]);
-      setUnitDetails({ Tablet: { factorToBase: "1", isPurchaseDefault: true, barcode: "" } });
+      setPrimaryUnit("");
+      setPrimaryBarcode("");
+      setSellingPrice("");
+      setShowPkgCalc(false);
+      setPkgPriceInput("");
+      setPkgUnitSelect("");
+      setHasSecondaryUnits(false);
+      setSecondaryUnits([]);
       document.getElementById("add-product-section")?.removeAttribute("open");
     }
   }, [state]);
 
-  const handleBaseUnitChange = (newBaseUnit: UnitOption) => {
-    setBaseUnitName(newBaseUnit);
-    if (!selectedUnits.includes(newBaseUnit)) {
-      updateSelectedUnits([...selectedUnits, newBaseUnit]);
+  const calculateTabletPriceFromPkg = (pkgPriceStr: string, unitName: string) => {
+    const pkgPrice = Number(pkgPriceStr);
+    const secUnit = secondaryUnits.find((u) => u.unitName === unitName);
+    const factor = secUnit ? Number(secUnit.factorToBase) || 1 : 1;
+    if (pkgPrice > 0 && factor > 0) {
+      const tabletPrice = (pkgPrice / factor).toFixed(4);
+      setSellingPrice(String(Number(tabletPrice)));
     }
   };
 
-  const updateSelectedUnits = (nextUnits: UnitOption[]) => {
-    setSelectedUnits(nextUnits);
-    setUnitDetails((current) => {
-      const next: Partial<Record<UnitOption, UnitDetails>> = {};
-      nextUnits.forEach((unit, index) => {
-        next[unit] = current[unit] ?? {
-          ...emptyUnitDetails(),
-          factorToBase: unit === baseUnitName ? "1" : "",
-          isPurchaseDefault: index === 0,
-        };
-      });
-      return next;
-    });
+  const addSecondaryUnit = () => {
+    const available = UNIT_OPTIONS.filter(
+      (u) => u !== primaryUnit && !secondaryUnits.some((s) => s.unitName === u)
+    );
+    const defaultUnit = available[0] ?? "Box";
+    setSecondaryUnits((prev) => [
+      ...prev,
+      {
+        id: Math.random().toString(36).substring(2, 9),
+        unitName: defaultUnit,
+        factorToBase: "",
+        sellingPrice: "",
+        isPurchaseDefault: false,
+        barcode: "",
+      },
+    ]);
   };
 
-  const updateUnitDetails = (unit: UnitOption, patch: Partial<UnitDetails>) => {
-    setUnitDetails((current) => ({ ...current, [unit]: { ...(current[unit] ?? emptyUnitDetails()), ...patch } }));
+  const updateSecondaryUnit = (id: string, patch: Partial<SecondaryUnitRow>) => {
+    setSecondaryUnits((prev) => prev.map((row) => (row.id === id ? { ...row, ...patch } : row)));
   };
 
-  const unitsPayload = JSON.stringify(
-    (selectedUnits.length > 0 ? selectedUnits : [baseUnitName]).map((unit, index) => {
-      const details = unitDetails[unit] ?? emptyUnitDetails();
-      return {
-        unitName: unit || baseUnitName || "Piece",
-        factorToBase: Number(details.factorToBase) || 1,
-        isPurchaseDefault: details.isPurchaseDefault,
-        isSaleDefault: index === 0,
-        barcode: details.barcode.trim() || undefined,
-      };
-    })
-  );
+  const removeSecondaryUnit = (id: string) => {
+    setSecondaryUnits((prev) => prev.filter((row) => row.id !== id));
+  };
+
+  // Build JSON payload expected by backend
+  const activePrimary = primaryUnit || "Piece";
+  const unitsPayload = JSON.stringify([
+    {
+      unitName: activePrimary,
+      factorToBase: 1,
+      sellingPrice: Number(sellingPrice) > 0 ? Number(sellingPrice) : undefined,
+      isPurchaseDefault: !secondaryUnits.some((s) => s.isPurchaseDefault),
+      isSaleDefault: true,
+      barcode: primaryBarcode.trim() || undefined,
+    },
+    ...(hasSecondaryUnits ? secondaryUnits : []).map((row) => ({
+      unitName: row.unitName,
+      factorToBase: Number(row.factorToBase) > 0 ? Number(row.factorToBase) : 1,
+      sellingPrice: Number(row.sellingPrice) > 0 ? Number(row.sellingPrice) : undefined,
+      isPurchaseDefault: row.isPurchaseDefault,
+      isSaleDefault: false,
+      barcode: row.barcode.trim() || undefined,
+    })),
+  ]);
 
   return (
     <form action={formAction} className="grid gap-5" ref={formRef}>
@@ -150,7 +118,7 @@ export function ProductForm() {
       <div className="rounded-2xl border border-neutral-border bg-neutral-surface p-5 space-y-4 shadow-sm">
         <div className="flex items-center gap-2 text-sm font-bold text-neutral-text border-b border-neutral-border/60 pb-3">
           <Sparkles className="size-4 text-brand-default" />
-          <span>Product Details</span>
+          <span>Basic Product Information</span>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
@@ -171,7 +139,12 @@ export function ProductForm() {
               <input className={inputClass} id="strength" name="strength" placeholder="e.g. 500mg" />
             </Field>
             <Field htmlFor="form" label="Form">
-              <input className={inputClass} id="form" name="form" placeholder="e.g. Tablet" />
+              <SearchableSelect
+                id="form"
+                name="form"
+                placeholder="Search form (Tablet, Syrup...)"
+                options={DOSAGE_FORM_OPTIONS.map((f) => ({ value: f, label: f }))}
+              />
             </Field>
           </div>
         </div>
@@ -179,82 +152,259 @@ export function ProductForm() {
 
       {/* Units & Pricing Section */}
       <div className="rounded-2xl border border-neutral-border bg-neutral-surface p-5 space-y-4 shadow-sm">
-        <div className="flex items-center justify-between border-b border-neutral-border/60 pb-3">
-          <span className="text-sm font-bold text-neutral-text">Units &amp; Pricing</span>
+        <div className="border-b border-neutral-border/60 pb-3">
+          <h3 className="text-sm font-bold text-neutral-text">Unit &amp; Selling Price</h3>
+          <p className="text-xs text-neutral-muted mt-0.5">Define how this item is measured and priced in your pharmacy</p>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field error={state.status === "error" ? state.fieldErrors?.baseUnitName : undefined} htmlFor="baseUnitName" label="Base Unit *">
-            <select
-              className={inputClass}
+          <Field error={state.status === "error" ? state.fieldErrors?.baseUnitName : undefined} htmlFor="baseUnitName" label="Primary Unit *">
+            <SearchableSelect
               id="baseUnitName"
               name="baseUnitName"
-              onChange={(e) => handleBaseUnitChange(e.target.value as UnitOption)}
+              defaultValue={primaryUnit}
+              placeholder="Search unit (Tablet, Bottle...)"
               required
-              value={baseUnitName}
-            >
-              {UNIT_OPTIONS.map((unit) => (
-                <option key={unit} value={unit}>
-                  {unit}
-                </option>
-              ))}
-            </select>
+              onChange={(val) => setPrimaryUnit(val as UnitOption)}
+              options={UNIT_OPTIONS.map((u) => ({ value: u, label: u }))}
+            />
           </Field>
 
-          <Field htmlFor="defaultSellingPrice" label="Selling Price (LKR)">
-            <input className={inputClass} id="defaultSellingPrice" min="0" name="defaultSellingPrice" placeholder="0.00" step="0.01" type="number" />
+          <Field error={state.status === "error" ? state.fieldErrors?.defaultSellingPrice : undefined} htmlFor="defaultSellingPrice" label={`Default Selling Price per 1 ${primaryUnit || "Unit"} (LKR, Optional)`}>
+            <input
+              className={inputClass}
+              id="defaultSellingPrice"
+              min="0"
+              name="defaultSellingPrice"
+              onChange={(e) => setSellingPrice(e.target.value)}
+              placeholder="Optional (Can set in GRN)"
+              step="any"
+              type="number"
+              value={sellingPrice}
+            />
           </Field>
 
-          <div className="sm:col-span-2 space-y-1.5">
-            <label className="text-xs font-semibold uppercase tracking-wide text-neutral-muted">Sale Units</label>
-            <SoldInMultiSelect onChange={updateSelectedUnits} selectedUnits={selectedUnits} />
-          </div>
-        </div>
+          <Field htmlFor="primaryBarcode" label="Primary Barcode (Optional)">
+            <input
+              className={inputClass}
+              id="primaryBarcode"
+              onChange={(e) => setPrimaryBarcode(e.target.value)}
+              placeholder="Scan or enter barcode"
+              value={primaryBarcode}
+            />
+          </Field>
 
-        {selectedUnits.length > 0 ? (
-          <div className="mt-3 space-y-2 rounded-xl border border-neutral-border/80 bg-neutral-bg/60 p-3">
-            <p className="text-xs font-bold text-neutral-text">Unit Conversion &amp; Barcode</p>
-            {selectedUnits.map((unit, index) => {
-              const details = unitDetails[unit] ?? emptyUnitDetails();
-              return (
-                <div className="grid items-center gap-2 rounded-xl border border-neutral-border bg-neutral-surface p-2.5 sm:grid-cols-[1fr_1fr_1.4fr_auto]" key={unit}>
-                  <strong className="text-sm text-neutral-text">{unit}{index === 0 ? <span className="ml-2 text-xs font-medium text-brand-default">(Default)</span> : null}</strong>
-                  <input
-                    aria-label={`${unit} conversion factor`}
-                    className={inputClass}
-                    min="0.001"
-                    onChange={(event) => updateUnitDetails(unit, { factorToBase: event.target.value })}
-                    placeholder={`Qty in ${baseUnitName}`}
-                    step="0.001"
-                    type="number"
-                    value={details.factorToBase}
-                  />
-                  <input
-                    aria-label={`${unit} barcode`}
-                    className={inputClass}
-                    onChange={(event) => updateUnitDetails(unit, { barcode: event.target.value })}
-                    placeholder="Barcode"
-                    value={details.barcode}
-                  />
-                  <label className="flex items-center gap-1.5 whitespace-nowrap text-xs font-semibold text-neutral-muted">
-                    <input
-                      checked={details.isPurchaseDefault}
-                      onChange={(event) => updateUnitDetails(unit, { isPurchaseDefault: event.target.checked })}
-                      type="checkbox"
-                    />
-                    Default Purchase
-                  </label>
-                </div>
-              );
-            })}
-          </div>
-        ) : null}
-
-        <div className="pt-1 sm:w-1/2">
-          <Field htmlFor="reorderLevel" label="Low Stock Alert Threshold">
+          <Field htmlFor="reorderLevel" label="Low Stock Alert Level">
             <input className={inputClass} id="reorderLevel" min="0" name="reorderLevel" placeholder="0" step="0.001" type="number" />
           </Field>
         </div>
+
+        {/* Live Selling Price Preview & Package Price Helper */}
+        {primaryUnit && (sellingPrice || hasSecondaryUnits) && (
+          <div className="mt-3 space-y-3">
+            {hasSecondaryUnits && secondaryUnits.length > 0 && (
+              <div className="rounded-xl border border-brand-default/20 bg-brand-pale/30 p-3.5 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold uppercase tracking-wider text-brand-default">Live Unit Selling Price Preview</span>
+                  <button
+                    type="button"
+                    className="text-xs font-semibold text-brand-hover hover:underline"
+                    onClick={() => setShowPkgCalc(!showPkgCalc)}
+                  >
+                    {showPkgCalc ? "Hide Package Calculator" : "Calculate from Box/Package Price?"}
+                  </button>
+                </div>
+
+                {showPkgCalc && (
+                  <div className="p-3 bg-white rounded-lg border border-brand-default/30 space-y-2">
+                    <p className="text-xs font-semibold text-neutral-text">
+                      Enter total price for a full package (e.g. LKR 30 for 1 Box of 50 {primaryUnit}s):
+                    </p>
+                    <div className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center">
+                      <input
+                        type="number"
+                        step="any"
+                        placeholder="Package Price (e.g. 30)"
+                        className={inputClass}
+                        value={pkgPriceInput}
+                        onChange={(e) => {
+                          setPkgPriceInput(e.target.value);
+                          if (pkgUnitSelect) calculateTabletPriceFromPkg(e.target.value, pkgUnitSelect);
+                        }}
+                      />
+                      <select
+                        className={inputClass}
+                        value={pkgUnitSelect}
+                        onChange={(e) => {
+                          setPkgUnitSelect(e.target.value);
+                          if (pkgPriceInput) calculateTabletPriceFromPkg(pkgPriceInput, e.target.value);
+                        }}
+                      >
+                        <option value="">Select package unit...</option>
+                        {secondaryUnits.map((u) => (
+                          <option key={u.id} value={u.unitName}>
+                            1 {u.unitName} ({u.factorToBase || 1} {primaryUnit}s)
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        className="px-3 py-2 bg-brand-default text-white rounded-xl text-xs font-bold"
+                        onClick={() => calculateTabletPriceFromPkg(pkgPriceInput, pkgUnitSelect)}
+                      >
+                        Set Price
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid gap-2 sm:grid-cols-3">
+                  <div className="rounded-lg bg-white p-2.5 border border-neutral-border text-center shadow-xs">
+                    <div className="text-[10px] font-bold text-neutral-muted uppercase">1 {primaryUnit}</div>
+                    <div className="text-sm font-extrabold text-neutral-text">
+                      LKR {Number(sellingPrice || 0).toFixed(2)}
+                    </div>
+                  </div>
+                  {secondaryUnits.map((u) => {
+                    const factor = Number(u.factorToBase) || 1;
+                    const autoPrice = Number(sellingPrice || 0) * factor;
+                    const displayPrice = u.sellingPrice && Number(u.sellingPrice) > 0 ? Number(u.sellingPrice) : autoPrice;
+                    const isCustom = u.sellingPrice && Number(u.sellingPrice) > 0;
+                    return (
+                      <div key={u.id} className="rounded-lg bg-white p-2.5 border border-neutral-border text-center shadow-xs">
+                        <div className="text-[10px] font-bold text-neutral-muted uppercase flex items-center justify-center gap-1">
+                          <span>1 {u.unitName} ({factor} {primaryUnit}s)</span>
+                          {isCustom && <span className="text-[9px] bg-brand-pale text-brand-hover px-1 rounded font-bold">Custom</span>}
+                        </div>
+                        <div className="text-sm font-extrabold text-brand-hover">
+                          LKR {displayPrice.toFixed(2)}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Secondary Packaging Checkbox */}
+        {primaryUnit && (
+          <div className="mt-4 pt-3 border-t border-neutral-border/60">
+            <label className="flex items-center gap-2.5 cursor-pointer text-sm font-bold text-neutral-text">
+              <input
+                type="checkbox"
+                className="size-4 rounded accent-brand-default"
+                checked={hasSecondaryUnits}
+                onChange={(e) => {
+                  setHasSecondaryUnits(e.target.checked);
+                  if (e.target.checked && secondaryUnits.length === 0) {
+                    addSecondaryUnit();
+                  }
+                }}
+              />
+              This item is also bought or sold in larger packaging (e.g. Strip, Box, Pack)
+            </label>
+
+            {hasSecondaryUnits && (
+              <div className="mt-3 space-y-3 rounded-xl border border-brand-default/20 bg-brand-pale/20 p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-brand-default">Packaging Conversion &amp; Custom Prices</h4>
+                    <p className="text-xs text-neutral-muted">Define how many {primaryUnit}s are in each package and optional package discount price</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={addSecondaryUnit}
+                    className="inline-flex items-center gap-1 text-xs font-bold text-brand-default bg-white border border-brand-default/30 px-3 py-1.5 rounded-lg shadow-sm hover:bg-brand-pale"
+                  >
+                    + Add Package Unit
+                  </button>
+                </div>
+
+                <div className="space-y-2.5">
+                  {secondaryUnits.map((row) => {
+                    const autoPkgPrice = (Number(sellingPrice || 0) * (Number(row.factorToBase) || 1)).toFixed(2);
+                    return (
+                      <div key={row.id} className="grid items-center gap-2 sm:grid-cols-[1.1fr_1.3fr_1.3fr_1fr_auto_auto] bg-white p-3 rounded-xl border border-neutral-border shadow-sm">
+                        <div>
+                          <label className="text-[10px] font-bold text-neutral-muted uppercase">Package Unit</label>
+                          <SearchableSelect
+                            name={`secUnit_${row.id}`}
+                            defaultValue={row.unitName}
+                            placeholder="Search unit..."
+                            onChange={(val) => updateSecondaryUnit(row.id, { unitName: val as UnitOption })}
+                            options={UNIT_OPTIONS.filter((u) => u !== primaryUnit).map((u) => ({ value: u, label: u }))}
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-[10px] font-bold text-neutral-muted uppercase">Count ({primaryUnit}s per {row.unitName}) *</label>
+                          <input
+                            type="number"
+                            step="0.001"
+                            min="0.001"
+                            required
+                            className={inputClass}
+                            placeholder={`Count in 1 ${row.unitName}`}
+                            value={row.factorToBase}
+                            onChange={(e) => updateSecondaryUnit(row.id, { factorToBase: e.target.value })}
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-[10px] font-bold text-neutral-muted uppercase">Package Price (Optional)</label>
+                          <input
+                            type="number"
+                            step="any"
+                            min="0"
+                            className={inputClass}
+                            placeholder={`Auto (LKR ${autoPkgPrice})`}
+                            value={row.sellingPrice || ""}
+                            onChange={(e) => updateSecondaryUnit(row.id, { sellingPrice: e.target.value })}
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-[10px] font-bold text-neutral-muted uppercase">Package Barcode</label>
+                          <input
+                            type="text"
+                            className={inputClass}
+                            placeholder="Optional"
+                            value={row.barcode}
+                            onChange={(e) => updateSecondaryUnit(row.id, { barcode: e.target.value })}
+                          />
+                        </div>
+
+                        <div className="pt-4 flex items-center gap-1.5">
+                          <label className="flex items-center gap-1 text-xs text-neutral-muted whitespace-nowrap">
+                            <input
+                              type="checkbox"
+                              checked={row.isPurchaseDefault}
+                              onChange={(e) => updateSecondaryUnit(row.id, { isPurchaseDefault: e.target.checked })}
+                            />
+                            Default GRN
+                          </label>
+                        </div>
+
+                        <div className="pt-4">
+                          <button
+                            type="button"
+                            onClick={() => removeSecondaryUnit(row.id)}
+                            className="p-1.5 text-neutral-muted hover:text-status-danger-text rounded-lg hover:bg-red-50"
+                            title="Remove unit"
+                          >
+                            <X className="size-4" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Prescription Settings */}

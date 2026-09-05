@@ -489,7 +489,13 @@ export async function createSupplierReturn(input: CreateSupplierReturnInput, act
 
     const returnNumber = `RET-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.floor(1000 + Math.random() * 9000)}`;
 
-    const returnUnitCost = batch.costPrice ?? batch.grnLine?.costPrice ?? new Prisma.Decimal(0);
+    let returnUnitCost = batch.costPrice ?? new Prisma.Decimal(0);
+    if (batch.grnLine && batch.grnLine.costPrice.equals(returnUnitCost)) {
+      const grnUnit = await tx.productUnit.findUnique({ where: { id: batch.grnLine.unitId } });
+      if (grnUnit && grnUnit.factorToBase.gt(1)) {
+        returnUnitCost = returnUnitCost.div(grnUnit.factorToBase);
+      }
+    }
     const returnTotalCost = qtyToReturn.mul(returnUnitCost);
 
     const supplierReturn = await tx.supplierReturn.create({

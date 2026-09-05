@@ -298,7 +298,11 @@ async function assertOwnerPermissionSet(client: DbClient, roleId: string, permis
   const role = await client.role.findUnique({ where: { id: roleId }, select: { code: true } });
   if (!role || role.code !== "owner") return;
 
-  const expectedCodes = uniqueStrings(permissionRegistry.map((permission) => permission.code));
+  const expectedCodes = uniqueStrings(
+    permissionRegistry
+      .map((permission) => permission.code)
+      .filter((code) => code !== "system.under_construction" && code !== "under_construction"),
+  );
   const actualCodes = uniqueStrings(permissionCodes.map(canonicalizePermissionCode));
   const missing = expectedCodes.filter((code) => !actualCodes.includes(code));
   if (missing.length > 0) {
@@ -634,7 +638,13 @@ export async function createBootstrapOwner(input: { name: string; username: stri
     });
 
     const permissionRows = await tx.permission.findMany({
-      where: { code: { in: permissionRegistry.map((permission) => permission.code) } },
+      where: {
+        code: {
+          in: permissionRegistry
+            .map((permission) => permission.code)
+            .filter((code) => code !== "system.under_construction" && code !== "under_construction"),
+        },
+      },
       select: { id: true },
     });
     await tx.rolePermission.createMany({
@@ -1196,7 +1206,9 @@ export async function seedAllPermissionsAndRoles(client: DbClient = prisma) {
       name: "Owner",
       description: "Pharmacy owner with full access",
       isSystem: true,
-      permissionCodes: permissionRegistry.map((permission) => permission.code),
+      permissionCodes: permissionRegistry
+        .map((permission) => permission.code)
+        .filter((code) => code !== "system.under_construction" && code !== "under_construction"),
     },
     {
       code: "pharmacist",

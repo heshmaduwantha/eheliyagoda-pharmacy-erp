@@ -63,7 +63,7 @@ async function renderDashboardPage() {
             className="inline-flex items-center gap-2 rounded-xl bg-brand-default px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-brand-hover hover:shadow-md"
           >
             <Plus className="size-4" strokeWidth={3} />
-            New Sale (POS)
+            New Sale
           </Link>
         </div>
       </div>
@@ -149,7 +149,10 @@ async function renderDashboardPage() {
                     style={{ height: `${height}%` }}
                   />
                   <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-muted">
-                    {new Intl.DateTimeFormat("en-US", { weekday: "short" }).format(day.date)}
+                    {(() => {
+                      const d = new Date(day.date);
+                      return Number.isNaN(d.getTime()) ? "" : new Intl.DateTimeFormat("en-US", { weekday: "short" }).format(d);
+                    })()}
                   </span>
                   {/* Hover tooltip */}
                   <div className="pointer-events-none absolute -top-8 z-10 opacity-0 transition-opacity group-hover:opacity-100">

@@ -14,6 +14,42 @@ export const UNIT_OPTIONS = [
   "Litre",
   "Gram",
   "Kilogram",
+  "Drops",
+  "Jar",
+  "Can",
+  "Roll",
+  "Pair",
+  "Set",
+  "Container",
+  "Bucket",
+  "Suppository",
+  "Inhaler",
+  "Patch",
 ] as const;
 
 export type UnitOption = (typeof UNIT_OPTIONS)[number];
+
+export const DOSAGE_FORM_OPTIONS = [
+  "Tablet",
+  "Capsule",
+  "Syrup",
+  "Suspension",
+  "Injection",
+  "Ointment",
+  "Cream",
+  "Gel",
+  "Drops",
+  "Inhaler",
+  "Suppository",
+  "Patch",
+  "Powder",
+  "Lotion",
+  "Emulsion",
+  "Solution",
+  "Spray",
+  "Vial",
+  "Ampoule",
+  "Sachet",
+] as const;
+
+export type DosageFormOption = (typeof DOSAGE_FORM_OPTIONS)[number];

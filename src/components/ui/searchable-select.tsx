@@ -29,7 +29,8 @@ export function SearchableSelect({
   disabled = false,
   id,
   onChange,
-}: SearchableSelectProps) {
+  maxResults = 10,
+}: SearchableSelectProps & { maxResults?: number }) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [selectedValue, setSelectedValue] = useState(defaultValue);
@@ -96,13 +97,17 @@ export function SearchableSelect({
     [options, selectedValue]
   );
 
-  const filteredOptions = useMemo(() => {
+  const allMatches = useMemo(() => {
     if (!search) return options;
     const lowerSearch = search.toLowerCase();
     return options.filter((opt) =>
       opt.label.toLowerCase().includes(lowerSearch)
     );
   }, [options, search]);
+
+  const filteredOptions = useMemo(() => {
+    return allMatches.slice(0, maxResults);
+  }, [allMatches, maxResults]);
 
   const handleSelect = (val: string) => {
     setSelectedValue(val);

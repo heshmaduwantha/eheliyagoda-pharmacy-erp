@@ -273,7 +273,7 @@ export async function confirmGrn(grnId: string, actorUserId: string) {
       where: { id: grnId },
       include: {
         supplier: true,
-        lines: { include: { product: { select: { productType: true } } } },
+        lines: { include: { product: { select: { productType: true } }, unit: { select: { factorToBase: true } } } },
       },
     });
 
@@ -296,18 +296,21 @@ export async function confirmGrn(grnId: string, actorUserId: string) {
 
     }
 
-    const batches = grn.lines.map((line) => ({
-      id: randomUUID(),
-      productId: line.productId,
-      grnLineId: line.id,
-      batchNo: line.batchNo,
-      supplierBatchNo: line.supplierBatchNo,
-      expiryDate: line.expiryDate,
-      mrp: line.mrp,
-      costPrice: line.costPrice,
-      sellingPrice: line.sellingPrice,
-      qtyOnHandBase: line.qtyBase,
-    }));
+    const batches = grn.lines.map((line) => {
+      const factor = line.unit?.factorToBase ?? new Prisma.Decimal(1);
+      return {
+        id: randomUUID(),
+        productId: line.productId,
+        grnLineId: line.id,
+        batchNo: line.batchNo,
+        supplierBatchNo: line.supplierBatchNo,
+        expiryDate: line.expiryDate,
+        mrp: line.mrp != null ? line.mrp.div(factor) : null,
+        costPrice: line.costPrice.div(factor),
+        sellingPrice: line.sellingPrice.div(factor),
+        qtyOnHandBase: line.qtyBase,
+      };
+    });
     await tx.batch.createMany({ data: batches });
     await tx.stockMovement.createMany({
       data: batches.map((batch, index) => ({
