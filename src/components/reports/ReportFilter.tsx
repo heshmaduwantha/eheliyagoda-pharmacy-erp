@@ -1,4 +1,5 @@
 import type { ReportDateRange, ReportType } from "@/modules/reports/report.types";
+import { dateInputClass } from "@/components/ui/input-styles";
 
 const reportOptions: { value: ReportType; label: string }[] = [
   { value: "daily-sales", label: "Sales summary" },
@@ -33,7 +34,7 @@ export function ReportFilter({ type, range }: { type: ReportType; range: ReportD
       <label className="grid gap-1.5 text-sm font-medium text-neutral-text">
         From
         <input
-          className="rounded-xl border border-neutral-border px-3 py-2.5 text-sm outline-none focus:border-brand-default"
+          className={dateInputClass}
           defaultValue={range.from}
           name="from"
           type="date"
@@ -42,7 +43,7 @@ export function ReportFilter({ type, range }: { type: ReportType; range: ReportD
       <label className="grid gap-1.5 text-sm font-medium text-neutral-text">
         To
         <input
-          className="rounded-xl border border-neutral-border px-3 py-2.5 text-sm outline-none focus:border-brand-default"
+          className={dateInputClass}
           defaultValue={range.to}
           name="to"
           type="date"

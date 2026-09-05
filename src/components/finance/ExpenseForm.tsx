@@ -6,7 +6,7 @@ import { createExpenseAction } from "@/modules/finance/finance.actions";
 import { EXPENSE_CATEGORIES } from "@/modules/finance/expense.types";
 import { idleFormState } from "@/lib/forms";
 import { SearchableSelect } from "@/components/ui/searchable-select";
-import { Field, FormAlert, SubmitButton, inputClass } from "@/components/ui/form";
+import { Field, FormAlert, SubmitButton, dateInputClass, inputClass } from "@/components/ui/form";
 
 const PAYMENT_METHODS = ["CASH", "CARD"] as const;
 
@@ -66,7 +66,7 @@ export function ExpenseForm() {
         </summary>
         <div className="grid gap-3 border-t border-neutral-border p-3 sm:grid-cols-4">
           <Field htmlFor="date" label="Date" error={state.status === "error" ? state.fieldErrors?.date : undefined}>
-            <input className={inputClass} defaultValue={date} id="date" name="date" type="date" required />
+            <input className={dateInputClass} defaultValue={date} id="date" name="date" type="date" required />
           </Field>
           <Field htmlFor="category" label="Category" error={state.status === "error" ? state.fieldErrors?.category : undefined}>
             <SearchableSelect

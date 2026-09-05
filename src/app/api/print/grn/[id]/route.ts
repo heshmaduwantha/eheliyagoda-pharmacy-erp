@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { formatDateOnly } from "@/lib/date-format";
 import { getGrn } from "@/modules/procurement/grn.service";
 import Handlebars from "handlebars";
 
@@ -271,9 +272,7 @@ export async function GET(
     }
 
     const dateObj = grn.receivedAt ?? grn.createdAt;
-    const formattedDate = dateObj
-      ? new Date(dateObj).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })
-      : "—";
+    const formattedDate = formatDateOnly(dateObj);
 
     const rawLines = grn.lines.map((line, index) => ({
       itemNo: `Item ${index + 1}`,
@@ -325,4 +324,3 @@ export async function GET(
     return new NextResponse("Failed to render Goods Received Note", { status: 500 });
   }
 }
-

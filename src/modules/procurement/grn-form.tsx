@@ -48,7 +48,7 @@ const emptyLine = (): LineRow => ({
   sellingPrice: "",
 });
 
-const lineTotal = (line: LineRow) => (Number(line.qtyInUnit) || 0) * (Number(line.costPrice) || 0);
+const lineTotal = (line: LineRow) => Number(line.costPrice) || 0;
 
 export function GrnForm({
   suppliers,
@@ -139,8 +139,8 @@ export function GrnForm({
                 <th className="px-3 py-3 font-extrabold">Supplier lot</th>
                 <th className="px-3 py-3 font-extrabold">Expiry</th>
                 <th className="px-3 py-3 font-extrabold">MRP</th>
-                <th className="px-3 py-3 text-status-danger-text font-extrabold">Cost *</th>
-                <th className="px-3 py-3 text-status-danger-text font-extrabold">Price *</th>
+                <th className="px-3 py-3 text-status-danger-text font-extrabold">Total cost *</th>
+                <th className="px-3 py-3 text-status-danger-text font-extrabold">Total selling value *</th>
                 <th className="px-3 py-3 text-right font-extrabold">Total</th>
                 <th className="px-3 py-3" />
               </tr>
@@ -180,10 +180,10 @@ export function GrnForm({
                       <input className={inputClass} min="0" onChange={(e) => updateLine(index, { mrp: e.target.value })} placeholder="MRP" step="0.01" type="number" value={line.mrp} />
                     </td>
                     <td className={`${cell} min-w-[95px]`}>
-                      <input className={`${inputClass} ${!line.costPrice || Number(line.costPrice) <= 0 ? "border-status-danger-text focus:ring-status-danger-text" : ""}`} min="0.01" onChange={(e) => updateLine(index, { costPrice: e.target.value })} placeholder="Cost" required step="0.01" type="number" value={line.costPrice} />
+                        <input aria-label="Total purchase cost for entered quantity" className={`${inputClass} ${!line.costPrice || Number(line.costPrice) <= 0 ? "border-status-danger-text focus:ring-status-danger-text" : ""}`} min="0.01" onChange={(e) => updateLine(index, { costPrice: e.target.value })} placeholder="Total cost" required step="0.01" type="number" value={line.costPrice} />
                     </td>
                     <td className={`${cell} min-w-[95px]`}>
-                      <input className={`${inputClass} ${!line.sellingPrice || Number(line.sellingPrice) <= 0 ? "border-status-danger-text focus:ring-status-danger-text" : ""}`} min="0.01" onChange={(e) => updateLine(index, { sellingPrice: e.target.value })} placeholder="Price" required step="0.01" type="number" value={line.sellingPrice} />
+                        <input aria-label="Total selling value for entered quantity" className={`${inputClass} ${!line.sellingPrice || Number(line.sellingPrice) <= 0 ? "border-status-danger-text focus:ring-status-danger-text" : ""}`} min="0.01" onChange={(e) => updateLine(index, { sellingPrice: e.target.value })} placeholder="Total selling" required step="0.01" type="number" value={line.sellingPrice} />
                     </td>
                     <td className={`${cell} min-w-[110px] pt-3.5 text-right font-semibold text-neutral-text`}>{formatMoney(lineTotal(line))}</td>
                     <td className={`${cell} w-[4%] pt-2.5`}>

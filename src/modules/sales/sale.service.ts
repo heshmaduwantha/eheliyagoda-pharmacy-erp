@@ -5,6 +5,7 @@ import { writeAuditLogs } from "@/modules/audit/audit.service";
 import { hasPermission } from "@/modules/auth/permissions";
 import { validateAndPersistPrescriptionForCompletedSale } from "@/modules/prescriptions/prescription.service";
 import { validatePrescriptionForSale } from "./prescription-rule.service";
+import { baseUnitPriceForSaleUnit } from "@/modules/inventory/batch-pricing";
 import type { CurrentUser } from "@/modules/auth/session";
 import type {
   SaleCompletionInput,
@@ -34,7 +35,6 @@ type LockedBatchRow = {
   qtyOnHandBase: Prisma.Decimal;
   status: BatchStatus;
   createdAt: Date;
-  sourceUnitFactor: Prisma.Decimal | null;
 };
 
 type PreparedLine = {
@@ -146,12 +146,9 @@ async function lockCandidateBatches(tx: Prisma.TransactionClient, products: Prod
       b."sellingPrice",
       b."qtyOnHandBase",
       b.status,
-      b."createdAt",
-      source_unit."factorToBase" AS "sourceUnitFactor"
+      b."createdAt"
     FROM "Batch" b
     INNER JOIN "Product" p ON p.id = b."productId"
-    LEFT JOIN "GrnLine" source_line ON source_line.id = b."grnLineId"
-    LEFT JOIN "ProductUnit" source_unit ON source_unit.id = source_line."unitId"
     WHERE b."productId" IN (${Prisma.join(productIds.map((id) => Prisma.sql`${id}::uuid`))})
       AND p."isActive" = TRUE
       AND b.status = 'ACTIVE'
@@ -167,17 +164,14 @@ async function lockCandidateBatches(tx: Prisma.TransactionClient, products: Prod
 
 function currentBatchPriceLimit(product: ProductRow, unit: ProductRow["units"][number], batch: LockedBatchRow) {
   if (!isMedicine(product) || batch.mrp == null) return null;
-  return batchPriceForUnit(batch, unit, batch.mrp);
+  return batchPriceForUnit(unit, batch.mrp);
 }
 
 function batchPriceForUnit(
-  batch: LockedBatchRow,
   unit: ProductRow["units"][number],
   price: Prisma.Decimal,
 ) {
-  return batch.sourceUnitFactor?.gt(0)
-    ? price.div(batch.sourceUnitFactor).mul(unit.factorToBase)
-    : price;
+  return baseUnitPriceForSaleUnit(price, unit.factorToBase);
 }
 
 function allocateProductGroup(group: PreparedProductGroup) {
@@ -223,7 +217,7 @@ function allocateProductGroup(group: PreparedProductGroup) {
 
       const allocBase = batchRemaining.lt(remainingLineQtyBase) ? batchRemaining : remainingLineQtyBase;
       const allocQty = allocBase.div(line.unit.factorToBase);
-      const unitPrice = batchPriceForUnit(batch, line.unit, batch.sellingPrice);
+      const unitPrice = batchPriceForUnit(line.unit, batch.sellingPrice);
       const lineTotal = allocQty.mul(unitPrice);
       if (remainingLineQtyBase.equals(line.requestedQtyBase) && !moneyEquals(unitPrice, line.quotedUnitPrice)) {
         throw new SaleCompletionError(
@@ -255,9 +249,7 @@ function allocateProductGroup(group: PreparedProductGroup) {
         );
       }
 
-      const costPriceAtSale = batch.sourceUnitFactor?.gt(0)
-        ? batch.costPrice.div(batch.sourceUnitFactor)
-        : batch.costPrice;
+      const costPriceAtSale = batch.costPrice;
 
       const saleLineId = randomUUID();
       allocations.push({
@@ -275,7 +267,7 @@ function allocateProductGroup(group: PreparedProductGroup) {
         unitPrice,
         lineTotal,
         costPriceAtSale,
-        mrpAtSale: batch.mrp != null ? batchPriceForUnit(batch, line.unit, batch.mrp) : null,
+        mrpAtSale: batch.mrp != null ? batchPriceForUnit(line.unit, batch.mrp) : null,
         barcodeUsed: line.input.barcodeUsed?.trim() || null,
         lineGrossDiscount: new Prisma.Decimal(0),
       });

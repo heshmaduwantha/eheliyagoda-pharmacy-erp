@@ -1,6 +1,7 @@
 import { BatchStatus, Prisma, ProductType } from "@prisma/client";
 import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { baseUnitPriceForSaleUnit } from "@/modules/inventory/batch-pricing";
 import type {
   PosBarcodeLookupResult,
   PosBatchPreview,
@@ -54,14 +55,12 @@ const stockBatchSelect = {
   sellingPrice: true,
   mrp: true,
   costPrice: true,
-  grnLine: { select: { unit: { select: { factorToBase: true } } } },
 } satisfies Prisma.BatchSelect;
 
 type ProductBaseRow = Prisma.ProductGetPayload<{ select: typeof productSelect }>;
 type UnitRow = Prisma.ProductUnitGetPayload<{ select: typeof unitSelect }>;
 type BarcodeRow = Prisma.ProductBarcodeGetPayload<{ select: typeof barcodeSelect }>;
 type StockBatchRow = Prisma.BatchGetPayload<{ select: typeof stockBatchSelect }>;
-type BatchPriceSource = Pick<StockBatchRow, "grnLine">;
 type ProductReadRow = ProductBaseRow & {
   units: UnitRow[];
   barcodes: BarcodeRow[];
@@ -97,17 +96,6 @@ function sellableBatches(product: ProductReadRow) {
     });
 }
 
-function batchPriceForUnit(
-  batch: BatchPriceSource,
-  saleUnitFactor: Prisma.Decimal,
-  price: Prisma.Decimal,
-) {
-  const sourceUnitFactor = batch.grnLine?.unit.factorToBase;
-  return sourceUnitFactor?.gt(0)
-    ? price.div(sourceUnitFactor).mul(saleUnitFactor)
-    : price;
-}
-
 function serializeUnit(
   product: ProductReadRow,
   unit: ProductReadRow["units"][number],
@@ -116,7 +104,7 @@ function serializeUnit(
   const barcode = product.barcodes.find((item) => item.unitId === unit.id)?.barcode ?? null;
   const customPrice = unit.sellingPrice ? unit.sellingPrice.toFixed(2) : null;
   const sellingPrice = customPrice ?? (preferredBatch
-    ? batchPriceForUnit(preferredBatch, unit.factorToBase, preferredBatch.sellingPrice).toFixed(2)
+    ? baseUnitPriceForSaleUnit(preferredBatch.sellingPrice, unit.factorToBase).toFixed(2)
     : product.defaultSellingPrice
     ? product.defaultSellingPrice.mul(unit.factorToBase).toFixed(2)
     : null);
@@ -185,25 +173,19 @@ function groupByProductId<T extends { productId: string }>(rows: T[]) {
 async function hydrateProductRows(products: ProductBaseRow[]): Promise<ProductReadRow[]> {
   if (products.length === 0) return [];
   const productIds = products.map((product) => product.id);
-  const units = await prisma.productUnit.findMany({
-    where: { productId: { in: productIds } },
-    select: unitSelect,
-    orderBy: { factorToBase: "asc" },
-  });
-  const barcodes = await prisma.productBarcode.findMany({
-    where: { productId: { in: productIds } },
-    select: barcodeSelect,
-    orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }],
-  });
-  const batches = await prisma.batch.findMany({
-    where: {
-      productId: { in: productIds },
-      status: BatchStatus.ACTIVE,
-      qtyOnHandBase: { gt: 0 },
-    },
-    select: stockBatchSelect,
-    orderBy: [{ expiryDate: { sort: "asc", nulls: "last" } }, { createdAt: "asc" }],
-  });
+  const [units, barcodes, batches] = await Promise.all([
+    prisma.productUnit.findMany({
+      where: { productId: { in: productIds } },
+      select: unitSelect,
+      orderBy: { factorToBase: "asc" },
+    }),
+    prisma.productBarcode.findMany({
+      where: { productId: { in: productIds } },
+      select: barcodeSelect,
+      orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }],
+    }),
+    readStockBatches(productIds),
+  ]);
   const unitsByProduct = groupByProductId(units);
   const barcodesByProduct = groupByProductId(barcodes);
   const batchesByProduct = groupByProductId(batches);
@@ -214,6 +196,18 @@ async function hydrateProductRows(products: ProductBaseRow[]): Promise<ProductRe
     barcodes: barcodesByProduct.get(product.id) ?? [],
     batches: batchesByProduct.get(product.id) ?? [],
   }));
+}
+
+/** Read POS stock in FEFO order without loading unused GRN purchase-unit data. */
+async function readStockBatches(productIds: string[]): Promise<StockBatchRow[]> {
+  return prisma.$queryRaw<StockBatchRow[]>(Prisma.sql`
+    SELECT b.id, b."productId", b."expiryDate", b."qtyOnHandBase", b.status,
+      b."sellingPrice", b.mrp, b."costPrice"
+    FROM "Batch" b
+    WHERE b."productId" IN (${Prisma.join(productIds.map((id) => Prisma.sql`${id}::uuid`))})
+      AND b.status = 'ACTIVE' AND b."qtyOnHandBase" > 0
+    ORDER BY b."expiryDate" ASC NULLS LAST, b."createdAt" ASC
+  `);
 }
 
 let initialPosCatalogCache: { data: PosProductSearchResult[]; expiresAt: number } | null = null;
@@ -387,7 +381,6 @@ export async function getPosBatchPreview(
       mrp: true,
       costPrice: true,
       sellingPrice: true,
-      grnLine: { select: { unit: { select: { factorToBase: true } } } },
     },
     orderBy: [{ expiryDate: { sort: "asc", nulls: "last" } }, { createdAt: "asc" }],
   });
@@ -410,9 +403,9 @@ export async function getPosBatchPreview(
       expiryDate: toDateOnly(batch.expiryDate),
       status: batch.status,
       availableQtyBase: batch.qtyOnHandBase.toFixed(3),
-      mrp: batch.mrp ? batchPriceForUnit(batch, unit.factorToBase, batch.mrp).toFixed(2) : null,
-      costPrice: batchPriceForUnit(batch, unit.factorToBase, batch.costPrice).toFixed(2),
-      sellingPrice: batchPriceForUnit(batch, unit.factorToBase, batch.sellingPrice).toFixed(2),
+      mrp: batch.mrp ? baseUnitPriceForSaleUnit(batch.mrp, unit.factorToBase).toFixed(2) : null,
+      costPrice: baseUnitPriceForSaleUnit(batch.costPrice, unit.factorToBase).toFixed(2),
+      sellingPrice: baseUnitPriceForSaleUnit(batch.sellingPrice, unit.factorToBase).toFixed(2),
       fefoRank: index + 1,
     })),
     generatedAt: new Date().toISOString(),

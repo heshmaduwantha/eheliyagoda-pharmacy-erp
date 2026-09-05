@@ -8,7 +8,7 @@ import { getDailySalesReport, getGrossProfitReport } from "@/modules/reports/sal
 import { completeSale } from "./sale.service";
 import { voidSale } from "./sale-void.service";
 import { SaleVoidError } from "./sale-void.types";
-import { SaleCompletionError } from "./sale.types";
+import { SaleCompletionError, type SaleCompletionInput } from "./sale.types";
 
 type SaleActor = {
   id: string;
@@ -244,7 +244,7 @@ function saleInput(fixture: Fixture, overrides: Partial<{
   discountAmount: string;
   taxAmount: string;
   prescription: unknown;
-}> = {}) {
+}> = {}): SaleCompletionInput {
   const quantity = overrides.quantity ?? "1";
   const quotedUnitPrice = overrides.quotedUnitPrice ?? fixture.saleUnitPrice.toFixed(2);
   const discountAmount = overrides.discountAmount ?? "0.00";
@@ -306,7 +306,7 @@ test("complete normal OTC sale creates sale, sale lines, payment, and stock move
     saleUnitFactor: "10",
     saleUnitName: "strip",
     batches: [
-      { qtyOnHandBase: "100.000", expiryDate: new Date("2027-12-31"), mrp: "120.00", costPrice: "6.50", sellingPrice: "100.00" },
+      { qtyOnHandBase: "100.000", expiryDate: new Date("2027-12-31"), mrp: "12.00", costPrice: "0.65", sellingPrice: "10.00" },
     ],
   });
 
@@ -332,6 +332,53 @@ test("complete normal OTC sale creates sale, sale lines, payment, and stock move
   assert.ok(auditActions.some((entry) => entry.action === "sale.completed"));
   assert.ok(auditActions.some((entry) => entry.action === "stock.sale_out"));
   assert.ok(auditActions.some((entry) => entry.action === "payment.recorded"));
+  await cleanupSaleEntities(result.saleId);
+});
+
+test("manual batch selection uses that batch price, COGS, and stock only", async () => {
+  const actor = await getSaleActor();
+  const fixture = await createFixture({
+    name: `BATCH-SWITCH-${randomUUID().slice(0, 8)}`,
+    defaultSellingPrice: "1.00",
+    saleUnitFactor: "10",
+    saleUnitName: "strip",
+    batches: [
+      { qtyOnHandBase: "150.000", expiryDate: new Date("2027-03-31"), mrp: "1.10", costPrice: "0.90", sellingPrice: "1.00" },
+      { qtyOnHandBase: "300.000", expiryDate: new Date("2027-08-31"), mrp: "1.30", costPrice: "1.00", sellingPrice: "1.20" },
+    ],
+  });
+  const input = saleInput(fixture, {
+    quantity: "2",
+    quotedUnitPrice: "12.00",
+    expectedTotal: "24.00",
+  });
+  input.lines[0].batchId = fixture.batchIds[1];
+
+  const result = await completeSale(input, actor);
+
+  assert.equal(result.total, "24.00");
+  assert.equal(result.allocations.length, 1);
+  assert.equal(result.allocations[0].batchId, fixture.batchIds[1]);
+  assert.equal(result.allocations[0].qty, "2.000");
+  assert.equal(result.allocations[0].qtyBase, "20.000");
+  assert.equal(result.allocations[0].unitPrice, "12.00");
+  assert.equal(result.allocations[0].lineTotal, "24.00");
+  assert.equal(result.allocations[0].costPriceAtSale, "1.00");
+
+  const [a1, a2, saleLine, movement] = await Promise.all([
+    prisma.batch.findUniqueOrThrow({ where: { id: fixture.batchIds[0] } }),
+    prisma.batch.findUniqueOrThrow({ where: { id: fixture.batchIds[1] } }),
+    prisma.saleLine.findFirstOrThrow({ where: { saleId: result.saleId } }),
+    prisma.stockMovement.findFirstOrThrow({ where: { refType: "SALE", refId: result.saleId } }),
+  ]);
+  assert.equal(a1.qtyOnHandBase.toFixed(3), "150.000");
+  assert.equal(a2.qtyOnHandBase.toFixed(3), "280.000");
+  assert.equal(saleLine.batchId, fixture.batchIds[1]);
+  assert.equal(saleLine.unitPrice.toFixed(2), "12.00");
+  assert.equal(saleLine.lineTotal.toFixed(2), "24.00");
+  assert.equal(saleLine.costPriceAtSale.toFixed(2), "1.00");
+  assert.equal(movement.batchId, fixture.batchIds[1]);
+  assert.equal(movement.qtyBase.toFixed(3), "-20.000");
   await cleanupSaleEntities(result.saleId);
 });
 

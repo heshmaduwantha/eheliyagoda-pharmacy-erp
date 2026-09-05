@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { formatDateTime } from "@/lib/date-format";
 import { getSupplierPaymentReceiptById } from "@/modules/finance/supplier-payment.service";
 import Handlebars from "handlebars";
 
@@ -329,13 +330,7 @@ export async function GET(
     const dateObj = new Date(payment.paidAt);
     const paidAtFormatted = isNaN(dateObj.getTime())
       ? payment.paidAt
-      : dateObj.toLocaleDateString("en-US", {
-          year: "numeric",
-          month: "short",
-          day: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-        });
+      : formatDateTime(dateObj);
 
     const template = Handlebars.compile(voucherTemplate);
     const html = template({

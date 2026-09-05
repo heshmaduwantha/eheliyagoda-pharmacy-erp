@@ -16,7 +16,6 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
       {/* Left Side (Branding & Info) */}
       <div className="relative hidden w-1/2 flex-col justify-between overflow-hidden bg-blue-950 p-12 lg:flex xl:p-16">
         {/* Subtle background grid pattern */}
-        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10 mix-blend-soft-light"></div>
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff0a_1px,transparent_1px),linear-gradient(to_bottom,#ffffff0a_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)]"></div>
 
         <div className="relative z-10">
@@ -139,4 +138,3 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
     </main>
   );
 }
-

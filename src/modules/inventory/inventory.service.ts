@@ -1,4 +1,5 @@
 import { BatchStatus, Prisma, StockMovementType, SupplierInvoiceStatus } from "@prisma/client";
+import { formatDateTime } from "@/lib/date-format";
 import { prisma } from "@/lib/prisma";
 import type {
   ExpiryAlertRecord,
@@ -475,6 +476,10 @@ export async function createSupplierReturn(input: CreateSupplierReturnInput, act
     if (!supplierId) {
       throw new Error("Supplier could not be identified for this batch. Please select a supplier.");
     }
+    const originatingSupplierId = batch.grnLine?.grn.supplierId;
+    if (originatingSupplierId && supplierId !== originatingSupplierId) {
+      throw new Error("Supplier return supplier must match the supplier that supplied this batch.");
+    }
 
     const nextQty = batch.qtyOnHandBase.sub(qtyToReturn);
     const nextStatus = nextQty.eq(0) ? BatchStatus.DEPLETED : batch.status;
@@ -489,13 +494,8 @@ export async function createSupplierReturn(input: CreateSupplierReturnInput, act
 
     const returnNumber = `RET-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.floor(1000 + Math.random() * 9000)}`;
 
-    let returnUnitCost = batch.costPrice ?? new Prisma.Decimal(0);
-    if (batch.grnLine && batch.grnLine.costPrice.equals(returnUnitCost)) {
-      const grnUnit = await tx.productUnit.findUnique({ where: { id: batch.grnLine.unitId } });
-      if (grnUnit && grnUnit.factorToBase.gt(1)) {
-        returnUnitCost = returnUnitCost.div(grnUnit.factorToBase);
-      }
-    }
+    // Batch cost is canonical base-unit cost after GRN confirmation.
+    const returnUnitCost = batch.costPrice;
     const returnTotalCost = qtyToReturn.mul(returnUnitCost);
 
     const supplierReturn = await tx.supplierReturn.create({
@@ -544,6 +544,7 @@ export type ProcessSupplierReturnInput = {
 
 export async function processSupplierReturnSettlement(input: ProcessSupplierReturnInput, actorUserId: string) {
   return prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT id FROM "SupplierReturn" WHERE id = ${input.returnId}::uuid FOR UPDATE`;
     const supplierReturn = await tx.supplierReturn.findUnique({
       where: { id: input.returnId },
       include: { supplier: true },
@@ -556,11 +557,20 @@ export async function processSupplierReturnSettlement(input: ProcessSupplierRetu
 
     if (input.action === "DEDUCT_INVOICE") {
       if (!input.invoiceId) throw new Error("Please select an open supplier invoice to deduct from.");
+      await tx.$queryRaw`SELECT id FROM "SupplierInvoice" WHERE id = ${input.invoiceId}::uuid FOR UPDATE`;
       const invoice = await tx.supplierInvoice.findUnique({ where: { id: input.invoiceId } });
       if (!invoice) throw new Error("Supplier invoice not found.");
       if (invoice.status === SupplierInvoiceStatus.CANCELLED) throw new Error("Cannot deduct from a cancelled invoice.");
+      if (invoice.supplierId !== supplierReturn.supplierId) {
+        throw new Error("Supplier return can only be deducted from an invoice for the same supplier.");
+      }
 
-      const nextTotal = Prisma.Decimal.max(0, invoice.totalAmount.sub(supplierReturn.totalCost));
+      const outstanding = invoice.totalAmount.sub(invoice.paidAmount);
+      if (supplierReturn.totalCost.gt(outstanding)) {
+        throw new Error("Supplier return credit exceeds the invoice outstanding balance.");
+      }
+
+      const nextTotal = invoice.totalAmount.sub(supplierReturn.totalCost);
       let nextStatus = invoice.status;
       if (nextTotal.lte(invoice.paidAmount)) {
         nextStatus = SupplierInvoiceStatus.PAID;
@@ -582,6 +592,7 @@ export async function processSupplierReturnSettlement(input: ProcessSupplierRetu
         data: {
           status: "ADJUSTED",
           settledAt: new Date(),
+          settledInvoiceId: invoice.id,
           settledNotes: input.notes ? `Deducted from ${invoiceLabel}: ${input.notes}` : `Deducted from ${invoiceLabel}`,
         },
       });
@@ -742,11 +753,7 @@ export async function getBatchPrintDetails(id: string) {
     },
   });
 
-  const now = new Date();
-  const printedAt = now.toLocaleString("en-LK", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
+  const printedAt = formatDateTime(new Date());
 
   if (grn) {
     let printedBy = "Admin";
@@ -816,4 +823,3 @@ export async function getBatchPrintDetails(id: string) {
     barcode,
   };
 }
-

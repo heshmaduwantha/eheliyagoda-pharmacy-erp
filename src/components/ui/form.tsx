@@ -3,9 +3,7 @@
 import { useFormStatus } from "react-dom";
 import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 import type { FormState } from "@/lib/forms";
-
-export const inputClass =
-  "w-full rounded-lg border border-neutral-border bg-neutral-surface px-2.5 py-1.5 text-sm text-neutral-text shadow-sm outline-none transition placeholder:text-neutral-muted focus:border-brand-default focus:ring-1 focus:ring-brand-default/50";
+export { dateInputClass, inputClass } from "./input-styles";
 
 export function Field({
   label,

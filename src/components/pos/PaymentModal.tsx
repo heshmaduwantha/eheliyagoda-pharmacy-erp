@@ -6,6 +6,9 @@ import type { PosPaymentInput } from "@/modules/sales/pos.types";
 import { calculateRemaining, formatLkr, isPaymentExact } from "@/modules/sales/pos.utils";
 import type { PosPaymentMode } from "./PosSummaryPanel";
 
+const moneyInputClass =
+  "min-w-0 w-full bg-transparent py-3 font-[inherit] text-sm font-semibold tabular-nums text-neutral-text outline-none placeholder:font-medium placeholder:text-neutral-muted [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none";
+
 type Props = {
   open: boolean;
   mode: PosPaymentMode;
@@ -53,13 +56,14 @@ export function PaymentModal({ open, mode, total, onClose, onComplete }: Props) 
             <X className="size-5" />
           </button>
         </div>
-        <div className="mt-6 grid gap-4 sm:grid-cols-2">
+        <div className="mt-6 grid min-w-0 gap-4 sm:grid-cols-2">
           <label className="grid gap-2 text-sm font-bold text-neutral-text">
             Cash amount
-            <span className="flex items-center gap-2 rounded-xl border border-neutral-border px-3 focus-within:border-brand-default">
-              <Banknote className="size-4 text-neutral-muted" />
+            <span className="flex min-w-0 items-center gap-2 rounded-xl border border-neutral-border bg-neutral-surface px-3 shadow-sm transition focus-within:border-brand-default focus-within:ring-2 focus-within:ring-brand-default/15">
+              <Banknote className="size-4 shrink-0 text-neutral-muted" />
               <input
-                className="min-w-0 flex-1 py-3 outline-none"
+                className={moneyInputClass}
+                inputMode="decimal"
                 min="0"
                 onChange={(event) => setCashAmount(event.target.value)}
                 placeholder="0.00"
@@ -71,10 +75,11 @@ export function PaymentModal({ open, mode, total, onClose, onComplete }: Props) 
           </label>
           <label className="grid gap-2 text-sm font-bold text-neutral-text">
             Card amount
-            <span className="flex items-center gap-2 rounded-xl border border-neutral-border px-3 focus-within:border-brand-default">
-              <CreditCard className="size-4 text-neutral-muted" />
+            <span className="flex min-w-0 items-center gap-2 rounded-xl border border-neutral-border bg-neutral-surface px-3 shadow-sm transition focus-within:border-brand-default focus-within:ring-2 focus-within:ring-brand-default/15">
+              <CreditCard className="size-4 shrink-0 text-neutral-muted" />
               <input
-                className="min-w-0 flex-1 py-3 outline-none"
+                className={moneyInputClass}
+                inputMode="decimal"
                 min="0"
                 onChange={(event) => setCardAmount(event.target.value)}
                 placeholder="0.00"
@@ -88,7 +93,7 @@ export function PaymentModal({ open, mode, total, onClose, onComplete }: Props) 
         <label className="mt-4 grid gap-2 text-sm font-bold text-neutral-text">
           Card reference
           <input
-            className="rounded-xl border border-neutral-border px-4 py-3 font-normal outline-none focus:border-brand-default"
+            className="w-full rounded-xl border border-neutral-border bg-neutral-surface px-4 py-3 text-sm font-semibold text-neutral-text shadow-sm outline-none transition placeholder:font-medium placeholder:text-neutral-muted focus:border-brand-default focus:ring-2 focus:ring-brand-default/15"
             onChange={(event) => setCardReference(event.target.value)}
             placeholder="Optional reference / last 4 digits"
             value={cardReference}

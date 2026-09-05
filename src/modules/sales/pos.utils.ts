@@ -46,6 +46,33 @@ export function updateCartLineBatch(line: PosCartLine, batchId: string): PosCart
   return { ...line, selectedBatchId: batchId, unitPrice, lineTotal: calculateLineTotal(line.quantity, unitPrice) };
 }
 
+export function applyCartLineBatchPreview(line: PosCartLine, batchPreview: PosCartLine["batchPreview"]): PosCartLine {
+  if (!batchPreview) return { ...line, batchPreview: undefined };
+  const selectedBatchId = line.selectedBatchId;
+  const selectedBatch = selectedBatchId
+    ? batchPreview.candidates.find((batch) => batch.id === selectedBatchId)
+    : undefined;
+  if (!selectedBatch) {
+    return { ...line, batchPreview };
+  }
+  const unitPrice = Number(selectedBatch.sellingPrice ?? 0);
+  return {
+    ...line,
+    batchPreview,
+    unitPrice,
+    lineTotal: calculateLineTotal(line.quantity, unitPrice),
+  };
+}
+
+export function canCartLineFulfilSelectedBatch(line: PosCartLine) {
+  const preview = line.batchPreview;
+  if (!preview) return true;
+  if (preview.candidates.length === 0) return false;
+  const candidate = preview.candidates.find((batch) => batch.id === line.selectedBatchId)
+    ?? preview.candidates[0];
+  return Number(candidate.availableQtyBase) >= Number(preview.requestedQtyBase);
+}
+
 export function calculatePosTotals(lines: PosCartLine[], discount = 0, tax = 0) {
   const subtotal = roundMoney(lines.reduce((sum, line) => sum + line.lineTotal, 0));
   const safeDiscount = Math.min(Math.max(0, discount), subtotal);

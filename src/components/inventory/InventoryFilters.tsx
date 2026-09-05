@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Filter, Search, X } from "lucide-react";
-import { useRef } from "react";
+import { AutoSubmit } from "@/components/ui/auto-submit";
 
 type FilterOption = { value: string; label: string };
 
@@ -30,30 +30,16 @@ export function InventoryFilters({
   timeframe?: string;
 }) {
   const active = Boolean(search) || status !== "ALL" || direction !== "ALL" || availability !== "ALL" || timeframe !== "ALL";
-  const formRef = useRef<HTMLFormElement>(null);
-  const timeoutRef = useRef<NodeJS.Timeout>(null);
-
-  const handleInput = () => {
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    timeoutRef.current = setTimeout(() => {
-      formRef.current?.requestSubmit();
-    }, 300);
-  };
-
-  const handleChange = () => {
-    formRef.current?.requestSubmit();
-  };
-
   return (
-    <form ref={formRef} action={action} className="flex flex-col gap-3 rounded-2xl border border-neutral-border bg-neutral-surface p-4 shadow-sm sm:flex-row flex-wrap">
+    <form action={action} className="flex flex-col gap-3 rounded-2xl border border-neutral-border bg-neutral-surface p-4 shadow-sm sm:flex-row flex-wrap">
       <label className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-neutral-border bg-neutral-bg px-3 focus-within:border-brand-default min-w-[200px]">
         <Search className="size-4 text-neutral-muted shrink-0" />
-        <input className="min-w-0 flex-1 bg-transparent py-2.5 text-sm outline-none" defaultValue={search} name="search" placeholder="Search product, batch, reference…" onInput={handleInput} />
+        <input className="min-w-0 flex-1 bg-transparent py-2.5 text-sm outline-none" defaultValue={search} name="search" placeholder="Search product, batch, reference…" />
       </label>
       
       <label className="flex items-center gap-2 rounded-xl border border-neutral-border px-3 text-sm text-neutral-muted shrink-0">
         <Filter className="size-4 shrink-0" />
-        <select className="bg-transparent py-2.5 font-semibold text-neutral-text outline-none" defaultValue={status} name="status" onChange={handleChange}>
+        <select className="bg-transparent py-2.5 font-semibold text-neutral-text outline-none" defaultValue={status} name="status">
           <option value="ALL">All statuses</option>
           {statusOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
         </select>
@@ -61,7 +47,7 @@ export function InventoryFilters({
 
       {directionOptions.length > 0 ? <label className="flex items-center gap-2 rounded-xl border border-neutral-border px-3 text-sm text-neutral-muted shrink-0">
         <Filter className="size-4 shrink-0" />
-        <select className="bg-transparent py-2.5 font-semibold text-neutral-text outline-none" defaultValue={direction} name="direction" onChange={handleChange}>
+        <select className="bg-transparent py-2.5 font-semibold text-neutral-text outline-none" defaultValue={direction} name="direction">
           <option value="ALL">All directions</option>
           {directionOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
         </select>
@@ -69,7 +55,7 @@ export function InventoryFilters({
 
       {showAvailability ? <label className="flex items-center gap-2 rounded-xl border border-neutral-border px-3 text-sm text-neutral-muted shrink-0">
         <Filter className="size-4 shrink-0" />
-        <select className="bg-transparent py-2.5 font-semibold text-neutral-text outline-none" defaultValue={availability} name="availability" onChange={handleChange}>
+        <select className="bg-transparent py-2.5 font-semibold text-neutral-text outline-none" defaultValue={availability} name="availability">
           <option value="ALL">Any stock level</option>
           <option value="IN_STOCK">In stock</option>
           <option value="OUT_OF_STOCK">Out of stock</option>
@@ -78,7 +64,7 @@ export function InventoryFilters({
 
       {showTimeframe ? <label className="flex items-center gap-2 rounded-xl border border-neutral-border px-3 text-sm text-neutral-muted shrink-0">
         <Filter className="size-4 shrink-0" />
-        <select className="bg-transparent py-2.5 font-semibold text-neutral-text outline-none" defaultValue={timeframe} name="timeframe" onChange={handleChange}>
+        <select className="bg-transparent py-2.5 font-semibold text-neutral-text outline-none" defaultValue={timeframe} name="timeframe">
           <option value="ALL">Any expiry</option>
           <option value="NEAR_EXPIRY">Near expiry (30d)</option>
           <option value="EXPIRED">Expired</option>
@@ -90,6 +76,7 @@ export function InventoryFilters({
           <X className="size-4" />
         </Link>
       )}
+      <AutoSubmit debounceMs={300} />
     </form>
   );
 }

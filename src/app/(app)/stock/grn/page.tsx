@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { PackagePlus, Search } from "lucide-react";
 import { formatMoney } from "@/lib/money";
+import { formatDateOnly } from "@/lib/date-format";
 import { requirePermission } from "@/modules/auth/permissions";
 import { listGrns } from "@/modules/procurement/grn.service";
 import { Pagination } from "@/components/ui/pagination";
@@ -80,7 +81,7 @@ export default async function GrnListPage({ searchParams }: { searchParams: Prom
                         <span className="text-xs text-neutral-muted">{grn._count.lines} item{grn._count.lines === 1 ? "" : "s"}</span>
                       </td>
                       <td className="px-5 py-3.5 font-semibold text-neutral-text">{grn.supplier.name}</td>
-                      <td className="px-5 py-3.5 text-neutral-muted">{grn.createdAt.toLocaleDateString()}</td>
+                      <td className="px-5 py-3.5 text-neutral-muted">{formatDateOnly(grn.createdAt)}</td>
                       <td className="px-5 py-3.5">
                         <span className={`inline-flex rounded-full px-2.5 py-0.5 text-[10px] tracking-wider uppercase font-bold ${status.cls}`}>
                           {status.label}
@@ -88,9 +89,16 @@ export default async function GrnListPage({ searchParams }: { searchParams: Prom
                       </td>
                       <td className="px-5 py-3.5 text-right font-bold text-neutral-text">{formatMoney(grn.invoiceTotal)}</td>
                       <td className="px-5 py-3.5 text-right">
-                        <Link className="rounded-lg border border-neutral-border bg-neutral-surface px-3 py-2 text-sm font-semibold text-neutral-text hover:bg-neutral-bg" href={`/stock/grn/${grn.id}`}>
-                          View
-                        </Link>
+                        <div className="flex justify-end gap-2">
+                          <Link className="rounded-lg border border-neutral-border bg-neutral-surface px-3 py-2 text-sm font-semibold text-neutral-text hover:bg-neutral-bg" href={`/stock/grn/${grn.id}`}>
+                            View
+                          </Link>
+                          {grn.status === "DRAFT" && (
+                            <Link className="rounded-lg bg-brand-default px-3 py-2 text-sm font-semibold text-white hover:bg-brand-hover" href={`/stock/grn/${grn.id}/edit`}>
+                              Edit
+                            </Link>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );

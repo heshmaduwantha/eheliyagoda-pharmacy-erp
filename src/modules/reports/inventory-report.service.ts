@@ -41,23 +41,17 @@ export async function getStockValuationReport(): Promise<ReportResult<{ totalVal
     select: {
       id: true, batchNo: true, qtyOnHandBase: true, costPrice: true,
       product: { select: { name: true } },
-      grnLine: { select: { unit: { select: { factorToBase: true } } } },
     },
     orderBy: [{ product: { name: "asc" } }, { expiryDate: "asc" }],
     take: 1000,
   });
 
-  const getBaseCost = (batch: (typeof batches)[number]) => {
-    const factor = batch.grnLine?.unit.factorToBase;
-    return factor && factor.gt(0) ? batch.costPrice.div(factor) : batch.costPrice;
-  };
-
   const totalValuation = batches.reduce(
-    (sum, batch) => sum.add(batch.qtyOnHandBase.mul(getBaseCost(batch))),
+    (sum, batch) => sum.add(batch.qtyOnHandBase.mul(batch.costPrice)),
     new Prisma.Decimal(0),
   );
   const rows = batches.map((batch) => {
-    const baseCost = getBaseCost(batch);
+    const baseCost = batch.costPrice;
     return {
       batchId: batch.id,
       productName: batch.product.name,
@@ -114,19 +108,13 @@ export async function getNearExpiryReport(nearExpiryDays = DEFAULT_NEAR_EXPIRY_D
     select: {
       id: true, batchNo: true, expiryDate: true, qtyOnHandBase: true, status: true, costPrice: true,
       product: { select: { name: true } },
-      grnLine: { select: { unit: { select: { factorToBase: true } } } },
     },
     orderBy: { expiryDate: "asc" },
     take: 1000,
   });
 
-  const getBaseCost = (batch: (typeof batches)[number]) => {
-    const factor = batch.grnLine?.unit.factorToBase;
-    return factor && factor.gt(0) ? batch.costPrice.div(factor) : batch.costPrice;
-  };
-
   const rows = batches.map((batch) => {
-    const baseCost = getBaseCost(batch);
+    const baseCost = batch.costPrice;
     return {
       batchId: batch.id,
       productName: batch.product.name,
@@ -156,23 +144,17 @@ export async function getExpiredQuarantinedReport(): Promise<ReportResult<{ batc
     select: {
       id: true, batchNo: true, expiryDate: true, qtyOnHandBase: true, status: true, costPrice: true,
       product: { select: { name: true } },
-      grnLine: { select: { unit: { select: { factorToBase: true } } } },
     },
     orderBy: [{ expiryDate: "asc" }, { product: { name: "asc" } }],
     take: 1000,
   });
 
-  const getBaseCost = (batch: (typeof batches)[number]) => {
-    const factor = batch.grnLine?.unit.factorToBase;
-    return factor && factor.gt(0) ? batch.costPrice.div(factor) : batch.costPrice;
-  };
-
   const totalValuation = batches.reduce(
-    (sum, batch) => sum.add(batch.qtyOnHandBase.mul(getBaseCost(batch))),
+    (sum, batch) => sum.add(batch.qtyOnHandBase.mul(batch.costPrice)),
     new Prisma.Decimal(0),
   );
   const rows = batches.map((batch) => {
-    const baseCost = getBaseCost(batch);
+    const baseCost = batch.costPrice;
     return {
       batchId: batch.id,
       productName: batch.product.name,

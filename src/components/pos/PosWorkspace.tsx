@@ -6,7 +6,6 @@ import { completeSaleAction } from "@/modules/sales/sale.actions";
 import {
   getPosBatchPreviewAction,
   lookupProductByBarcodeAction,
-  searchProductsForPosAction,
 } from "@/modules/sales/pos.actions";
 import type { PrescriptionDecisionInput } from "@/modules/prescriptions/prescription.types";
 import type {
@@ -17,6 +16,8 @@ import type {
 } from "@/modules/sales/pos.types";
 import {
   calculatePosTotals,
+  applyCartLineBatchPreview,
+  canCartLineFulfilSelectedBatch,
   createCartLine,
   updateCartLineQuantity,
   updateCartLineUnit,
@@ -57,6 +58,10 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
   });
 
   const totals = useMemo(() => calculatePosTotals(lines), [lines]);
+  const canCheckout = useMemo(
+    () => lines.length > 0 && lines.every((line) => line.quantity > 0 && canCartLineFulfilSelectedBatch(line)),
+    [lines],
+  );
   const promptedProductCount = lines.filter((line) => line.prescriptionRule === "PROMPT_SKIPPABLE").length;
   const controlledProductCount = lines.filter((line) => line.prescriptionRule === "HARD_REQUIRED_CONTROLLED").length;
 
@@ -76,20 +81,26 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
     }
 
     let cancelled = false;
+    const controller = new AbortController();
     const timer = window.setTimeout(() => {
-      startSearchTransition(() => {
-        void searchProductsForPosAction(deferredQuery)
-          .then((items) => {
-            if (!cancelled) setProducts(items);
-          })
-          .catch(() => {
-            if (!cancelled) setNotice({ tone: "warning", message: "Product search is temporarily unavailable." });
+      startSearchTransition(async () => {
+        try {
+          const response = await fetch(`/api/pos/search?q=${encodeURIComponent(deferredQuery)}`, {
+            signal: controller.signal,
+            cache: "no-store",
           });
+          if (!response.ok) throw new Error("Product search failed");
+          const items: PosProductSearchResult[] = await response.json();
+          if (!cancelled) startSearchTransition(() => setProducts(items));
+        } catch {
+          if (!cancelled) setNotice({ tone: "warning", message: "Product search is temporarily unavailable." });
+        }
       });
     }, 250);
 
     return () => {
       cancelled = true;
+      controller.abort();
       window.clearTimeout(timer);
     };
   }, [deferredQuery, initialProducts]);
@@ -99,7 +110,7 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
     setLines((current) =>
       current.map((item) =>
         item.id === line.id && item.quantity === line.quantity
-          ? { ...item, batchPreview: preview ?? undefined }
+          ? applyCartLineBatchPreview(item, preview ?? undefined)
           : item,
       ),
     );
@@ -148,7 +159,7 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
 
   const changeQuantity = (lineId: string, quantity: number) => {
     if (quantity <= 0) {
-      setLines((current) => current.filter((item) => item.id !== lineId));
+      setNotice({ tone: "warning", message: "Quantity must be greater than zero." });
       return;
     }
 
@@ -199,7 +210,10 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
   };
 
   const submitSale = async (payments: PosPaymentInput[], prescription?: PrescriptionDecisionInput) => {
-    if (lines.length === 0 || saleSubmissionRef.current.inFlight) return;
+    if (!canCheckout || saleSubmissionRef.current.inFlight) {
+      setNotice({ tone: "warning", message: "Resolve the cart quantity or stock warning before taking payment." });
+      return;
+    }
 
     const requestId = saleSubmissionRef.current.requestId ?? generateClientUuid();
     saleSubmissionRef.current = { requestId, inFlight: true };
@@ -297,7 +311,7 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-170px)] overflow-hidden">
+    <div className="flex flex-col lg:h-[calc(100vh-170px)] lg:overflow-hidden">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between shrink-0 mb-1">
         <div>
           <h1 className="text-2xl font-black tracking-tight text-neutral-text sm:text-3xl">
@@ -361,9 +375,9 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
         </div>
       ) : null}
 
-      <div className="mt-4 flex flex-1 items-stretch gap-6 relative overflow-hidden pb-4">
+      <div className="mt-4 flex flex-col lg:flex-row flex-1 items-stretch gap-6 relative lg:overflow-hidden pb-4">
         {/* Left main area */}
-        <div className="flex-1 min-w-0 overflow-y-auto pr-2">
+        <div className="flex-1 min-w-0 lg:overflow-y-auto lg:pr-2">
           <ProductSearchPanel
             isLoading={isSearching}
             onAddProduct={(product) => {
@@ -376,7 +390,7 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
         </div>
 
         {/* Right sidebar cart */}
-        <div className="w-[340px] flex-shrink-0 xl:w-[400px] flex flex-col rounded-2xl bg-neutral-surface shadow-[0_2px_12px_rgba(15,23,42,0.03)] border border-neutral-border/60 overflow-hidden">
+        <div className="w-full lg:w-[340px] flex-shrink-0 xl:w-[400px] flex flex-col rounded-2xl bg-neutral-surface shadow-[0_2px_12px_rgba(15,23,42,0.03)] border border-neutral-border/60 overflow-hidden">
           <div className="flex-1 overflow-hidden p-4">
             <CartTable
               lines={lines}
@@ -390,6 +404,7 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
             <PosSummaryPanel
               {...totals}
               hasLines={lines.length > 0}
+              canCheckout={canCheckout}
               onClear={clearCart}
               onHold={() => setNotice({ tone: "warning", message: "Held sales are not implemented yet." })}
               onPayment={openPayment}

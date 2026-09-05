@@ -30,6 +30,16 @@ export type CreateProductInput = {
   units: ProductUnitInput[];
 };
 
+function parsePositiveFactor(value: number, unitName: string) {
+  try {
+    const factor = new Prisma.Decimal(value);
+    if (!factor.isFinite() || factor.lte(0)) throw new Error("invalid");
+    return factor;
+  } catch {
+    throw new Error(`Unit ${unitName || "conversion"} factor must be greater than zero.`);
+  }
+}
+
 /** Lists/searches active products with their units and barcodes for catalog screens. */
 export async function searchProducts(
   options: { query?: string; filter?: string; page?: number; pageSize?: number } = {}
@@ -94,6 +104,10 @@ export async function lookupBarcode(barcode: string) {
  * Writes an audit row in the same transaction.
  */
 export async function createProduct(input: CreateProductInput, actorUserId: string) {
+  const units = input.units.map((unit) => ({
+    ...unit,
+    factorToBase: parsePositiveFactor(unit.factorToBase, unit.unitName),
+  }));
   const prescriptionRule = input.isControlled
     ? PrescriptionRule.HARD_REQUIRED_CONTROLLED
     : input.prescriptionRule;
@@ -114,9 +128,9 @@ export async function createProduct(input: CreateProductInput, actorUserId: stri
           input.defaultSellingPrice != null ? new Prisma.Decimal(input.defaultSellingPrice) : null,
         reorderLevel: new Prisma.Decimal(input.reorderLevel ?? 0),
         units: {
-          create: input.units.map((unit) => ({
+          create: units.map((unit) => ({
             unitName: unit.unitName,
-            factorToBase: new Prisma.Decimal(unit.factorToBase),
+            factorToBase: unit.factorToBase,
             sellingPrice: unit.sellingPrice != null && unit.sellingPrice > 0 ? new Prisma.Decimal(unit.sellingPrice) : null,
             isPurchaseDefault: unit.isPurchaseDefault ?? false,
             isSaleDefault: unit.isSaleDefault ?? false,

@@ -10,12 +10,13 @@ type Props = {
   tax: number;
   total: number;
   hasLines: boolean;
+  canCheckout?: boolean;
   onPayment: (mode: PosPaymentMode) => void;
   onHold: () => void;
   onClear: () => void;
 };
 
-export function PosSummaryPanel({ subtotal, discount, tax, total, hasLines, onPayment, onClear }: Props) {
+export function PosSummaryPanel({ subtotal, discount, tax, total, hasLines, canCheckout = hasLines, onPayment, onClear }: Props) {
   return (
     <div className="flex flex-col">
       <div className="mb-4 grid gap-1.5 text-xs">
@@ -44,7 +45,7 @@ export function PosSummaryPanel({ subtotal, discount, tax, total, hasLines, onPa
       {/* Single primary action */}
       <button
         className="flex w-full items-center justify-center rounded-[10px] bg-brand-default px-4 py-3.5 text-sm font-bold text-white transition hover:bg-brand-hover disabled:cursor-not-allowed disabled:bg-slate-300"
-        disabled={!hasLines}
+        disabled={!canCheckout}
         onClick={() => onPayment("split")}
         type="button"
         id="take-payment-btn"

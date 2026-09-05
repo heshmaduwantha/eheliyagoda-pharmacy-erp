@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Ban, CheckCircle2 } from "lucide-react";
 import { PageHeader } from "@/components/ui/form";
+import { formatDateOnly, formatDateTime } from "@/lib/date-format";
 import { formatMoney, formatQty } from "@/lib/money";
 import { requirePermission } from "@/modules/auth/permissions";
 import { getGrn } from "@/modules/procurement/grn.service";
@@ -29,6 +30,11 @@ export default async function GrnDetailPage({ params }: { params: Promise<{ id: 
             <Link className="inline-flex items-center gap-2 rounded-xl border border-neutral-border bg-neutral-surface px-4 py-2 text-sm font-semibold text-neutral-muted hover:bg-neutral-bg" href="/stock/grn">
               <ArrowLeft className="size-4" /> Back
             </Link>
+            {grn.status === "DRAFT" && (
+              <Link className="inline-flex items-center gap-2 rounded-xl bg-brand-default px-4 py-2 text-sm font-semibold text-white hover:bg-brand-hover" href={`/stock/grn/${grn.id}/edit`}>
+                Edit draft
+              </Link>
+            )}
             {grn.status !== "CANCELLED" && (
               <VoidGrnButton grnId={grn.id} />
             )}
@@ -44,7 +50,7 @@ export default async function GrnDetailPage({ params }: { params: Promise<{ id: 
         </Detail>
         <Detail label="Invoice no.">{grn.supplierInvoiceNo ?? "—"}</Detail>
         <Detail label="Invoice total">{formatMoney(grn.invoiceTotal)}</Detail>
-        <Detail label="Received at">{grn.receivedAt ? grn.receivedAt.toLocaleString() : "—"}</Detail>
+        <Detail label="Received at">{formatDateTime(grn.receivedAt)}</Detail>
       </section>
 
       <section className="overflow-hidden rounded-xl border border-neutral-border bg-neutral-surface shadow-sm">
@@ -76,7 +82,7 @@ export default async function GrnDetailPage({ params }: { params: Promise<{ id: 
                   <td className="px-5 py-3.5 text-neutral-muted">{formatQty(line.qtyBase)}</td>
                   <td className="px-5 py-3.5 text-neutral-muted">{line.batchNo ?? "—"}</td>
                   <td className="px-5 py-3.5 text-neutral-muted">{line.supplierBatchNo ?? "—"}</td>
-                  <td className="px-5 py-3.5 text-neutral-muted">{line.expiryDate ? line.expiryDate.toLocaleDateString() : "—"}</td>
+                  <td className="px-5 py-3.5 text-neutral-muted">{formatDateOnly(line.expiryDate)}</td>
                   <td className="px-5 py-3.5 text-neutral-muted">{line.mrp ? formatMoney(line.mrp) : "—"}</td>
                   <td className="px-5 py-3.5 text-neutral-muted">{formatMoney(line.costPrice)}</td>
                   <td className="px-5 py-3.5 text-neutral-muted">{formatMoney(line.sellingPrice)}</td>

@@ -118,13 +118,12 @@ export async function createGrnDraft(input: CreateGrnInput, actorUserId: string)
   const unitIds = [...new Set(input.lines.map((l) => l.unitId))];
   const productIds = [...new Set(input.lines.map((l) => l.productId))];
   const units = await prisma.productUnit.findMany({ where: { id: { in: unitIds } } });
-  const products = await prisma.product.findMany({ where: { id: { in: productIds } }, select: { id: true } });
+  const products = await prisma.product.findMany({ where: { id: { in: productIds } }, select: { id: true, isActive: true } });
   const unitById = new Map(units.map((u) => [u.id, u]));
-  const productIdsFound = new Set(products.map((product) => product.id));
 
-  // Invoice total is calculated from the lines (quantity x cost), never typed in.
+  // GRN costPrice is the total cost for the entered line quantity.
   const invoiceTotal = input.lines.reduce(
-    (sum, line) => sum.add(new Prisma.Decimal(line.qtyInUnit).mul(line.costPrice)),
+    (sum, line) => sum.add(line.costPrice),
     new Prisma.Decimal(0),
   );
 
@@ -151,8 +150,9 @@ export async function createGrnDraft(input: CreateGrnInput, actorUserId: string)
         lines: {
           create: input.lines.map((line, index) => {
             const unit = unitById.get(line.unitId);
-            if (!unit || unit.productId !== line.productId || !productIdsFound.has(line.productId)) {
-              throw new Error("Selected unit does not belong to the product.");
+            const product = products.find((item) => item.id === line.productId);
+            if (!unit || unit.productId !== line.productId || !product || !product.isActive) {
+              throw new Error("Selected unit does not belong to an active product.");
             }
             const qtyBase = new Prisma.Decimal(line.qtyInUnit).mul(unit.factorToBase);
             return {
@@ -194,12 +194,11 @@ export async function updateGrnDraft(grnId: string, input: CreateGrnInput, actor
   const unitIds = [...new Set(input.lines.map((l) => l.unitId))];
   const productIds = [...new Set(input.lines.map((l) => l.productId))];
   const units = await prisma.productUnit.findMany({ where: { id: { in: unitIds } } });
-  const products = await prisma.product.findMany({ where: { id: { in: productIds } }, select: { id: true } });
+  const products = await prisma.product.findMany({ where: { id: { in: productIds } }, select: { id: true, isActive: true } });
   const unitById = new Map(units.map((u) => [u.id, u]));
-  const productIdsFound = new Set(products.map((product) => product.id));
 
   const invoiceTotal = input.lines.reduce(
-    (sum, line) => sum.add(new Prisma.Decimal(line.qtyInUnit).mul(line.costPrice)),
+    (sum, line) => sum.add(line.costPrice),
     new Prisma.Decimal(0),
   );
 
@@ -221,8 +220,9 @@ export async function updateGrnDraft(grnId: string, input: CreateGrnInput, actor
         lines: {
           create: input.lines.map((line, index) => {
             const unit = unitById.get(line.unitId);
-            if (!unit || unit.productId !== line.productId || !productIdsFound.has(line.productId)) {
-              throw new Error("Selected unit does not belong to the product.");
+            const product = products.find((item) => item.id === line.productId);
+            if (!unit || unit.productId !== line.productId || !product || !product.isActive) {
+              throw new Error("Selected unit does not belong to an active product.");
             }
             const qtyBase = new Prisma.Decimal(line.qtyInUnit).mul(unit.factorToBase);
             return {
@@ -273,7 +273,7 @@ export async function confirmGrn(grnId: string, actorUserId: string) {
       where: { id: grnId },
       include: {
         supplier: true,
-        lines: { include: { product: { select: { productType: true } }, unit: { select: { factorToBase: true } } } },
+        lines: { include: { product: { select: { productType: true, isActive: true } }, unit: { select: { factorToBase: true } } } },
       },
     });
 
@@ -282,14 +282,20 @@ export async function confirmGrn(grnId: string, actorUserId: string) {
     if (!grn.supplier.isActive) throw new Error("Supplier is inactive.");
     if (grn.lines.length === 0) throw new Error("GRN has no lines.");
 
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
     for (const line of grn.lines) {
       const isMedicine = line.product.productType === ProductType.MEDICINE;
       if (line.qtyBase.lte(0)) throw new Error("Each line must have a positive quantity.");
+      if (!line.product.isActive) throw new Error("Cannot confirm a GRN for an inactive product.");
 
       if (isMedicine) {
         if (!line.batchNo) throw new Error("Medicine lines require a batch number.");
         if (!line.expiryDate) throw new Error("Medicine lines require an expiry date.");
-        if (line.mrp != null && line.sellingPrice.gt(line.mrp)) {
+        if (line.expiryDate < today) throw new Error("Medicine batch expiry date must be today or later.");
+        const sellingPricePerBase = line.sellingPrice.div(line.qtyBase);
+        const mrpPerBase = line.mrp != null ? line.mrp.div(line.unit?.factorToBase ?? new Prisma.Decimal(1)) : null;
+        if (mrpPerBase != null && sellingPricePerBase.gt(mrpPerBase)) {
           throw new Error("Selling price cannot exceed the batch MRP for a medicine.");
         }
       }
@@ -305,9 +311,11 @@ export async function confirmGrn(grnId: string, actorUserId: string) {
         batchNo: line.batchNo,
         supplierBatchNo: line.supplierBatchNo,
         expiryDate: line.expiryDate,
+        // Cost and sellingPrice are total values for the entered quantity.
+        // Batch values are canonical per-base-unit prices.
         mrp: line.mrp != null ? line.mrp.div(factor) : null,
-        costPrice: line.costPrice.div(factor),
-        sellingPrice: line.sellingPrice.div(factor),
+        costPrice: line.costPrice.div(line.qtyBase),
+        sellingPrice: line.sellingPrice.div(line.qtyBase),
         qtyOnHandBase: line.qtyBase,
       };
     });

@@ -7,6 +7,7 @@ import { listSalesForVoidPage } from "@/modules/sales/sale-void.service";
 import { AutoSubmit } from "@/components/ui/auto-submit";
 import type { SaleVoidListStatusFilter } from "@/modules/sales/sale-void.types";
 import { Pagination } from "@/components/ui/pagination";
+import { compactDateInputClass } from "@/components/ui/input-styles";
 
 export const metadata: Metadata = {
   title: "Sale history",
@@ -82,9 +83,9 @@ export default async function SalesPage({
           <option value="HELD">Held</option>
         </select>
         <div className="flex items-center gap-2">
-          <input className="rounded-full border border-neutral-border bg-neutral-surface px-4 py-1.5 text-sm font-semibold outline-none focus:border-brand-default" defaultValue={from ?? ""} name="from" type="date" title="From Date" />
+          <input className={compactDateInputClass} defaultValue={from ?? ""} name="from" type="date" title="From Date" />
           <span className="text-neutral-muted text-sm">to</span>
-          <input className="rounded-full border border-neutral-border bg-neutral-surface px-4 py-1.5 text-sm font-semibold outline-none focus:border-brand-default" defaultValue={to ?? ""} name="to" type="date" title="To Date" />
+          <input className={compactDateInputClass} defaultValue={to ?? ""} name="to" type="date" title="To Date" />
         </div>
         <AutoSubmit />
       </form>

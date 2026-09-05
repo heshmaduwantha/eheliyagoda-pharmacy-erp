@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { formatDateTime } from "@/lib/date-format";
 import { getSaleReceiptById } from "@/modules/sales/sale.service";
 import Handlebars from "handlebars";
 
@@ -131,7 +132,7 @@ export async function GET(
     }
 
     const dateObj = new Date(receipt.completedAt);
-    const formattedDate = isNaN(dateObj.getTime()) ? receipt.completedAt : dateObj.toLocaleString();
+    const formattedDate = isNaN(dateObj.getTime()) ? receipt.completedAt : formatDateTime(dateObj);
 
     const data = {
       ...receipt,

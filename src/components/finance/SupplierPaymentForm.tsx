@@ -6,7 +6,7 @@ import { recordSupplierPaymentAction } from "@/modules/finance/finance.actions";
 import type { SupplierInvoiceBalanceRow } from "@/modules/finance/supplier-payment.types";
 import { idleFormState } from "@/lib/forms";
 import { SearchableSelect } from "@/components/ui/searchable-select";
-import { Field, FormAlert, SubmitButton, inputClass } from "@/components/ui/form";
+import { Field, FormAlert, SubmitButton, dateInputClass, inputClass } from "@/components/ui/form";
 
 const PAYMENT_METHODS = ["CASH", "CARD"] as const;
 
@@ -129,7 +129,7 @@ export function SupplierPaymentForm({ invoices }: { invoices: SupplierInvoiceBal
         </summary>
         <div className="grid gap-4 border-t border-neutral-border px-4 pb-4 pt-4 sm:grid-cols-2">
           <Field htmlFor="paidAt" label="Payment date" error={state.status === "error" ? state.fieldErrors?.paidAt : undefined}>
-            <input className={inputClass} id="paidAt" name="paidAt" onChange={(event) => setPaidAt(event.target.value)} value={paidAt} type="date" required />
+            <input className={dateInputClass} id="paidAt" name="paidAt" onChange={(event) => setPaidAt(event.target.value)} value={paidAt} type="date" required />
           </Field>
           <Field htmlFor="reference" label="Reference (bank transfer / receipt no.)">
             <input className={inputClass} id="reference" name="reference" placeholder="Optional" />

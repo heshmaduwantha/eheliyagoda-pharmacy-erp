@@ -8,6 +8,7 @@ const serverEnvSchema = z.object({
   PG_DB_NAME: z.string().min(1).optional(),
   PG_DB_USER: z.string().min(1).optional(),
   PG_DB_PASSWORD: z.string().min(1).optional(),
+  PG_DB_CONNECTION_LIMIT: z.coerce.number().int().min(1).max(100).default(5),
   REDIS_URL: z.string().url("REDIS_URL must be a valid Redis connection URL."),
   AUTH_SECRET: z.string().min(32, "AUTH_SECRET must contain at least 32 characters."),
   APP_URL: z.string().url("APP_URL must be a valid application URL."),
@@ -25,7 +26,7 @@ function buildDatabaseUrl(env: z.infer<typeof serverEnvSchema>) {
     url.searchParams.set("schema", "public");
     url.searchParams.set("connect_timeout", "20");
     url.searchParams.set("pool_timeout", "30");
-    url.searchParams.set("connection_limit", "1");
+    url.searchParams.set("connection_limit", String(env.PG_DB_CONNECTION_LIMIT));
     return url.toString();
   }
 
@@ -43,6 +44,7 @@ function validateServerEnv() {
     PG_DB_NAME: process.env.PG_DB_NAME,
     PG_DB_USER: process.env.PG_DB_USER,
     PG_DB_PASSWORD: process.env.PG_DB_PASSWORD,
+    PG_DB_CONNECTION_LIMIT: process.env.PG_DB_CONNECTION_LIMIT,
     REDIS_URL: process.env.REDIS_URL,
     AUTH_SECRET: process.env.AUTH_SECRET,
     APP_URL: process.env.APP_URL,
