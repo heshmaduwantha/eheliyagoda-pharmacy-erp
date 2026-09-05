@@ -11,7 +11,7 @@ export default async function AdminRolesNewPage() {
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm font-bold uppercase tracking-[.18em] text-brand-default">Administration</p>
-          <h1 className="text-3xl font-black tracking-tight text-neutral-text">Create role</h1>
+          <h1 className="text-2xl font-black tracking-tight text-neutral-text sm:text-3xl">Create role</h1>
         </div>
         <Link className="inline-flex items-center gap-2 rounded-xl border border-neutral-border bg-neutral-surface px-4 py-3 text-sm font-bold text-neutral-text shadow-sm" href="/admin/roles">
           <ArrowLeft className="size-4" />

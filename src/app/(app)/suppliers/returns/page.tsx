@@ -16,7 +16,7 @@ export default async function SupplierReturnsLogPage({ searchParams }: { searchP
   return (
     <div className="flex flex-col gap-6 min-w-0">
       <div>
-        <h1 className="text-3xl font-black tracking-tight text-neutral-text sm:text-4xl">Supplier Returns Log</h1>
+        <h1 className="text-2xl font-black tracking-tight text-neutral-text sm:text-3xl">Supplier Returns Log</h1>
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

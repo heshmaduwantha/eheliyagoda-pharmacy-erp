@@ -300,7 +300,7 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
     <div className="flex flex-col h-[calc(100vh-170px)] overflow-hidden">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between shrink-0 mb-1">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-neutral-text">
+          <h1 className="text-2xl font-black tracking-tight text-neutral-text sm:text-3xl">
             Point of Sale
           </h1>
         </div>

@@ -14,7 +14,7 @@ export default async function NewGrnPage() {
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-text">Record a delivery</h1>
+          <h1 className="text-2xl font-black tracking-tight text-neutral-text sm:text-3xl">Record a delivery</h1>
         </div>
         <Link
           className="inline-flex items-center gap-2 rounded-xl border border-neutral-border bg-neutral-surface px-4 py-2.5 text-sm font-semibold text-neutral-muted transition hover:border-neutral-border"

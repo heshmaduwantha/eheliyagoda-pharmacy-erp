@@ -32,7 +32,7 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
     <div className="grid gap-6">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-neutral-text sm:text-4xl">
+          <h1 className="text-2xl font-black tracking-tight text-neutral-text sm:text-3xl">
             Users
           </h1>
         </div>

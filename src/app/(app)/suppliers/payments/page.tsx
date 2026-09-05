@@ -33,7 +33,7 @@ export default async function SupplierPaymentsPage({ searchParams }: { searchPar
       {/* Header */}
       <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-neutral-text sm:text-4xl">
+          <h1 className="text-2xl font-black tracking-tight text-neutral-text sm:text-3xl">
             Pay suppliers
           </h1>
         </div>

@@ -25,7 +25,7 @@ export default async function AdminRolesPage({ searchParams }: { searchParams: P
     <div className="grid gap-6">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-neutral-text sm:text-4xl">Roles</h1>
+          <h1 className="text-2xl font-black tracking-tight text-neutral-text sm:text-3xl">Roles</h1>
         </div>
         <Link className="inline-flex items-center gap-2 rounded-lg bg-brand-default px-4 py-2 text-sm font-bold text-white transition hover:bg-brand-default" href="/admin/roles/new">
           <Plus className="size-4" />

@@ -68,7 +68,7 @@ export function PageHeader({ title, description, action }: { title: string; desc
   return (
     <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-neutral-text">{title}</h1>
+        <h1 className="text-2xl font-black tracking-tight text-neutral-text sm:text-3xl">{title}</h1>
         <p className="mt-0.5 max-w-2xl text-sm text-neutral-muted">{description}</p>
       </div>
       {action}
