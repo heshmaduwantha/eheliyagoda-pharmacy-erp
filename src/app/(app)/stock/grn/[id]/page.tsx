@@ -8,7 +8,6 @@ import { requirePermission } from "@/modules/auth/permissions";
 import { getGrn } from "@/modules/procurement/grn.service";
 import { ConfirmGrnButton } from "@/modules/procurement/confirm-grn-button";
 import { VoidGrnButton } from "@/modules/procurement/void-grn-button";
-import { PrintGrnLabelsButton } from "@/components/inventory/PrintGrnLabelsButton";
 import { PrintGrnNoteButton } from "@/components/inventory/PrintGrnNoteButton";
 
 const statusStyle: Record<string, string> = {
@@ -58,10 +57,7 @@ export default async function GrnDetailPage({ params }: { params: Promise<{ id: 
       <section className="overflow-hidden rounded-xl border border-neutral-border bg-neutral-surface shadow-sm">
         <div className="border-b border-neutral-border bg-neutral-bg px-5 py-4 flex items-center justify-between">
           <h2 className="text-sm font-black uppercase tracking-[.18em] text-brand-default">Lines ({grn.lines.length})</h2>
-          <div className="flex items-center gap-2">
-            <PrintGrnNoteButton grnId={grn.id} label="Print GRN Note" variant="secondary" />
-            <PrintGrnLabelsButton grnId={grn.id} label="Print Batch Sticker Label" variant="secondary" />
-          </div>
+          <PrintGrnNoteButton grnId={grn.id} label="Print GRN Note" variant="secondary" />
         </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[820px] text-left text-sm text-neutral-muted">
