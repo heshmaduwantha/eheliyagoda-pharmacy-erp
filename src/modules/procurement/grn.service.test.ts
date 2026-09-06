@@ -28,7 +28,7 @@ test("GRN confirmation creates stock and payable exactly once in one transaction
       grnNo: `TEST-GRN-${suffix}`,
       supplierId: supplier.id,
       supplierInvoiceNo: `TEST-INV-${suffix}`,
-      invoiceTotal: new Prisma.Decimal("90.00"),
+      invoiceTotal: new Prisma.Decimal("9000.00"),
       status: GrnStatus.DRAFT,
       receivedById: actor.id,
       lines: {
@@ -54,8 +54,8 @@ test("GRN confirmation creates stock and payable exactly once in one transaction
     const batches = await prisma.batch.findMany({ where: { grnLine: { grnId: grn.id } } });
     assert.equal(batches.length, 1);
     assert.equal(batches[0].qtyOnHandBase.toFixed(3), "100.000");
-    assert.equal(batches[0].costPrice.toFixed(2), "0.90");
-    assert.equal(batches[0].sellingPrice.toFixed(2), "1.00");
+    assert.equal(batches[0].costPrice.toFixed(2), "90.00");
+    assert.equal(batches[0].sellingPrice.toFixed(2), "100.00");
 
     const movements = await prisma.stockMovement.findMany({ where: { refType: "GRN", refId: grn.id } });
     assert.equal(movements.length, 1);
@@ -64,7 +64,7 @@ test("GRN confirmation creates stock and payable exactly once in one transaction
 
     const invoice = await prisma.supplierInvoice.findUnique({ where: { grnId: grn.id } });
     assert.ok(invoice);
-    assert.equal(invoice?.totalAmount.toFixed(2), "90.00");
+    assert.equal(invoice?.totalAmount.toFixed(2), "9000.00");
 
     const audit = await prisma.auditLog.findFirst({
       where: { entityType: "GRN", entityId: grn.id, action: "grn.confirmed" },

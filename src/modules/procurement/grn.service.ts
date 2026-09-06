@@ -121,9 +121,9 @@ export async function createGrnDraft(input: CreateGrnInput, actorUserId: string)
   const products = await prisma.product.findMany({ where: { id: { in: productIds } }, select: { id: true, isActive: true } });
   const unitById = new Map(units.map((u) => [u.id, u]));
 
-  // GRN costPrice is the total cost for the entered line quantity.
+  // GRN costPrice is per-unit cost. Invoice total is sum of qtyInUnit * costPrice across all lines.
   const invoiceTotal = input.lines.reduce(
-    (sum, line) => sum.add(line.costPrice),
+    (sum, line) => sum.add(new Prisma.Decimal(line.qtyInUnit).mul(line.costPrice)),
     new Prisma.Decimal(0),
   );
 
@@ -198,7 +198,7 @@ export async function updateGrnDraft(grnId: string, input: CreateGrnInput, actor
   const unitById = new Map(units.map((u) => [u.id, u]));
 
   const invoiceTotal = input.lines.reduce(
-    (sum, line) => sum.add(line.costPrice),
+    (sum, line) => sum.add(new Prisma.Decimal(line.qtyInUnit).mul(line.costPrice)),
     new Prisma.Decimal(0),
   );
 
@@ -311,11 +311,11 @@ export async function confirmGrn(grnId: string, actorUserId: string) {
         batchNo: line.batchNo,
         supplierBatchNo: line.supplierBatchNo,
         expiryDate: line.expiryDate,
-        // Cost and sellingPrice are total values for the entered quantity.
+        // line.costPrice and line.sellingPrice are unit values per purchase unit.
         // Batch values are canonical per-base-unit prices.
         mrp: line.mrp != null ? line.mrp.div(factor) : null,
-        costPrice: line.costPrice.div(line.qtyBase),
-        sellingPrice: line.sellingPrice.div(line.qtyBase),
+        costPrice: line.costPrice.div(factor),
+        sellingPrice: line.sellingPrice.div(factor),
         qtyOnHandBase: line.qtyBase,
       };
     });
