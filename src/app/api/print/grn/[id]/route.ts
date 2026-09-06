@@ -11,12 +11,12 @@ const grnPrintTemplate = `
   <title>Goods Received Note - {{grnNo}}</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
-    @page { margin: 12mm; size: A4 portrait; }
+    @page { margin: 10mm 12mm; size: A4 portrait; }
     * { box-sizing: border-box; }
     body {
       font-family: 'Inter', Arial, sans-serif;
       margin: 0;
-      padding: 24px;
+      padding: 16px 20px;
       color: #000000;
       background: #ffffff;
       font-size: 11px;
@@ -24,34 +24,31 @@ const grnPrintTemplate = `
     }
     
     .grn-container {
-      max-width: 820px;
+      max-width: 800px;
       margin: 0 auto;
     }
     
-    /* Header */
+    /* Title Bar */
     .title {
       text-align: center;
-      font-size: 24px;
+      font-size: 22px;
       font-weight: 800;
       letter-spacing: 0.5px;
       text-transform: uppercase;
-      margin-bottom: 6px;
+      margin-bottom: 8px;
     }
     
-    .header-double-line {
-      border-top: 3px solid #000000;
-      border-bottom: 1px solid #000000;
-      height: 4px;
-      margin-top: 8px;
-      margin-bottom: 24px;
+    .header-bar {
+      border-top: 3.5px solid #000000;
+      margin-bottom: 20px;
     }
     
     /* Top Metadata */
     .meta-top {
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 800;
-      margin-bottom: 24px;
-      line-height: 1.8;
+      margin-bottom: 20px;
+      line-height: 1.7;
     }
 
     .meta-top span {
@@ -62,22 +59,22 @@ const grnPrintTemplate = `
     .info-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 32px;
-      margin-bottom: 24px;
+      gap: 28px;
+      margin-bottom: 20px;
     }
     
     .section-header {
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 800;
       text-transform: uppercase;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
       color: #000000;
     }
     
     .info-row {
-      margin-bottom: 4px;
+      margin-bottom: 3px;
       font-size: 11px;
-      font-weight: 700;
+      font-weight: 800;
       color: #000000;
     }
 
@@ -89,17 +86,17 @@ const grnPrintTemplate = `
     table.items-table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 15px;
-      margin-bottom: 24px;
+      margin-top: 12px;
+      margin-bottom: 20px;
     }
 
     .table-banner {
-      background-color: #0047AB;
+      background-color: #0038A8;
       color: #ffffff;
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 800;
       text-align: center;
-      padding: 7px;
+      padding: 6px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
       border: 1px solid #000000;
@@ -111,35 +108,35 @@ const grnPrintTemplate = `
       font-size: 10px;
       font-weight: 800;
       text-transform: uppercase;
-      padding: 8px 4px;
+      padding: 6px 4px;
       border: 1px solid #000000;
       text-align: center;
       vertical-align: middle;
     }
 
     table.items-table td {
-      padding: 8px 6px;
+      padding: 6px 6px;
       border: 1px solid #000000;
-      font-size: 11px;
+      font-size: 10.5px;
       color: #000000;
-      height: 32px;
+      height: 28px;
     }
 
     .text-right { text-align: right; }
     .text-center { text-align: center; }
     .font-bold { font-weight: 700; }
 
-    /* Summary table at bottom right */
+    /* Summary box at bottom right */
     .summary-box {
-      width: 360px;
+      width: 320px;
       margin-left: auto;
       border-collapse: collapse;
-      margin-bottom: 32px;
+      margin-bottom: 24px;
     }
 
     .summary-box td {
       border: 1px solid #000000;
-      padding: 7px 12px;
+      padding: 6px 10px;
       font-size: 11px;
     }
 
@@ -156,20 +153,20 @@ const grnPrintTemplate = `
 
     /* Condition & Comments */
     .field-block {
-      margin-top: 24px;
+      margin-top: 20px;
     }
 
     .underline-line {
-      border-bottom: 1.5px solid #000000;
-      height: 28px;
-      margin-top: 4px;
+      border-bottom: 1px solid #000000;
+      height: 24px;
+      margin-top: 2px;
     }
   </style>
 </head>
 <body onload="window.print()">
   <div class="grn-container">
     <div class="title">GOODS RECEIVED NOTE</div>
-    <div class="header-double-line"></div>
+    <div class="header-bar"></div>
 
     <div class="meta-top">
       <div>GRN NUMBER: <span>{{grnNo}}</span></div>
@@ -192,7 +189,7 @@ const grnPrintTemplate = `
       </div>
     </div>
 
-    <div style="margin-bottom: 24px;">
+    <div style="margin-bottom: 20px;">
       <div class="section-header">RECEIVED BY:</div>
       <div class="info-row">Name: <span>{{receivedByName}}</span></div>
       <div class="info-row">Receiving Department: <span>Pharmacy Procurement</span></div>
@@ -205,14 +202,14 @@ const grnPrintTemplate = `
           <th colspan="8" class="table-banner">RECEIVED ITEMS</th>
         </tr>
         <tr>
-          <th class="sub-th" style="width: 8%;">ITEM</th>
-          <th class="sub-th" style="width: 24%;">DESCRIPTION</th>
-          <th class="sub-th" style="width: 13%;">EXPIRY DATE</th>
+          <th class="sub-th" style="width: 7%;">ITEM</th>
+          <th class="sub-th" style="width: 25%;">DESCRIPTION</th>
           <th class="sub-th" style="width: 13%;">UNIT OF MEASURE</th>
+          <th class="sub-th" style="width: 12%;">EXPIRY DATE</th>
           <th class="sub-th" style="width: 11%;">QUANTITY ORDERED</th>
           <th class="sub-th" style="width: 11%;">QUANTITY RECEIVED</th>
           <th class="sub-th" style="width: 10%;">UNIT PRICE</th>
-          <th class="sub-th" style="width: 10%;">TOTAL PRICE</th>
+          <th class="sub-th" style="width: 11%;">TOTAL PRICE</th>
         </tr>
       </thead>
       <tbody>
@@ -221,10 +218,10 @@ const grnPrintTemplate = `
           <td class="text-center">{{itemNo}}</td>
           <td>
             <strong>{{productName}}</strong>
-            {{#if genericName}}<div style="font-size: 10px; color: #555;">{{genericName}}</div>{{/if}}
+            {{#if genericName}}<div style="font-size: 9.5px; color: #555;">{{genericName}}</div>{{/if}}
           </td>
-          <td class="text-center font-bold">{{#if isFilled}}{{expiryDate}}{{/if}}</td>
           <td class="text-center">{{unitName}}</td>
+          <td class="text-center font-bold">{{#if isFilled}}{{expiryDate}}{{/if}}</td>
           <td class="text-center">{{#if isFilled}}{{qtyInUnit}}{{/if}}</td>
           <td class="text-center font-bold">{{#if isFilled}}{{qtyInUnit}}{{/if}}</td>
           <td class="text-right">{{#if isFilled}}LKR {{costPrice}}{{/if}}</td>
@@ -250,8 +247,9 @@ const grnPrintTemplate = `
       <div class="underline-line"></div>
     </div>
 
-    <div class="field-block" style="margin-top: 28px;">
+    <div class="field-block" style="margin-top: 24px;">
       <div class="section-header">COMMENTS:</div>
+      <div class="underline-line"></div>
       <div class="underline-line"></div>
       <div class="underline-line"></div>
       <div class="underline-line"></div>
