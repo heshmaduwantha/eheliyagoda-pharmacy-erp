@@ -4,6 +4,7 @@ import { Brand } from "@/components/ui/brand";
 import { getBootstrapState } from "@/modules/admin/rbac.service";
 import { loginAction } from "@/modules/auth/actions";
 import { getCurrentUser } from "@/modules/auth/session";
+import { LoginForm } from "./LoginForm";
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   if (await getCurrentUser()) redirect("/dashboard");
@@ -59,81 +60,9 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         </div>
       </div>
 
-      {/* Right Side (Login Form) */}
+      {/* Right Side (Login Form with Creative Medicine Loading Animation) */}
       <div className="flex w-full items-center justify-center bg-neutral-bg p-6 lg:w-1/2">
-        <div className="w-full max-w-[440px]">
-          {/* Main Card */}
-          <div className="rounded-[2rem] bg-neutral-surface p-8 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] ring-1 ring-slate-100 sm:p-12">
-            <div className="flex flex-col items-center text-center">
-              <div className="mb-6 flex size-16 items-center justify-center rounded-full bg-brand-pale text-brand-default">
-                <UserRound className="size-7" />
-              </div>
-              <h2 className="text-2xl font-black tracking-tight text-neutral-text">Welcome back</h2>
-              <p className="mt-2 text-sm font-medium text-neutral-muted">Sign in to your staff account</p>
-            </div>
-
-            {error === "invalid" && (
-              <p role="alert" className="mt-6 rounded-xl bg-status-danger-bg p-4 text-center text-sm font-semibold text-status-danger-text ring-1 ring-red-200">
-                Invalid username or password
-              </p>
-            )}
-
-            <form action={loginAction} className="mt-8 grid gap-5">
-              <div className="grid gap-2">
-                <label className="text-sm font-bold text-neutral-text" htmlFor="username">Username</label>
-                <div className="relative">
-                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-neutral-muted">
-                    <UserRound className="size-5" />
-                  </div>
-                  <input
-                    id="username"
-                    name="username"
-                    autoComplete="username"
-                    required
-                    placeholder="Your username"
-                    className="w-full rounded-xl border border-neutral-border py-3.5 pl-11 pr-4 text-sm font-medium text-neutral-text outline-none transition-all focus:border-brand-default focus:ring-4 focus:ring-brand-default/20 placeholder:text-neutral-muted"
-                  />
-                </div>
-              </div>
-
-              <div className="grid gap-2">
-                <label className="text-sm font-bold text-neutral-text" htmlFor="password">Password</label>
-                <div className="relative">
-                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-neutral-muted">
-                    <LockKeyhole className="size-5" />
-                  </div>
-                  <input
-                    id="password"
-                    name="password"
-                    type="password"
-                    autoComplete="current-password"
-                    required
-                    placeholder="Your password"
-                    className="w-full rounded-xl border border-neutral-border py-3.5 pl-11 pr-4 text-sm font-medium text-neutral-text outline-none transition-all focus:border-brand-default focus:ring-4 focus:ring-brand-default/20 placeholder:text-neutral-muted"
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                className="mt-4 w-full rounded-xl bg-brand-default px-4 py-4 text-sm font-bold text-white transition-all hover:bg-brand-hover active:scale-[0.98] shadow-lg shadow-brand-default/25"
-              >
-                Sign in
-              </button>
-            </form>
-          </div>
-
-          {/* Info Banner Below */}
-          <div className="mt-6 flex items-center gap-4 rounded-2xl bg-brand-pale p-5 ring-1 ring-brand-default/10">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-neutral-surface text-brand-default shadow-sm ring-1 ring-brand-default/10">
-              <ShieldCheck className="size-5" />
-            </div>
-            <div>
-              <p className="text-sm font-bold text-brand-hover">Staff sign-in</p>
-              <p className="text-xs font-medium text-brand-default/80">Use your pharmacy account to continue.</p>
-            </div>
-          </div>
-        </div>
+        <LoginForm error={error} />
       </div>
     </main>
   );

@@ -68,7 +68,7 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
 
   const totals = useMemo(() => calculatePosTotals(lines, calculatedDiscount), [lines, calculatedDiscount]);
   const canCheckout = useMemo(
-    () => lines.length > 0 && lines.every((line) => line.quantity > 0 && canCartLineFulfilSelectedBatch(line)),
+    () => lines.length > 0 && lines.every((line) => line.quantity > 0),
     [lines],
   );
   const promptedProductCount = lines.filter((line) => line.prescriptionRule === "PROMPT_SKIPPABLE").length;
@@ -318,17 +318,38 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between shrink-0 mb-1">
-        <div>
-          <h1 className="text-2xl font-black tracking-tight text-neutral-text sm:text-3xl">
-            Point of Sale
-          </h1>
+      <div className="flex items-center justify-between shrink-0 mb-1">
+        <h1 className="text-2xl font-black tracking-tight text-neutral-text sm:text-3xl">
+          Point of Sale
+        </h1>
+      </div>
+
+      {notice ? (
+        <div
+          className={`mt-2 flex items-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold ${
+            notice.tone === "success"
+              ? "border-status-success-bg bg-status-success-bg text-status-success-text"
+              : notice.tone === "warning"
+                ? "border-status-warning-bg bg-status-warning-bg text-status-warning-text"
+                : "border-status-danger-bg bg-status-danger-bg text-status-danger-text"
+          }`}
+        >
+          {notice.tone === "success" ? (
+            <CircleCheck className="size-4" />
+          ) : (
+            <CircleAlert className="size-4" />
+          )}
+          {notice.message}
         </div>
-        <div className="w-full sm:w-[55%] sm:max-w-2xl">
-          <label className="flex items-center gap-3 rounded-2xl bg-neutral-surface px-4 py-2 shadow-sm border border-neutral-border focus-within:border-brand-default focus-within:ring-4 focus-within:ring-brand-default/10 transition-all">
-            <Search className="size-4 shrink-0 text-neutral-muted" />
+      ) : null}
+
+      <div className="mt-2 grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_540px] 2xl:grid-cols-[minmax(0,1fr)_600px] pb-6">
+        {/* Left main area with Search Input */}
+        <div className="min-w-0 flex flex-col gap-4">
+          <label className="flex items-center gap-3 rounded-2xl bg-neutral-surface px-4 py-3 shadow-xs border border-neutral-border focus-within:border-brand-default focus-within:ring-4 focus-within:ring-brand-default/10 transition-all">
+            <Search className="size-5 shrink-0 text-neutral-muted" />
             <input
-              className="min-w-0 flex-1 bg-transparent py-2 text-base outline-none text-neutral-text placeholder:text-neutral-muted"
+              className="min-w-0 flex-1 bg-transparent py-1 text-base font-medium outline-none text-neutral-text placeholder:font-normal placeholder:text-neutral-muted"
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={async (e) => {
                 if ((e.key === "ArrowUp" || e.key === "ArrowDown") && !query.trim()
@@ -369,40 +390,10 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
               }}
               aria-label="Search medicines or scan barcode"
               placeholder="Search medicine or scan barcode…"
-              aria-describedby="pos-quantity-shortcut"
               value={query}
             />
           </label>
-          <p id="pos-quantity-shortcut" className="mt-1 text-xs text-neutral-muted">
-            {lines.some((line) => line.id === lastAddedLineId)
-              ? `↑ / ↓ changes quantity of ${lines.find((line) => line.id === lastAddedLineId)?.productName} when search is empty.`
-              : "After adding an item, use ↑ / ↓ here to adjust its quantity."}
-          </p>
-        </div>
-      </div>
 
-      {notice ? (
-        <div
-          className={`mt-5 flex items-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold ${
-            notice.tone === "success"
-              ? "border-status-success-bg bg-status-success-bg text-status-success-text"
-              : notice.tone === "warning"
-                ? "border-status-warning-bg bg-status-warning-bg text-status-warning-text"
-                : "border-status-danger-bg bg-status-danger-bg text-status-danger-text"
-          }`}
-        >
-          {notice.tone === "success" ? (
-            <CircleCheck className="size-4" />
-          ) : (
-            <CircleAlert className="size-4" />
-          )}
-          {notice.message}
-        </div>
-      ) : null}
-
-      <div className="mt-4 grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_480px] 2xl:grid-cols-[minmax(0,1fr)_520px] pb-6">
-        {/* Left main area */}
-        <div className="min-w-0">
           <ProductSearchPanel
             isLoading={isSearching}
             onAddProduct={(product) => {
@@ -416,7 +407,7 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
 
         {/* Right sidebar cart */}
         <div className="w-full min-w-0 flex flex-col rounded-2xl bg-neutral-surface shadow-sm border border-neutral-border overflow-hidden xl:sticky xl:top-4">
-          <div className="min-h-[280px] max-h-[52vh] overflow-y-auto p-4 sm:p-5">
+          <div className="min-h-[380px] max-h-[64vh] xl:max-h-[calc(100vh-260px)] overflow-y-auto p-4 sm:p-5">
             <CartTable
               lines={lines}
               onQuantityChange={changeQuantity}

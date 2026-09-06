@@ -21,7 +21,7 @@ export function CartTable(props: Props) {
         <span className="text-xs font-semibold text-neutral-muted">{props.lines.length} line{props.lines.length === 1 ? "" : "s"}</span>
       </div>
 
-      <div className="px-1 flex flex-col gap-3">
+      <div className="px-1 flex flex-col gap-2">
         {props.lines.map((line) => (
           <CartLine 
             key={line.id} 

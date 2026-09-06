@@ -121,7 +121,7 @@ export function PosSummaryPanel({
         type="button"
         id="take-payment-btn"
       >
-        Take payment →
+        Take payment
       </button>
 
       {/* Quiet secondary action */}
