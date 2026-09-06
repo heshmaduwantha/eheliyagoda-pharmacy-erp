@@ -108,17 +108,17 @@ const grnPrintTemplate = `
     table.items-table th.sub-th {
       background-color: #D9D9D9;
       color: #000000;
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 800;
       text-transform: uppercase;
-      padding: 8px 6px;
+      padding: 8px 4px;
       border: 1px solid #000000;
       text-align: center;
       vertical-align: middle;
     }
 
     table.items-table td {
-      padding: 8px 8px;
+      padding: 8px 6px;
       border: 1px solid #000000;
       font-size: 11px;
       color: #000000;
@@ -202,16 +202,17 @@ const grnPrintTemplate = `
     <table class="items-table">
       <thead>
         <tr>
-          <th colspan="7" class="table-banner">RECEIVED ITEMS</th>
+          <th colspan="8" class="table-banner">RECEIVED ITEMS</th>
         </tr>
         <tr>
-          <th class="sub-th" style="width: 10%;">ITEM</th>
-          <th class="sub-th" style="width: 30%;">DESCRIPTION</th>
-          <th class="sub-th" style="width: 14%;">UNIT OF MEASURE</th>
-          <th class="sub-th" style="width: 12%;">QUANTITY ORDERED</th>
-          <th class="sub-th" style="width: 12%;">QUANTITY RECEIVED</th>
-          <th class="sub-th" style="width: 11%;">UNIT PRICE</th>
-          <th class="sub-th" style="width: 11%;">TOTAL PRICE</th>
+          <th class="sub-th" style="width: 8%;">ITEM</th>
+          <th class="sub-th" style="width: 24%;">DESCRIPTION</th>
+          <th class="sub-th" style="width: 13%;">EXPIRY DATE</th>
+          <th class="sub-th" style="width: 13%;">UNIT OF MEASURE</th>
+          <th class="sub-th" style="width: 11%;">QUANTITY ORDERED</th>
+          <th class="sub-th" style="width: 11%;">QUANTITY RECEIVED</th>
+          <th class="sub-th" style="width: 10%;">UNIT PRICE</th>
+          <th class="sub-th" style="width: 10%;">TOTAL PRICE</th>
         </tr>
       </thead>
       <tbody>
@@ -222,6 +223,7 @@ const grnPrintTemplate = `
             <strong>{{productName}}</strong>
             {{#if genericName}}<div style="font-size: 10px; color: #555;">{{genericName}}</div>{{/if}}
           </td>
+          <td class="text-center font-bold">{{#if isFilled}}{{expiryDate}}{{/if}}</td>
           <td class="text-center">{{unitName}}</td>
           <td class="text-center">{{#if isFilled}}{{qtyInUnit}}{{/if}}</td>
           <td class="text-center font-bold">{{#if isFilled}}{{qtyInUnit}}{{/if}}</td>
@@ -278,6 +280,7 @@ export async function GET(
       itemNo: `Item ${index + 1}`,
       productName: line.product.name,
       genericName: line.product.genericName,
+      expiryDate: line.expiryDate ? formatDateOnly(line.expiryDate) : "—",
       unitName: line.unit.unitName,
       qtyInUnit: String(Number(line.qtyInUnit)),
       costPrice: Number(line.costPrice).toFixed(2),
@@ -292,6 +295,7 @@ export async function GET(
         itemNo: "",
         productName: "",
         genericName: "",
+        expiryDate: "",
         unitName: "",
         qtyInUnit: "",
         costPrice: "",
