@@ -50,6 +50,8 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
   const [pendingPayments, setPendingPayments] = useState<PosPaymentInput[] | null>(null);
   const [promptOpen, setPromptOpen] = useState(false);
   const [controlledDrugOpen, setControlledDrugOpen] = useState(false);
+  const [discountType, setDiscountType] = useState<"AMOUNT" | "PERCENT">("AMOUNT");
+  const [discountValue, setDiscountValue] = useState<number>(0);
   const [isSearching, startSearchTransition] = useTransition();
   const [isCompletingSale, setIsCompletingSale] = useState(false);
   const searchCacheRef = useRef(new Map<string, PosProductSearchResult[]>());
@@ -58,7 +60,15 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
     inFlight: false,
   });
 
-  const totals = useMemo(() => calculatePosTotals(lines), [lines]);
+  const calculatedDiscount = useMemo(() => {
+    const subtotal = lines.reduce((sum, line) => sum + line.lineTotal, 0);
+    if (discountType === "PERCENT") {
+      return Math.min(subtotal, Math.round(((subtotal * Math.max(0, discountValue)) / 100) * 100) / 100);
+    }
+    return Math.min(subtotal, Math.max(0, discountValue));
+  }, [lines, discountType, discountValue]);
+
+  const totals = useMemo(() => calculatePosTotals(lines, calculatedDiscount), [lines, calculatedDiscount]);
   const canCheckout = useMemo(
     () => lines.length > 0 && lines.every((line) => line.quantity > 0 && canCartLineFulfilSelectedBatch(line)),
     [lines],
@@ -212,6 +222,8 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
 
   const clearCart = (preserveReceipt = false) => {
     setLines([]);
+    setDiscountValue(0);
+    setDiscountType("AMOUNT");
     if (!preserveReceipt) {
       setNotice(null);
       setReceipt(null);
@@ -414,6 +426,12 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
           <div className="border-t border-neutral-border p-5">
             <PosSummaryPanel
               {...totals}
+              discountType={discountType}
+              discountValue={discountValue}
+              onDiscountChange={(type, val) => {
+                setDiscountType(type);
+                setDiscountValue(val);
+              }}
               hasLines={lines.length > 0}
               canCheckout={canCheckout}
               onClear={clearCart}
