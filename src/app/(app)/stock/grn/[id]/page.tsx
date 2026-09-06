@@ -55,9 +55,8 @@ export default async function GrnDetailPage({ params }: { params: Promise<{ id: 
       </section>
 
       <section className="overflow-hidden rounded-xl border border-neutral-border bg-neutral-surface shadow-sm">
-        <div className="border-b border-neutral-border bg-neutral-bg px-5 py-4 flex items-center justify-between">
+        <div className="border-b border-neutral-border bg-neutral-bg px-5 py-4">
           <h2 className="text-sm font-black uppercase tracking-[.18em] text-brand-default">Lines ({grn.lines.length})</h2>
-          <PrintGrnNoteButton grnId={grn.id} label="Print GRN Note" variant="secondary" />
         </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[820px] text-left text-sm text-neutral-muted">
