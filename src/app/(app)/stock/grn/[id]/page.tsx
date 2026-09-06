@@ -9,6 +9,7 @@ import { getGrn } from "@/modules/procurement/grn.service";
 import { ConfirmGrnButton } from "@/modules/procurement/confirm-grn-button";
 import { VoidGrnButton } from "@/modules/procurement/void-grn-button";
 import { PrintGrnLabelsButton } from "@/components/inventory/PrintGrnLabelsButton";
+import { PrintGrnNoteButton } from "@/components/inventory/PrintGrnNoteButton";
 
 const statusStyle: Record<string, string> = {
   DRAFT: "bg-status-warning-bg text-status-warning-text",
@@ -30,6 +31,7 @@ export default async function GrnDetailPage({ params }: { params: Promise<{ id: 
             <Link className="inline-flex items-center gap-2 rounded-xl border border-neutral-border bg-neutral-surface px-4 py-2 text-sm font-semibold text-neutral-muted hover:bg-neutral-bg" href="/stock/grn">
               <ArrowLeft className="size-4" /> Back
             </Link>
+            <PrintGrnNoteButton grnId={grn.id} label="Print GRN Note" variant="outline" />
             {grn.status === "DRAFT" && (
               <Link className="inline-flex items-center gap-2 rounded-xl bg-brand-default px-4 py-2 text-sm font-semibold text-white hover:bg-brand-hover" href={`/stock/grn/${grn.id}/edit`}>
                 Edit draft
@@ -56,7 +58,10 @@ export default async function GrnDetailPage({ params }: { params: Promise<{ id: 
       <section className="overflow-hidden rounded-xl border border-neutral-border bg-neutral-surface shadow-sm">
         <div className="border-b border-neutral-border bg-neutral-bg px-5 py-4 flex items-center justify-between">
           <h2 className="text-sm font-black uppercase tracking-[.18em] text-brand-default">Lines ({grn.lines.length})</h2>
-          <PrintGrnLabelsButton grnId={grn.id} label="Print GRN Batch Label" variant="secondary" />
+          <div className="flex items-center gap-2">
+            <PrintGrnNoteButton grnId={grn.id} label="Print GRN Note" variant="secondary" />
+            <PrintGrnLabelsButton grnId={grn.id} label="Print Batch Sticker Label" variant="secondary" />
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[820px] text-left text-sm text-neutral-muted">

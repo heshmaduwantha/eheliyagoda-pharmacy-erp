@@ -5,6 +5,7 @@ import { formatDateOnly } from "@/lib/date-format";
 import { requirePermission } from "@/modules/auth/permissions";
 import { listGrns } from "@/modules/procurement/grn.service";
 import { Pagination } from "@/components/ui/pagination";
+import { PrintGrnNoteButton } from "@/components/inventory/PrintGrnNoteButton";
 
 const statusConfig: Record<string, { label: string; cls: string }> = {
   DRAFT: { label: "Draft", cls: "bg-status-warning-bg text-status-warning-text" },
@@ -89,7 +90,8 @@ export default async function GrnListPage({ searchParams }: { searchParams: Prom
                       </td>
                       <td className="px-5 py-3.5 text-right font-bold text-neutral-text">{formatMoney(grn.invoiceTotal)}</td>
                       <td className="px-5 py-3.5 text-right">
-                        <div className="flex justify-end gap-2">
+                        <div className="flex items-center justify-end gap-2">
+                          <PrintGrnNoteButton grnId={grn.id} variant="icon" />
                           <Link className="rounded-lg border border-neutral-border bg-neutral-surface px-3 py-2 text-sm font-semibold text-neutral-text hover:bg-neutral-bg" href={`/stock/grn/${grn.id}`}>
                             View
                           </Link>
