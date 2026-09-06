@@ -14,14 +14,14 @@ type Props = {
 
 export function ProductSearchPanel({ products, query, onAddProduct, isLoading = false }: Props) {
   return (
-    <section className="flex flex-col gap-6">
+    <section className="flex flex-col gap-4">
       {/* Header Text */}
       <p className="text-sm font-semibold text-neutral-muted">
         {isLoading ? "Searching…" : query.trim() ? "Search results" : "Fast selling available items"}
       </p>
 
       {/* Product tile grid */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-2">
         {products.slice(0, 18).map((product) => {
           const unit = product.units.find((u) => u.id === product.defaultSaleUnitId) ?? product.units[0];
           const stockStatus = !product.hasActiveStock
@@ -32,7 +32,7 @@ export function ProductSearchPanel({ products, query, onAddProduct, isLoading = 
 
           return (
             <div
-              className={`relative flex flex-col rounded-2xl bg-neutral-surface p-4 text-left shadow-[0_2px_12px_rgba(15,23,42,0.03)] border border-transparent transition-all ${
+              className={`relative flex flex-col rounded-2xl bg-neutral-surface p-5 text-left shadow-sm border border-neutral-border transition-all ${
                 isAvailable
                   ? "cursor-pointer hover:border-brand-default/40 hover:shadow-md active:scale-[0.99]"
                   : "opacity-75"
@@ -43,7 +43,7 @@ export function ProductSearchPanel({ products, query, onAddProduct, isLoading = 
               }}
             >
               {/* Name */}
-              <p className="line-clamp-2 text-sm font-black leading-snug text-neutral-text">
+              <p className="line-clamp-2 text-base font-bold leading-snug text-neutral-text">
                 {product.name}
               </p>
               {product.genericName && (
@@ -86,10 +86,11 @@ export function ProductSearchPanel({ products, query, onAddProduct, isLoading = 
                     if (isAvailable) onAddProduct(product);
                   }}
                   disabled={!isAvailable}
-                  className="grid size-8 shrink-0 place-items-center rounded-lg bg-brand-default text-white transition hover:bg-brand-hover disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                  aria-label={`Add ${product.name} to cart`}
+                  className="flex h-10 shrink-0 items-center justify-center gap-1.5 px-3 rounded-xl bg-brand-default text-white transition hover:bg-brand-hover disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
                   type="button"
                 >
-                  <Plus className="size-5" />
+                  <Plus className="size-4" /><span className="text-sm font-bold">Add</span>
                 </button>
               </div>
             </div>

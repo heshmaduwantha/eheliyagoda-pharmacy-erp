@@ -1,12 +1,9 @@
 "use client";
 
-import { useDeferredValue, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { CircleAlert, CircleCheck, Search } from "lucide-react";
 import { completeSaleAction } from "@/modules/sales/sale.actions";
-import {
-  getPosBatchPreviewAction,
-  lookupProductByBarcodeAction,
-} from "@/modules/sales/pos.actions";
+import { lookupProductByBarcodeAction } from "@/modules/sales/pos.actions";
 import type { PrescriptionDecisionInput } from "@/modules/prescriptions/prescription.types";
 import type {
   PosCartLine,
@@ -42,6 +39,7 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
   const deferredQuery = useDeferredValue(query);
   const [products, setProducts] = useState(initialProducts);
   const [lines, setLines] = useState<PosCartLine[]>([]);
+  const [lastAddedLineId, setLastAddedLineId] = useState<string | null>(null);
   const [selectedLine, setSelectedLine] = useState<PosCartLine | null>(null);
   const [paymentMode, setPaymentMode] = useState<PosPaymentMode>("split");
   const [paymentOpen, setPaymentOpen] = useState(false);
@@ -126,16 +124,13 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
     };
   }, [deferredQuery, initialProducts]);
 
-  const refreshBatchPreview = async (line: PosCartLine) => {
-    const preview = await getPosBatchPreviewAction(line.productId, line.unitId, String(line.quantity));
-    setLines((current) =>
-      current.map((item) =>
-        item.id === line.id && item.quantity === line.quantity
-          ? applyCartLineBatchPreview(item, preview ?? undefined)
-          : item,
-      ),
-    );
-  };
+  const receiveBatchPreview = useCallback((lineId: string, quantity: number, preview: PosCartLine["batchPreview"]) => {
+    setLines((current) => current.map((line) =>
+      line.id === lineId && line.quantity === quantity
+        ? applyCartLineBatchPreview(line, preview)
+        : line,
+    ));
+  }, []);
 
   const addProduct = async (product: PosProductSearchResult, selectedUnit?: PosUnitOption | null) => {
     if (product.units.length === 0) {
@@ -148,8 +143,7 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
       targetUnit = product.units.find((item) => item.id === product.defaultSaleUnitId) ?? product.units[0];
     }
     const targetUnitId = targetUnit?.id;
-
-    let updatedLine: PosCartLine | null = null;
+    setLastAddedLineId(`${product.id}-${targetUnitId}`);
 
     setLines((current) => {
       const existingIndex = current.findIndex(
@@ -158,7 +152,6 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
       if (existingIndex >= 0) {
         const existing = current[existingIndex];
         const nextLine = updateCartLineQuantity(existing, existing.quantity + 1);
-        updatedLine = nextLine;
         const nextLines = [...current];
         nextLines[existingIndex] = nextLine;
         return nextLines;
@@ -167,15 +160,11 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
         if (targetUnit && targetUnit.id !== newLine.unitId) {
           newLine = updateCartLineUnit(newLine, targetUnit);
         }
-        updatedLine = newLine;
         return [...current, newLine];
       }
     });
 
     setNotice({ tone: "success", message: `${product.name} added to the cart.` });
-    if (updatedLine) {
-      await refreshBatchPreview(updatedLine);
-    }
   };
 
   const changeQuantity = (lineId: string, quantity: number) => {
@@ -184,26 +173,20 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
       return;
     }
 
-    let updatedLine: PosCartLine | null = null;
     setLines((current) => {
       const line = current.find((item) => item.id === lineId);
       if (!line) return current;
       const nextLine = updateCartLineQuantity(line, quantity);
-      updatedLine = nextLine;
       return current.map((item) => (item.id === lineId ? nextLine : item));
     });
-
-    if (updatedLine) {
-      void refreshBatchPreview(updatedLine);
-    }
   };
 
   const changeUnit = (lineId: string, unit: PosUnitOption) => {
     const line = lines.find((item) => item.id === lineId);
     if (!line) return;
     const nextLine = updateCartLineUnit(line, unit);
+    setLastAddedLineId((current) => current === lineId ? nextLine.id : current);
     setLines((current) => current.map((item) => (item.id === lineId ? nextLine : item)));
-    void refreshBatchPreview(nextLine);
   };
 
   const changeBatch = (lineId: string, batchId: string) => {
@@ -334,48 +317,67 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
   }
 
   return (
-    <div className="flex flex-col lg:h-[calc(100vh-170px)] lg:overflow-hidden">
+    <div className="flex flex-col gap-2">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between shrink-0 mb-1">
         <div>
           <h1 className="text-2xl font-black tracking-tight text-neutral-text sm:text-3xl">
             Point of Sale
           </h1>
         </div>
-        <div className="w-full sm:w-auto sm:min-w-[320px] max-w-md">
-          <label className="flex items-center gap-2 rounded-xl bg-neutral-surface px-3 py-1 shadow-xs border border-neutral-border focus-within:border-neutral-400 focus-within:bg-white transition-all">
+        <div className="w-full sm:w-[55%] sm:max-w-2xl">
+          <label className="flex items-center gap-3 rounded-2xl bg-neutral-surface px-4 py-2 shadow-sm border border-neutral-border focus-within:border-brand-default focus-within:ring-4 focus-within:ring-brand-default/10 transition-all">
             <Search className="size-4 shrink-0 text-neutral-muted" />
             <input
-              className="min-w-0 flex-1 bg-transparent py-1.5 text-xs sm:text-sm outline-none text-neutral-text placeholder:text-neutral-muted"
+              className="min-w-0 flex-1 bg-transparent py-2 text-base outline-none text-neutral-text placeholder:text-neutral-muted"
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={async (e) => {
+                if ((e.key === "ArrowUp" || e.key === "ArrowDown") && !query.trim()
+                  && !e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey
+                  && !e.nativeEvent.isComposing && !paymentOpen && !promptOpen
+                  && !controlledDrugOpen && !selectedLine && !isCompletingSale && !receipt) {
+                  if (!lines.some((line) => line.id === lastAddedLineId)) return;
+                  e.preventDefault();
+                  const delta = e.key === "ArrowUp" ? 1 : -1;
+                  setLines((current) => current.map((line) => line.id === lastAddedLineId
+                    ? updateCartLineQuantity(line, Math.max(1, line.quantity + delta))
+                    : line));
+                  return;
+                }
                 if (e.key === "Enter" && query.trim()) {
                   e.preventDefault();
                   const trimmed = query.trim();
-                  const exactMatch =
-                    products.find(
-                      (p) => p.primaryBarcode?.toLowerCase() === trimmed.toLowerCase(),
-                    ) ?? products[0];
-
-                  if (exactMatch && exactMatch.hasActiveStock) {
-                    await addProduct(exactMatch);
-                    setQuery("");
-                  } else {
-                    try {
-                      const barcodeResult = await lookupProductByBarcodeAction(trimmed);
-                      if (barcodeResult && barcodeResult.product) {
-                        await addProduct(barcodeResult.product, barcodeResult.matchedUnit);
+                  try {
+                    // Resolve scans against the barcode table before using name results.
+                    // Search results may still belong to the previous debounced query.
+                    const barcodeResult = await lookupProductByBarcodeAction(trimmed);
+                    if (barcodeResult) {
+                      await addProduct(barcodeResult.product, barcodeResult.matchedUnit);
+                      setQuery("");
+                    } else {
+                      const nameMatch = products.find((product) => product.name.toLowerCase() === trimmed.toLowerCase());
+                      if (nameMatch) {
+                        await addProduct(nameMatch);
                         setQuery("");
+                      } else {
+                        setNotice({ tone: "warning", message: "No matching barcode. Select a medicine from the search results." });
                       }
-                    } catch {
-                      // ignore error
                     }
+                  } catch {
+                    setNotice({ tone: "error", message: "Barcode lookup failed. Please try again." });
                   }
                 }
               }}
-              placeholder="Scan barcode, or search by name..."
+              aria-label="Search medicines or scan barcode"
+              placeholder="Search medicine or scan barcode…"
+              aria-describedby="pos-quantity-shortcut"
               value={query}
             />
           </label>
+          <p id="pos-quantity-shortcut" className="mt-1 text-xs text-neutral-muted">
+            {lines.some((line) => line.id === lastAddedLineId)
+              ? `↑ / ↓ changes quantity of ${lines.find((line) => line.id === lastAddedLineId)?.productName} when search is empty.`
+              : "After adding an item, use ↑ / ↓ here to adjust its quantity."}
+          </p>
         </div>
       </div>
 
@@ -398,9 +400,9 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
         </div>
       ) : null}
 
-      <div className="mt-4 flex flex-col lg:flex-row flex-1 items-stretch gap-6 relative lg:overflow-hidden pb-4">
+      <div className="mt-4 grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_480px] 2xl:grid-cols-[minmax(0,1fr)_520px] pb-6">
         {/* Left main area */}
-        <div className="flex-1 min-w-0 lg:overflow-y-auto lg:pr-2">
+        <div className="min-w-0">
           <ProductSearchPanel
             isLoading={isSearching}
             onAddProduct={(product) => {
@@ -413,17 +415,18 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
         </div>
 
         {/* Right sidebar cart */}
-        <div className="w-full lg:w-[340px] flex-shrink-0 xl:w-[400px] flex flex-col rounded-2xl bg-neutral-surface shadow-[0_2px_12px_rgba(15,23,42,0.03)] border border-neutral-border/60 overflow-hidden">
-          <div className="flex-1 overflow-hidden p-4">
+        <div className="w-full min-w-0 flex flex-col rounded-2xl bg-neutral-surface shadow-sm border border-neutral-border overflow-hidden xl:sticky xl:top-4">
+          <div className="min-h-[280px] max-h-[52vh] overflow-y-auto p-4 sm:p-5">
             <CartTable
               lines={lines}
               onQuantityChange={changeQuantity}
               onRemove={(lineId) => setLines((current) => current.filter((line) => line.id !== lineId))}
               onSelectUnit={setSelectedLine}
               onChangeBatch={changeBatch}
+              onBatchPreview={receiveBatchPreview}
             />
           </div>
-          <div className="border-t border-neutral-border p-5">
+          <div className="shrink-0 border-t border-neutral-border bg-neutral-bg/40 p-5">
             <PosSummaryPanel
               {...totals}
               discountType={discountType}

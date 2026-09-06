@@ -87,6 +87,7 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
                     <th className="px-5 py-3.5 font-extrabold">Sold in &amp; unit pricing</th>
                     <th className="px-5 py-3.5 font-extrabold">Barcode</th>
                     <th className="px-5 py-3.5 text-right font-extrabold">Selling Price</th>
+                    <th className="px-5 py-3.5 font-extrabold">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -130,12 +131,13 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
                         ) : <span className="text-neutral-muted">—</span>}
                       </td>
                       <td className="px-5 py-3.5 font-mono text-xs text-neutral-muted">
-                        {product.barcodes.length > 0 ? product.barcodes[0].barcode : "—"}
+                        {product.barcodes.find((barcode) => barcode.isPrimary)?.barcode ?? "—"}
                       </td>
                       <td className="px-5 py-3.5 text-right font-bold text-neutral-text">
                         {product.defaultSellingPrice ? formatMoney(product.defaultSellingPrice) : "—"}
                         <span className="ml-1 text-xs font-normal text-neutral-muted">/{product.baseUnitName}</span>
                       </td>
+                      <td className="px-5 py-3.5"><Link href={`/products/${product.id}/edit`} className="font-bold text-brand-default hover:underline" aria-label={`Edit ${product.name}`}>Edit</Link></td>
                     </tr>
                   ))}
                 </tbody>

@@ -6,6 +6,7 @@ import {
   canCartLineFulfilSelectedBatch,
   updateCartLineBatch,
   updateCartLineQuantity,
+  updateCartLineUnit,
 } from "./pos.utils";
 
 const preview: PosBatchPreview = {
@@ -91,3 +92,18 @@ test("quantity changes preserve selected batch pricing and selected-batch stock 
   assert.equal(canCartLineFulfilSelectedBatch(selectedA1), false);
 }
 );
+
+test("quantity changes invalidate preview and block checkout until refreshed", () => {
+  const pending = updateCartLineQuantity(line, 3);
+  assert.equal(pending.batchPreview, undefined);
+  assert.equal(canCartLineFulfilSelectedBatch(pending), false);
+  assert.equal(canCartLineFulfilSelectedBatch(applyCartLineBatchPreview(pending, preview)), true);
+  assert.equal(updateCartLineQuantity(line, line.quantity), line);
+  assert.equal(updateCartLineUnit(line, { id: line.unitId } as Parameters<typeof updateCartLineUnit>[1]), line);
+});
+
+test("automatic batch preview refresh uses the displayed batch price", () => {
+  const refreshed = applyCartLineBatchPreview({ ...line, unitPrice: 99 }, preview);
+  assert.equal(refreshed.unitPrice, Number(preview.candidates[0].sellingPrice));
+  assert.equal(refreshed.selectedBatchId, undefined);
+});

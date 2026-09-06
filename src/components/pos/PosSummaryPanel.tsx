@@ -35,7 +35,7 @@ export function PosSummaryPanel({
 }: Props) {
   return (
     <div className="flex flex-col">
-      <div className="mb-4 grid gap-2 text-xs">
+      <div className="mb-4 grid gap-3 text-sm">
         <div className="flex justify-between text-neutral-muted font-medium">
           <span>Subtotal</span>
           <span>{formatLkr(subtotal)}</span>
@@ -74,6 +74,7 @@ export function PosSummaryPanel({
           </div>
           <div className="relative flex items-center">
             <input
+              aria-label="Discount amount"
               type="number"
               min="0"
               step={discountType === "PERCENT" ? "1" : "1"}
@@ -84,7 +85,7 @@ export function PosSummaryPanel({
                 onDiscountChange(discountType, val);
               }}
               disabled={!hasLines}
-              className="w-full rounded-lg border border-neutral-border bg-neutral-surface px-3 py-1.5 text-xs font-semibold text-neutral-text placeholder:text-neutral-muted/60 focus:border-brand-default focus:outline-none disabled:opacity-50"
+              className="w-full rounded-lg border border-neutral-border bg-neutral-surface px-3 py-2.5 text-sm font-semibold text-neutral-text placeholder:text-neutral-muted/60 focus:border-brand-default focus:outline-none disabled:opacity-50"
             />
             {discountType === "PERCENT" && discountValue > 0 && (
               <span className="absolute right-2.5 text-[11px] font-bold text-emerald-600">
@@ -108,7 +109,7 @@ export function PosSummaryPanel({
         )}
         <div className="mt-1 flex items-end justify-between border-t border-neutral-border/60 pt-2">
           <span className="text-[15px] font-black text-neutral-text">Total to pay</span>
-          <strong className="text-xl font-black text-brand-default">{formatLkr(total)}</strong>
+          <strong className="text-2xl font-black tabular-nums text-brand-default">{formatLkr(total)}</strong>
         </div>
       </div>
 

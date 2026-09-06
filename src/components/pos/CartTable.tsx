@@ -9,6 +9,7 @@ type Props = {
   onQuantityChange: (lineId: string, quantity: number) => void;
   onSelectUnit: (line: PosCartLine) => void;
   onRemove: (lineId: string) => void;
+  onBatchPreview: (lineId: string, quantity: number, preview: PosCartLine["batchPreview"]) => void;
   onChangeBatch: (lineId: string, batchId: string) => void;
 };
 
@@ -16,11 +17,11 @@ export function CartTable(props: Props) {
   return (
     <div className="flex flex-col h-full">
       <div className="mb-4 flex items-center justify-between px-1">
-        <h2 className="font-black text-neutral-text">Current cart</h2>
+        <h2 className="font-black text-neutral-text">Current bill</h2>
         <span className="text-xs font-semibold text-neutral-muted">{props.lines.length} line{props.lines.length === 1 ? "" : "s"}</span>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-1 flex flex-col gap-3">
+      <div className="px-1 flex flex-col gap-3">
         {props.lines.map((line) => (
           <CartLine 
             key={line.id} 
@@ -29,6 +30,7 @@ export function CartTable(props: Props) {
             onRemove={props.onRemove} 
             onSelectUnit={props.onSelectUnit} 
             onChangeBatch={props.onChangeBatch}
+            onBatchPreview={props.onBatchPreview}
           />
         ))}
         {props.lines.length === 0 && (

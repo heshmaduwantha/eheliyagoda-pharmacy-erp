@@ -4,6 +4,8 @@ import { formatLkr } from "@/modules/sales/pos.utils";
 
 type Props = {
   batch?: PosBatchPreview;
+  error?: boolean;
+  onRetry?: () => void;
   selectedBatchId?: string;
   onChange?: (batchId: string) => void;
 };
@@ -25,8 +27,9 @@ function isExpired(expiryDate: string | null) {
   return expiry < now;
 }
 
-export function BatchPreviewCard({ batch, selectedBatchId, onChange }: Props) {
-  if (!batch) return <div className="rounded-lg border border-dashed border-neutral-border bg-neutral-bg px-3 py-2 text-xs text-neutral-muted">No active batch preview available</div>;
+export function BatchPreviewCard({ batch, selectedBatchId, onChange, error, onRetry }: Props) {
+  if (error) return <div role="alert" className="rounded-lg border border-status-warning-bg bg-status-warning-bg px-3 py-2 text-xs text-status-warning-text">Could not load batch details. <button type="button" onClick={onRetry} className="font-bold underline">Retry</button></div>;
+  if (!batch) return <div className="rounded-lg border border-dashed border-neutral-border bg-neutral-bg px-3 py-2 text-xs text-neutral-muted">Loading batch details…</div>;
   
   if (batch.candidates.length === 0) return <div className="rounded-lg border border-status-warning-bg bg-status-warning-bg px-3 py-2 text-xs text-status-warning-text">No sellable active stock. Preview only; no stock is reserved.</div>;
 
@@ -39,7 +42,7 @@ export function BatchPreviewCard({ batch, selectedBatchId, onChange }: Props) {
   const canFulfilCandidate = Number(candidate.availableQtyBase) >= Number(batch.requestedQtyBase);
 
   return (
-    <div className={`flex flex-col gap-2 rounded-xl border p-2.5 text-[11px] ${canFulfilCandidate ? "border-brand-default/20 bg-brand-pale/60" : "border-status-warning-bg bg-status-warning-bg"}`}>
+    <div className={`flex flex-col gap-2 rounded-xl border p-3 text-xs ${canFulfilCandidate ? "border-brand-default/20 bg-brand-pale/60" : "border-status-warning-bg bg-status-warning-bg"}`}>
       {batch.candidates.length > 1 ? (
         <select 
           className="w-full rounded-md border border-brand-default/20 bg-white pl-2 pr-8 py-1.5 text-xs text-neutral-text outline-none focus:border-brand-default focus:ring-1 focus:ring-brand-default text-ellipsis overflow-hidden"
@@ -58,9 +61,9 @@ export function BatchPreviewCard({ batch, selectedBatchId, onChange }: Props) {
         <div className="flex justify-between items-start gap-2">
           <span className="flex items-center gap-1.5 text-neutral-muted">
             <PackageCheck className="size-3.5 text-brand-default shrink-0" />
-            <span className="truncate">{candidate.batchNumber ?? "No batch number"}</span>
+            <span className="break-all">{candidate.batchNumber ?? "No batch number"}</span>
           </span>
-          <span className="text-right font-semibold text-neutral-text shrink-0">
+          <span className="text-right font-semibold text-neutral-text">
             {batch.unitName} MRP {candidate.mrp ? formatLkr(Number(candidate.mrp)) : "—"}
           </span>
         </div>
@@ -77,7 +80,7 @@ export function BatchPreviewCard({ batch, selectedBatchId, onChange }: Props) {
       </div>
       
       {!selectedBatchId && (
-        <span className="text-neutral-muted">Oldest batch auto-selected · {batch.canFulfil ? "stock available" : "insufficient stock"}</span>
+        <span className="text-neutral-muted">Earliest expiry selected · {batch.canFulfil ? "stock available" : "insufficient stock"}</span>
       )}
       {selectedBatchId && !canFulfilCandidate && (
         <span className="text-status-danger-text font-semibold">Insufficient quantity in selected batch.</span>

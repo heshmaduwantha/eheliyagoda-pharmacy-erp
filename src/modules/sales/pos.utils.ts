@@ -31,10 +31,12 @@ export function createCartLine(product: PosProductSearchResult): PosCartLine {
 
 export function updateCartLineQuantity(line: PosCartLine, quantity: number): PosCartLine {
   const safeQuantity = Math.max(0, Math.floor(Number.isFinite(quantity) ? quantity : 1));
-  return { ...line, quantity: safeQuantity, lineTotal: calculateLineTotal(safeQuantity, line.unitPrice) };
+  if (safeQuantity === line.quantity) return line;
+  return { ...line, batchPreview: undefined, quantity: safeQuantity, lineTotal: calculateLineTotal(safeQuantity, line.unitPrice) };
 }
 
 export function updateCartLineUnit(line: PosCartLine, unit: PosUnitOption): PosCartLine {
+  if (unit.id === line.unitId) return line;
   const unitPrice = Number(unit.sellingPrice ?? 0);
   return { ...line, id: `${line.productId}-${unit.id}`, unitId: unit.id, unitLabel: unit.unitName, unitPrice, lineTotal: calculateLineTotal(line.quantity, unitPrice), batchPreview: undefined, selectedBatchId: undefined };
 }
@@ -49,9 +51,10 @@ export function updateCartLineBatch(line: PosCartLine, batchId: string): PosCart
 export function applyCartLineBatchPreview(line: PosCartLine, batchPreview: PosCartLine["batchPreview"]): PosCartLine {
   if (!batchPreview) return { ...line, batchPreview: undefined };
   const selectedBatchId = line.selectedBatchId;
-  const selectedBatch = selectedBatchId
+  const matchingBatch = selectedBatchId
     ? batchPreview.candidates.find((batch) => batch.id === selectedBatchId)
     : undefined;
+  const selectedBatch = matchingBatch ?? batchPreview.candidates[0];
   if (!selectedBatch) {
     return { ...line, batchPreview };
   }
@@ -59,6 +62,7 @@ export function applyCartLineBatchPreview(line: PosCartLine, batchPreview: PosCa
   return {
     ...line,
     batchPreview,
+    selectedBatchId: matchingBatch?.id,
     unitPrice,
     lineTotal: calculateLineTotal(line.quantity, unitPrice),
   };
@@ -66,7 +70,7 @@ export function applyCartLineBatchPreview(line: PosCartLine, batchPreview: PosCa
 
 export function canCartLineFulfilSelectedBatch(line: PosCartLine) {
   const preview = line.batchPreview;
-  if (!preview) return true;
+  if (!preview) return false;
   if (preview.candidates.length === 0) return false;
   const candidate = preview.candidates.find((batch) => batch.id === line.selectedBatchId)
     ?? preview.candidates[0];
