@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AlertOctagon, RotateCcw, ShieldAlert } from "lucide-react";
 import type { ExpiryAlertRecord, ExpiryAlertState } from "@/modules/inventory/inventory.types";
 import { formatInventoryDate, formatInventoryQty } from "@/modules/inventory/inventory.utils";
 import { SupplierReturnModal } from "./SupplierReturnModal";
 import { depriveExpiredBatchesAction } from "@/modules/inventory/inventory.actions";
+import { TablePagination } from "@/components/common/TablePagination";
 
 const statusStyle: Record<ExpiryAlertState, { badge: string; label: string }> = {
   EXPIRED: { badge: "bg-status-danger-bg text-status-danger-text border border-red-200", label: "Expired" },
@@ -17,6 +18,20 @@ export function ExpiryAlertTable({ rows }: { rows: ExpiryAlertRecord[] }) {
   const [returnTarget, setReturnTarget] = useState<ExpiryAlertRecord | null>(null);
   const [isDepriving, setIsDepriving] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [rows]);
+
+  const totalRows = rows.length;
+  const totalPages = Math.max(1, Math.ceil(totalRows / pageSize));
+  const validPage = Math.min(currentPage, totalPages);
+
+  const startIndex = (validPage - 1) * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, totalRows);
+  const displayedAlerts = rows.slice(startIndex, endIndex);
 
   const hasExpiredBatches = rows.some((row) => row.alertState === "EXPIRED" && Number(row.qty) > 0);
 
@@ -82,7 +97,7 @@ export function ExpiryAlertTable({ rows }: { rows: ExpiryAlertRecord[] }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {rows.map((alert) => {
+              {displayedAlerts.map((alert) => {
                 const statusInfo = statusStyle[alert.alertState] ?? statusStyle.NEAR_EXPIRY;
                 const canReturn = Number(alert.qty) > 0;
 
@@ -133,7 +148,7 @@ export function ExpiryAlertTable({ rows }: { rows: ExpiryAlertRecord[] }) {
                   </tr>
                 );
               })}
-              {rows.length === 0 && (
+              {totalRows === 0 && (
                 <tr>
                   <td className="px-5 py-16 text-center text-neutral-muted" colSpan={8}>
                     No expiry alerts or near-expiry batches found.
@@ -143,6 +158,17 @@ export function ExpiryAlertTable({ rows }: { rows: ExpiryAlertRecord[] }) {
             </tbody>
           </table>
         </div>
+
+        <TablePagination
+          currentPage={validPage}
+          totalItems={totalRows}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={(size) => {
+            setPageSize(size);
+            setCurrentPage(1);
+          }}
+        />
       </section>
 
       {returnTarget ? (

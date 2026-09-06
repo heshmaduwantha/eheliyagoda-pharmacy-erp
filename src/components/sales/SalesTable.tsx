@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Eye, Printer, X } from "lucide-react";
 import { formatMoney } from "@/lib/money";
 import type { SaleVoidListItem } from "@/modules/sales/sale-void.types";
 import { SaleVoidButton } from "./SaleVoidButton";
+import { TablePagination } from "@/components/common/TablePagination";
 
 function statusBadge(status: string) {
   if (status === "COMPLETED") return { label: "Completed", cls: "bg-status-success-bg text-status-success-text border border-status-success-bg" };
@@ -14,6 +15,20 @@ function statusBadge(status: string) {
 
 export function SalesTable({ sales, canVoid }: { sales: SaleVoidListItem[]; canVoid: boolean }) {
   const [activeSale, setActiveSale] = useState<SaleVoidListItem | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [sales]);
+
+  const totalRows = sales.length;
+  const totalPages = Math.max(1, Math.ceil(totalRows / pageSize));
+  const validPage = Math.min(currentPage, totalPages);
+
+  const startIndex = (validPage - 1) * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, totalRows);
+  const displayedSales = sales.slice(startIndex, endIndex);
 
   return (
     <>
@@ -29,14 +44,14 @@ export function SalesTable({ sales, canVoid }: { sales: SaleVoidListItem[]; canV
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {sales.length === 0 ? (
+            {totalRows === 0 ? (
               <tr>
                 <td className="px-5 py-16 text-center text-neutral-muted" colSpan={5}>
                   No sales matched the current filters.
                 </td>
               </tr>
             ) : (
-              sales.map((sale) => {
+              displayedSales.map((sale) => {
                 const badge = statusBadge(sale.status);
                 return (
                   <tr className="transition hover:bg-neutral-bg bg-neutral-surface" key={sale.saleId}>
@@ -57,7 +72,7 @@ export function SalesTable({ sales, canVoid }: { sales: SaleVoidListItem[]; canV
                           <SaleVoidButton saleId={sale.saleId} saleNumber={sale.saleNumber} total={sale.total} />
                         )}
                         <button
-                          className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-border bg-neutral-surface px-3 py-1.5 text-xs font-bold text-brand-default transition hover:bg-brand-pale hover:border-brand-default"
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-border bg-neutral-surface px-3 py-1.5 text-xs font-bold text-brand-default transition hover:bg-brand-pale hover:border-brand-default cursor-pointer"
                           onClick={() => setActiveSale(sale)}
                           type="button"
                         >
@@ -73,6 +88,17 @@ export function SalesTable({ sales, canVoid }: { sales: SaleVoidListItem[]; canV
           </tbody>
         </table>
       </div>
+
+      <TablePagination
+        currentPage={validPage}
+        totalItems={totalRows}
+        pageSize={pageSize}
+        onPageChange={setCurrentPage}
+        onPageSizeChange={(size) => {
+          setPageSize(size);
+          setCurrentPage(1);
+        }}
+      />
 
       {/* Sale details modal */}
       {activeSale && (

@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { Printer, Trash2 } from "lucide-react";
 import { removeExpiredBatchAction } from "@/modules/inventory/inventory.actions";
 import type { InventoryBatchRecord, InventoryBatchStatus } from "@/modules/inventory/inventory.types";
 import { formatInventoryDate, formatInventoryMoney, formatInventoryQty } from "@/modules/inventory/inventory.utils";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { TablePagination } from "@/components/common/TablePagination";
 import { toast } from "sonner";
 
 const statusStyle: Record<InventoryBatchStatus, string> = {
@@ -21,6 +22,20 @@ export function BatchTable({ rows }: { rows: InventoryBatchRecord[] }) {
 
   const [isPending, startTransition] = useTransition();
   const [writeOffBatchId, setWriteOffBatchId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [rows]);
+
+  const totalRows = rows.length;
+  const totalPages = Math.max(1, Math.ceil(totalRows / pageSize));
+  const validPage = Math.min(currentPage, totalPages);
+
+  const startIndex = (validPage - 1) * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, totalRows);
+  const displayedBatches = rows.slice(startIndex, endIndex);
 
   const handleConfirmRemove = () => {
     if (!writeOffBatchId) return;
@@ -50,7 +65,7 @@ export function BatchTable({ rows }: { rows: InventoryBatchRecord[] }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {rows.map((batch) => {
+            {displayedBatches.map((batch) => {
               let daysLeft: number | null = null;
               if (batch.expiryDate) {
                 const expDate = new Date(batch.expiryDate);
@@ -132,7 +147,7 @@ export function BatchTable({ rows }: { rows: InventoryBatchRecord[] }) {
                 </tr>
               );
             })}
-            {rows.length === 0 && (
+            {totalRows === 0 && (
               <tr>
                 <td className="px-5 py-16 text-center text-neutral-muted" colSpan={10}>
                   No batches found.
@@ -142,6 +157,17 @@ export function BatchTable({ rows }: { rows: InventoryBatchRecord[] }) {
           </tbody>
         </table>
       </div>
+
+      <TablePagination
+        currentPage={validPage}
+        totalItems={totalRows}
+        pageSize={pageSize}
+        onPageChange={setCurrentPage}
+        onPageSizeChange={(size) => {
+          setPageSize(size);
+          setCurrentPage(1);
+        }}
+      />
 
       <ConfirmDialog
         isOpen={!!writeOffBatchId}

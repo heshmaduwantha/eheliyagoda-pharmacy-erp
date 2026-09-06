@@ -1,7 +1,26 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import { formatMoney } from "@/lib/money";
 import type { SupplierPaymentRow } from "@/modules/reports/report.types";
+import { TablePagination } from "@/components/common/TablePagination";
 
 export function SupplierPaymentTable({ payments }: { payments: SupplierPaymentRow[] }) {
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [payments]);
+
+  const totalRows = payments.length;
+  const totalPages = Math.max(1, Math.ceil(totalRows / pageSize));
+  const validPage = Math.min(currentPage, totalPages);
+
+  const startIndex = (validPage - 1) * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, totalRows);
+  const displayedPayments = payments.slice(startIndex, endIndex);
+
   return (
     <section className="overflow-hidden rounded-2xl border border-neutral-border bg-neutral-surface shadow-[0_8px_30px_rgba(15,51,58,.05)]">
       <div className="overflow-x-auto">
@@ -20,14 +39,14 @@ export function SupplierPaymentTable({ payments }: { payments: SupplierPaymentRo
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {payments.length === 0 ? (
+            {totalRows === 0 ? (
               <tr>
                 <td className="px-5 py-16 text-center text-neutral-muted" colSpan={9}>
                   No supplier payments recorded yet.
                 </td>
               </tr>
             ) : (
-              payments.map((payment) => (
+              displayedPayments.map((payment) => (
                 <tr className="hover:bg-brand-pale/30" key={payment.paymentId}>
                   <td className="px-5 py-4 font-semibold text-neutral-text">{payment.paidAt.slice(0, 10)}</td>
                   <td className="px-5 py-4 text-neutral-muted">{payment.paymentNumber}</td>
@@ -44,6 +63,17 @@ export function SupplierPaymentTable({ payments }: { payments: SupplierPaymentRo
           </tbody>
         </table>
       </div>
+
+      <TablePagination
+        currentPage={validPage}
+        totalItems={totalRows}
+        pageSize={pageSize}
+        onPageChange={setCurrentPage}
+        onPageSizeChange={(size) => {
+          setPageSize(size);
+          setCurrentPage(1);
+        }}
+      />
     </section>
   );
 }

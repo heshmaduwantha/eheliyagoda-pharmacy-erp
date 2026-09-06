@@ -7,6 +7,7 @@ import { PrescriptionValidationError } from "@/modules/prescriptions/prescriptio
 import { invalidateAlertCountsCache } from "@/modules/dashboard/dashboard.service";
 import { completeSale } from "./sale.service";
 import { SaleCompletionError } from "./sale.types";
+import { invalidatePosInitialCatalogCache } from "./pos.service";
 
 const decimalLike = z.union([z.string(), z.number()]).transform((value) => String(value));
 
@@ -68,6 +69,7 @@ export async function completeSaleAction(rawInput: unknown) {
       const input = completeSaleSchema.parse(rawInput);
       const sale = await completeSale(input, actor);
       invalidateAlertCountsCache();
+      invalidatePosInitialCatalogCache();
       return { ok: true as const, sale };
     } catch (error) {
       console.error("[completeSaleAction] error", error);

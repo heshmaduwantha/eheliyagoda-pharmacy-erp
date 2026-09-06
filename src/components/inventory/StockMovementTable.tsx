@@ -1,5 +1,9 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import type { StockMovementRecord, StockMovementType } from "@/modules/inventory/inventory.types";
 import { formatInventoryQty, formatMovementDate } from "@/modules/inventory/inventory.utils";
+import { TablePagination } from "@/components/common/TablePagination";
 
 const movementStyle: Record<StockMovementType, string> = {
   GRN_IN: "bg-status-success-bg text-status-success-text",
@@ -25,5 +29,92 @@ const directionStyle = {
 };
 
 export function StockMovementTable({ rows }: { rows: StockMovementRecord[] }) {
-  return <section className="overflow-hidden rounded-2xl border border-neutral-border bg-neutral-surface shadow-[0_8px_30px_rgba(15,51,58,.05)]"><div className="overflow-x-auto"><table className="w-full min-w-[1260px] border-collapse text-left text-sm"><thead className="bg-brand-pale text-xs uppercase tracking-wider font-extrabold text-brand-hover border-b border-brand-default/15"><tr>{["Date", "Product", "System Batch", "Supplier Lot", "Movement Type", "Direction", "Qty Base", "Created By"].map((heading) => <th className="px-5 py-3.5 font-extrabold" key={heading}>{heading}</th>)}</tr></thead><tbody className="divide-y divide-slate-100">{rows.map((movement) => { const quantity = Number(movement.qtyBase); return <tr className="hover:bg-brand-pale/30" key={movement.id}><td className="px-5 py-4 text-neutral-muted">{formatMovementDate(movement.occurredAt)}</td><td className="px-5 py-4 font-bold text-neutral-text">{movement.productName}</td><td className="px-5 py-4 font-semibold text-neutral-muted">{movement.batchNumber ?? "—"}</td><td className="px-5 py-4 font-semibold text-neutral-muted">{movement.supplierLotNumber ?? "—"}</td><td className="px-5 py-4"><span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${movementStyle[movement.movementType]}`}>{movementLabel[movement.movementType]}</span></td><td className="px-5 py-4"><span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${directionStyle[movement.direction]}`}>{movement.direction}</span></td><td className={`px-5 py-4 font-black ${quantity >= 0 ? "text-status-success-text" : "text-status-danger-text"}`}>{quantity > 0 ? "+" : ""}{formatInventoryQty(movement.qtyBase)} <span className="text-xs font-normal text-neutral-muted">{movement.baseUnit}</span></td><td className="px-5 py-4 text-neutral-muted">{movement.createdBy ?? "System"}</td></tr>; })}{rows.length === 0 && <tr><td className="px-5 py-16 text-center text-neutral-muted" colSpan={8}>No stock movements found.</td></tr>}</tbody></table></div></section>;
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [rows]);
+
+  const totalRows = rows.length;
+  const totalPages = Math.max(1, Math.ceil(totalRows / pageSize));
+  const validPage = Math.min(currentPage, totalPages);
+
+  const startIndex = (validPage - 1) * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, totalRows);
+  const displayedRows = rows.slice(startIndex, endIndex);
+
+  return (
+    <section className="overflow-hidden rounded-2xl border border-neutral-border bg-neutral-surface shadow-[0_8px_30px_rgba(15,51,58,.05)]">
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[1260px] border-collapse text-left text-sm">
+          <thead className="bg-brand-pale text-xs uppercase tracking-wider font-extrabold text-brand-hover border-b border-brand-default/15">
+            <tr>
+              {[
+                "Date",
+                "Product",
+                "System Batch",
+                "Supplier Lot",
+                "Movement Type",
+                "Direction",
+                "Qty Base",
+                "Created By",
+              ].map((heading) => (
+                <th className="px-5 py-3.5 font-extrabold" key={heading}>
+                  {heading}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {displayedRows.map((movement) => {
+              const quantity = Number(movement.qtyBase);
+              return (
+                <tr className="hover:bg-brand-pale/30" key={movement.id}>
+                  <td className="px-5 py-4 text-neutral-muted">{formatMovementDate(movement.occurredAt)}</td>
+                  <td className="px-5 py-4 font-bold text-neutral-text">{movement.productName}</td>
+                  <td className="px-5 py-4 font-semibold text-neutral-muted">{movement.batchNumber ?? "—"}</td>
+                  <td className="px-5 py-4 font-semibold text-neutral-muted">{movement.supplierLotNumber ?? "—"}</td>
+                  <td className="px-5 py-4">
+                    <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${movementStyle[movement.movementType]}`}>
+                      {movementLabel[movement.movementType]}
+                    </span>
+                  </td>
+                  <td className="px-5 py-4">
+                    <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${directionStyle[movement.direction]}`}>
+                      {movement.direction}
+                    </span>
+                  </td>
+                  <td className={`px-5 py-4 font-black ${quantity >= 0 ? "text-status-success-text" : "text-status-danger-text"}`}>
+                    {quantity > 0 ? "+" : ""}
+                    {formatInventoryQty(movement.qtyBase)}{" "}
+                    <span className="text-xs font-normal text-neutral-muted">{movement.baseUnit}</span>
+                  </td>
+                  <td className="px-5 py-4 text-neutral-muted">{movement.createdBy ?? "System"}</td>
+                </tr>
+              );
+            })}
+            {totalRows === 0 && (
+              <tr>
+                <td className="px-5 py-16 text-center text-neutral-muted" colSpan={8}>
+                  No stock movements found.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <TablePagination
+        currentPage={validPage}
+        totalItems={totalRows}
+        pageSize={pageSize}
+        onPageChange={setCurrentPage}
+        onPageSizeChange={(size) => {
+          setPageSize(size);
+          setCurrentPage(1);
+        }}
+      />
+    </section>
+  );
 }

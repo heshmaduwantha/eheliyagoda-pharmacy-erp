@@ -12,17 +12,17 @@ type Props = {
   isLoading?: boolean;
 };
 
-export function ProductSearchPanel({ products, onAddProduct, isLoading = false }: Props) {
+export function ProductSearchPanel({ products, query, onAddProduct, isLoading = false }: Props) {
   return (
     <section className="flex flex-col gap-6">
       {/* Header Text */}
       <p className="text-sm font-semibold text-neutral-muted">
-        {isLoading ? "Searching…" : "Most searched products are shown"}
+        {isLoading ? "Searching…" : query.trim() ? "Search results" : "Fast selling available items"}
       </p>
 
       {/* Product tile grid */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-3">
-        {products.slice(0, 6).map((product) => {
+        {products.slice(0, 18).map((product) => {
           const unit = product.units.find((u) => u.id === product.defaultSaleUnitId) ?? product.units[0];
           const stockStatus = !product.hasActiveStock
             ? { label: "Out of stock", cls: "bg-status-danger-bg text-status-danger-text" }

@@ -246,6 +246,31 @@ function deduplicateProductsByName(products: PosProductSearchResult[]): PosProdu
 const fetchInitialPosCatalogFromDb = unstable_cache(
   async () => {
     const today = startOfToday();
+
+    // Aggregated completed sales quantity per product to identify fast selling items
+    const topSales = await prisma.saleLine.groupBy({
+      by: ["productId"],
+      where: {
+        sale: { status: "COMPLETED" },
+      },
+      _sum: {
+        qtyBase: true,
+      },
+      _count: {
+        id: true,
+      },
+      orderBy: [
+        { _sum: { qtyBase: "desc" } },
+        { _count: { id: "desc" } },
+      ],
+      take: 200,
+    });
+
+    const salesMap = new Map<string, number>();
+    topSales.forEach((s) => {
+      salesMap.set(s.productId, Number(s._sum.qtyBase ?? 0));
+    });
+
     const products = await prisma.product.findMany({
       where: {
         isActive: true,
@@ -258,13 +283,23 @@ const fetchInitialPosCatalogFromDb = unstable_cache(
         },
       },
       select: productSelect,
-      orderBy: { createdAt: "desc" },
-      take: 36,
+      take: 200,
     });
 
     const serialized = (await hydrateProductRows(products)).map(serializeProduct);
     const activeWithStock = serialized.filter((product) => product.hasActiveStock);
-    return deduplicateProductsByName(activeWithStock);
+    const deduped = deduplicateProductsByName(activeWithStock);
+
+    deduped.sort((left, right) => {
+      const leftSales = salesMap.get(left.id) ?? 0;
+      const rightSales = salesMap.get(right.id) ?? 0;
+      if (rightSales !== leftSales) {
+        return rightSales - leftSales;
+      }
+      return left.name.localeCompare(right.name);
+    });
+
+    return deduped.slice(0, 36);
   },
   ["pos-initial-catalog"],
   { revalidate: 30, tags: ["pos-catalog"] },
@@ -283,22 +318,50 @@ export async function searchProductsForPos(query: string): Promise<PosProductSea
     return result;
   }
 
-  const products = await prisma.product.findMany({
-    where: {
-      isActive: true,
-      OR: [
-        { name: { contains: normalized, mode: "insensitive" } },
-        { genericName: { contains: normalized, mode: "insensitive" } },
-        { barcodes: { some: { barcode: { contains: normalized } } } },
-      ],
-    },
-    select: productSelect,
-    orderBy: { createdAt: "desc" },
-    take: 40,
+  const [topSales, products] = await Promise.all([
+    prisma.saleLine.groupBy({
+      by: ["productId"],
+      where: { sale: { status: "COMPLETED" } },
+      _sum: { qtyBase: true },
+      orderBy: { _sum: { qtyBase: "desc" } },
+      take: 200,
+    }),
+    prisma.product.findMany({
+      where: {
+        isActive: true,
+        OR: [
+          { name: { contains: normalized, mode: "insensitive" } },
+          { genericName: { contains: normalized, mode: "insensitive" } },
+          { barcodes: { some: { barcode: { contains: normalized } } } },
+        ],
+      },
+      select: productSelect,
+      orderBy: { createdAt: "desc" },
+      take: 60,
+    }),
+  ]);
+
+  const salesMap = new Map<string, number>();
+  topSales.forEach((s) => {
+    salesMap.set(s.productId, Number(s._sum.qtyBase ?? 0));
   });
 
   const serialized = (await hydrateProductRows(products)).map(serializeProduct);
-  return deduplicateProductsByName(serialized);
+  const deduped = deduplicateProductsByName(serialized);
+
+  deduped.sort((left, right) => {
+    if (left.hasActiveStock !== right.hasActiveStock) {
+      return left.hasActiveStock ? -1 : 1;
+    }
+    const leftSales = salesMap.get(left.id) ?? 0;
+    const rightSales = salesMap.get(right.id) ?? 0;
+    if (rightSales !== leftSales) {
+      return rightSales - leftSales;
+    }
+    return left.name.localeCompare(right.name);
+  });
+
+  return deduped;
 }
 
 export async function lookupProductByBarcode(barcode: string): Promise<PosBarcodeLookupResult | null> {

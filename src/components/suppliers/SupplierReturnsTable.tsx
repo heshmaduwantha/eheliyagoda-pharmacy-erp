@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { formatMoney } from "@/lib/money";
 import { ProcessSupplierReturnModal, type SupplierReturnModalItem } from "./ProcessSupplierReturnModal";
 import { CheckCircle2, Clock, DollarSign } from "lucide-react";
+import { TablePagination } from "@/components/common/TablePagination";
 
 export type SupplierReturnRow = {
   id: string;
@@ -40,6 +41,20 @@ type Props = {
 
 export function SupplierReturnsTable({ logs }: Props) {
   const [selectedReturn, setSelectedReturn] = useState<SupplierReturnModalItem | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [logs]);
+
+  const totalRows = logs.length;
+  const totalPages = Math.max(1, Math.ceil(totalRows / pageSize));
+  const validPage = Math.min(currentPage, totalPages);
+
+  const startIndex = (validPage - 1) * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, totalRows);
+  const displayedLogs = logs.slice(startIndex, endIndex);
 
   return (
     <>
@@ -57,14 +72,14 @@ export function SupplierReturnsTable({ logs }: Props) {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {logs.length === 0 ? (
+            {totalRows === 0 ? (
               <tr>
                 <td className="px-5 py-16 text-center text-neutral-muted" colSpan={7}>
                   No supplier return records found.
                 </td>
               </tr>
             ) : (
-              logs.map((log) => {
+              displayedLogs.map((log) => {
                 const isPending = log.status === "PENDING";
                 const isRefunded = log.status === "REFUNDED";
                 const isAdjusted = log.status === "ADJUSTED";
@@ -119,7 +134,7 @@ export function SupplierReturnsTable({ logs }: Props) {
                       {isPending ? (
                         <button
                           onClick={() => setSelectedReturn(log)}
-                          className="inline-flex items-center justify-center whitespace-nowrap rounded-lg border border-brand-default/30 bg-brand-pale px-3 py-1.5 text-xs font-bold text-brand-hover shadow-sm transition hover:bg-brand-default hover:text-white"
+                          className="inline-flex items-center justify-center whitespace-nowrap rounded-lg border border-brand-default/30 bg-brand-pale px-3 py-1.5 text-xs font-bold text-brand-hover shadow-sm transition hover:bg-brand-default hover:text-white cursor-pointer"
                         >
                           Process Refund
                         </button>
@@ -136,6 +151,17 @@ export function SupplierReturnsTable({ logs }: Props) {
           </tbody>
         </table>
       </div>
+
+      <TablePagination
+        currentPage={validPage}
+        totalItems={totalRows}
+        pageSize={pageSize}
+        onPageChange={setCurrentPage}
+        onPageSizeChange={(size) => {
+          setPageSize(size);
+          setCurrentPage(1);
+        }}
+      />
 
       {selectedReturn && (
         <ProcessSupplierReturnModal
