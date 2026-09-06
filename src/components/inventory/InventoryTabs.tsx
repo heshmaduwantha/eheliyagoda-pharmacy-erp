@@ -5,6 +5,7 @@ const tabs = [
   ["Batches", "/stock/batches"],
   ["Movements", "/stock/movements"],
   ["Expiry alerts", "/stock/expiry"],
+  ["Batch Expiry", "/stock/batch-expiry"],
 ] as const;
 
 export function InventoryTabs({ active }: { active: (typeof tabs)[number][1] }) {

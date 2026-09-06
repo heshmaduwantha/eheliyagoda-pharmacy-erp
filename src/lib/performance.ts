@@ -35,8 +35,7 @@ export type PerformanceSummary = Omit<PerformanceContext, "startedAt" | "slowest
 const performanceStorage = new AsyncLocalStorage<PerformanceContext>();
 
 export function isPerformanceLoggingEnabled() {
-  if (process.env.PERF_LOGGING === "0") return false;
-  return process.env.PERF_LOGGING === "1" || process.env.NODE_ENV !== "production";
+  return process.env.PERF_LOGGING === "1";
 }
 
 function roundMs(value: number) {

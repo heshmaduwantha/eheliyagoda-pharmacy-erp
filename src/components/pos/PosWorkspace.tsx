@@ -52,6 +52,7 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
   const [controlledDrugOpen, setControlledDrugOpen] = useState(false);
   const [isSearching, startSearchTransition] = useTransition();
   const [isCompletingSale, setIsCompletingSale] = useState(false);
+  const searchCacheRef = useRef(new Map<string, PosProductSearchResult[]>());
   const saleSubmissionRef = useRef<{ requestId: string | null; inFlight: boolean }>({
     requestId: null,
     inFlight: false,
@@ -75,28 +76,38 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
   }, [notice]);
 
   useEffect(() => {
-    if (deferredQuery === "") {
+    const normalizedQuery = deferredQuery.trim();
+    if (normalizedQuery === "") {
       setProducts(initialProducts);
+      return;
+    }
+
+    const cached = searchCacheRef.current.get(normalizedQuery.toLowerCase());
+    if (cached) {
+      setProducts(cached);
       return;
     }
 
     let cancelled = false;
     const controller = new AbortController();
     const timer = window.setTimeout(() => {
-      startSearchTransition(async () => {
+      void (async () => {
         try {
-          const response = await fetch(`/api/pos/search?q=${encodeURIComponent(deferredQuery)}`, {
+          const response = await fetch(`/api/pos/search?q=${encodeURIComponent(normalizedQuery)}`, {
             signal: controller.signal,
             cache: "no-store",
           });
           if (!response.ok) throw new Error("Product search failed");
           const items: PosProductSearchResult[] = await response.json();
-          if (!cancelled) startSearchTransition(() => setProducts(items));
+          searchCacheRef.current.set(normalizedQuery.toLowerCase(), items);
+          if (!cancelled) {
+            startSearchTransition(() => setProducts(items));
+          }
         } catch {
           if (!cancelled) setNotice({ tone: "warning", message: "Product search is temporarily unavailable." });
         }
-      });
-    }, 250);
+      })();
+    }, 350);
 
     return () => {
       cancelled = true;

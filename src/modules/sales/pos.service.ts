@@ -211,9 +211,59 @@ async function readStockBatches(productIds: string[]): Promise<StockBatchRow[]> 
 }
 
 let initialPosCatalogCache: { data: PosProductSearchResult[]; expiresAt: number } | null = null;
+const posSearchCache = new Map<string, { data: PosProductSearchResult[]; expiresAt: number }>();
+const posSearchCacheTtlMs = 15_000;
+const posSearchCacheMaxEntries = 80;
+let posSalesRankCache: { data: Map<string, number>; expiresAt: number } | null = null;
+const posSalesRankCacheTtlMs = 60_000;
 
 export function invalidatePosInitialCatalogCache() {
   initialPosCatalogCache = null;
+  posSearchCache.clear();
+  posSalesRankCache = null;
+}
+
+function readPosSearchCache(key: string, now = Date.now()) {
+  const cached = posSearchCache.get(key);
+  if (!cached) return null;
+  if (cached.expiresAt <= now) {
+    posSearchCache.delete(key);
+    return null;
+  }
+  return cached.data;
+}
+
+function writePosSearchCache(key: string, data: PosProductSearchResult[], now = Date.now()) {
+  if (posSearchCache.size >= posSearchCacheMaxEntries) {
+    const oldestKey = posSearchCache.keys().next().value;
+    if (oldestKey) posSearchCache.delete(oldestKey);
+  }
+  posSearchCache.set(key, { data, expiresAt: now + posSearchCacheTtlMs });
+}
+
+async function getPosSalesRank(now = Date.now()) {
+  if (posSalesRankCache && posSalesRankCache.expiresAt > now) {
+    return posSalesRankCache.data;
+  }
+
+  const topSales = await prisma.saleLine.groupBy({
+    by: ["productId"],
+    where: { sale: { status: "COMPLETED" } },
+    _sum: { qtyBase: true },
+    _count: { id: true },
+    orderBy: [
+      { _sum: { qtyBase: "desc" } },
+      { _count: { id: "desc" } },
+    ],
+    take: 200,
+  });
+
+  const salesMap = new Map<string, number>();
+  for (const sale of topSales) {
+    salesMap.set(sale.productId, Number(sale._sum.qtyBase ?? 0));
+  }
+  posSalesRankCache = { data: salesMap, expiresAt: now + posSalesRankCacheTtlMs };
+  return salesMap;
 }
 
 function deduplicateProductsByName(products: PosProductSearchResult[]): PosProductSearchResult[] {
@@ -246,45 +296,23 @@ function deduplicateProductsByName(products: PosProductSearchResult[]): PosProdu
 const fetchInitialPosCatalogFromDb = unstable_cache(
   async () => {
     const today = startOfToday();
-
-    // Aggregated completed sales quantity per product to identify fast selling items
-    const topSales = await prisma.saleLine.groupBy({
-      by: ["productId"],
-      where: {
-        sale: { status: "COMPLETED" },
-      },
-      _sum: {
-        qtyBase: true,
-      },
-      _count: {
-        id: true,
-      },
-      orderBy: [
-        { _sum: { qtyBase: "desc" } },
-        { _count: { id: "desc" } },
-      ],
-      take: 200,
-    });
-
-    const salesMap = new Map<string, number>();
-    topSales.forEach((s) => {
-      salesMap.set(s.productId, Number(s._sum.qtyBase ?? 0));
-    });
-
-    const products = await prisma.product.findMany({
-      where: {
-        isActive: true,
-        batches: {
-          some: {
-            status: BatchStatus.ACTIVE,
-            qtyOnHandBase: { gt: 0 },
-            OR: [{ expiryDate: null }, { expiryDate: { gte: today } }],
+    const [salesMap, products] = await Promise.all([
+      getPosSalesRank(),
+      prisma.product.findMany({
+        where: {
+          isActive: true,
+          batches: {
+            some: {
+              status: BatchStatus.ACTIVE,
+              qtyOnHandBase: { gt: 0 },
+              OR: [{ expiryDate: null }, { expiryDate: { gte: today } }],
+            },
           },
         },
-      },
-      select: productSelect,
-      take: 200,
-    });
+        select: productSelect,
+        take: 200,
+      }),
+    ]);
 
     const serialized = (await hydrateProductRows(products)).map(serializeProduct);
     const activeWithStock = serialized.filter((product) => product.hasActiveStock);
@@ -318,14 +346,12 @@ export async function searchProductsForPos(query: string): Promise<PosProductSea
     return result;
   }
 
-  const [topSales, products] = await Promise.all([
-    prisma.saleLine.groupBy({
-      by: ["productId"],
-      where: { sale: { status: "COMPLETED" } },
-      _sum: { qtyBase: true },
-      orderBy: { _sum: { qtyBase: "desc" } },
-      take: 200,
-    }),
+  const cacheKey = normalized.toLowerCase();
+  const cached = readPosSearchCache(cacheKey, now);
+  if (cached) return cached;
+
+  const [salesMap, products] = await Promise.all([
+    getPosSalesRank(now),
     prisma.product.findMany({
       where: {
         isActive: true,
@@ -340,11 +366,6 @@ export async function searchProductsForPos(query: string): Promise<PosProductSea
       take: 60,
     }),
   ]);
-
-  const salesMap = new Map<string, number>();
-  topSales.forEach((s) => {
-    salesMap.set(s.productId, Number(s._sum.qtyBase ?? 0));
-  });
 
   const serialized = (await hydrateProductRows(products)).map(serializeProduct);
   const deduped = deduplicateProductsByName(serialized);
@@ -361,6 +382,7 @@ export async function searchProductsForPos(query: string): Promise<PosProductSea
     return left.name.localeCompare(right.name);
   });
 
+  writePosSearchCache(cacheKey, deduped, now);
   return deduped;
 }
 

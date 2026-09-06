@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 export function AutoSubmit({ debounceMs = 400 }: { debounceMs?: number }) {
   const ref = useRef<HTMLInputElement>(null);
+  const lastUrlRef = useRef("");
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
@@ -24,9 +25,20 @@ export function AutoSubmit({ debounceMs = 400 }: { debounceMs?: number }) {
       for (const [key, value] of new FormData(form)) {
         if (typeof value === "string" && value !== "" && key !== "page") url.searchParams.append(key, value);
       }
-      startTransition(() => router.replace(`${url.pathname}${url.search}`, { scroll: false }));
+      const nextUrl = `${url.pathname}${url.search}`;
+      if (nextUrl === lastUrlRef.current || nextUrl === `${window.location.pathname}${window.location.search}`) return;
+      lastUrlRef.current = nextUrl;
+      startTransition(() => router.replace(nextUrl, { scroll: false }));
     };
     const onChange = (event: Event) => {
+      if (
+        !(event.target instanceof HTMLInputElement)
+        && !(event.target instanceof HTMLSelectElement)
+        && !(event.target instanceof HTMLTextAreaElement)
+      ) {
+        return;
+      }
+      if (event.target instanceof HTMLInputElement && event.target.type === "hidden") return;
       clearTimeout(timer);
       if (event.target instanceof HTMLSelectElement) {
         // Selects emit input followed by change; submit once, immediately.
