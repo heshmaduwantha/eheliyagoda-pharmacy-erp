@@ -21,7 +21,7 @@ export function ProductSearchPanel({ products, query, onAddProduct, isLoading = 
       </p>
 
       {/* Product tile grid */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-2">
+      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
         {(query.trim() ? products.slice(0, 18) : products.slice(0, 6)).map((product) => {
           const unit = product.units.find((u) => u.id === product.defaultSaleUnitId) ?? product.units[0];
           const stockStatus = !product.hasActiveStock
@@ -32,54 +32,44 @@ export function ProductSearchPanel({ products, query, onAddProduct, isLoading = 
 
           return (
             <div
-              className={`relative flex flex-col rounded-xl bg-neutral-surface p-3.5 text-left shadow-xs border border-neutral-border transition-all ${
+              className={`relative flex flex-col justify-between rounded-xl bg-neutral-surface p-2.5 border border-neutral-border/80 shadow-2xs transition-all ${
                 isAvailable
-                  ? "cursor-pointer hover:border-brand-default/40 hover:shadow-sm active:scale-[0.99]"
-                  : "opacity-75"
+                  ? "cursor-pointer hover:border-brand-default/50 hover:shadow-xs active:scale-[0.99]"
+                  : "opacity-65"
               }`}
               key={product.id}
               onClick={() => {
                 if (isAvailable) onAddProduct(product);
               }}
             >
-              {/* Name */}
-              <p className="truncate text-sm font-bold leading-tight text-neutral-text" title={product.name}>
-                {product.name}
-              </p>
-              {product.genericName && (
-                <p className="mt-0.5 truncate text-[11px] text-neutral-muted" title={product.genericName}>{product.genericName}</p>
-              )}
-
-              {/* Badges Flow */}
-              <div className="mt-2 flex flex-wrap gap-1">
-                {product.prescriptionRule !== "NONE" && (
-                  <span className="inline-flex rounded-full bg-status-warning-bg px-2 py-0.5 text-[9px] font-bold text-status-warning-text">
-                    Rx required
+              <div className="min-w-0">
+                <div className="flex items-start justify-between gap-1.5">
+                  <p className="truncate text-xs font-bold text-neutral-text" title={product.name}>
+                    {product.name}
+                  </p>
+                  <span className="shrink-0 text-xs font-black text-brand-default">
+                    {unit?.sellingPrice ? formatLkr(Number(unit.sellingPrice)) : "—"}
                   </span>
-                )}
-                <span className={`inline-flex rounded-full px-2 py-0.5 text-[9px] font-bold ${stockStatus.cls}`}>
-                  {stockStatus.label}
-                </span>
-                {product.nextExpiryDate && (
-                  <span className="inline-flex rounded-full bg-status-orange-bg px-2 py-0.5 text-[9px] font-bold text-status-orange-text">
-                    Exp. {product.nextExpiryDate}
-                  </span>
+                </div>
+                {product.genericName && (
+                  <p className="truncate text-[10px] text-neutral-muted" title={product.genericName}>
+                    {product.genericName}
+                  </p>
                 )}
               </div>
 
-              {/* Spacer */}
-              <div className="flex-1 min-h-2" />
-
-              {/* Price & Add Button */}
-              <div className="mt-3 flex items-center justify-between gap-2">
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-black text-brand-default truncate">
-                    {unit?.sellingPrice ? formatLkr(Number(unit.sellingPrice)) : "—"}
-                  </p>
-                  <p className="text-[10px] font-semibold text-neutral-muted truncate">
-                    per {unit?.unitName ?? "unit"}
-                  </p>
+              <div className="mt-2 flex items-center justify-between gap-1.5 pt-1.5 border-t border-neutral-border/40">
+                <div className="flex items-center gap-1 overflow-hidden">
+                  <span className={`inline-flex rounded-md px-1.5 py-0.5 text-[9px] font-bold ${stockStatus.cls}`}>
+                    {stockStatus.label}
+                  </span>
+                  {product.prescriptionRule !== "NONE" && (
+                    <span className="inline-flex rounded-md bg-amber-50 text-amber-700 border border-amber-200 px-1.5 py-0.5 text-[9px] font-bold">
+                      Rx
+                    </span>
+                  )}
                 </div>
+
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -87,10 +77,11 @@ export function ProductSearchPanel({ products, query, onAddProduct, isLoading = 
                   }}
                   disabled={!isAvailable}
                   aria-label={`Add ${product.name} to cart`}
-                  className="flex h-8 shrink-0 items-center justify-center gap-1 px-2.5 rounded-lg bg-brand-default text-white transition hover:bg-brand-hover disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                  className="flex h-7 shrink-0 items-center justify-center gap-1 px-2.5 rounded-md bg-brand-default text-white text-[11px] font-bold transition hover:bg-brand-hover disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
                   type="button"
                 >
-                  <Plus className="size-3.5" /><span className="text-xs font-bold">Add</span>
+                  <Plus className="size-3" />
+                  <span>Add</span>
                 </button>
               </div>
             </div>

@@ -16,8 +16,8 @@ type Props = {
 export function CartTable(props: Props) {
   return (
     <div className="flex flex-col h-full">
-      <div className="mb-4 flex items-center justify-between px-1">
-        <h2 className="font-black text-neutral-text">Current bill</h2>
+      <div className="mb-3 flex items-center justify-between border-b border-neutral-border pb-2.5 px-1">
+        <h2 className="font-black text-sm text-neutral-text uppercase tracking-wider">Current bill</h2>
         <span className="text-xs font-semibold text-neutral-muted">{props.lines.length} line{props.lines.length === 1 ? "" : "s"}</span>
       </div>
 
