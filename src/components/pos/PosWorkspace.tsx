@@ -406,8 +406,8 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
         </div>
 
         {/* Right sidebar cart */}
-        <div className="w-full min-w-0 flex flex-col rounded-2xl bg-neutral-surface shadow-sm border border-neutral-border overflow-hidden xl:sticky xl:top-4">
-          <div className="min-h-[380px] max-h-[64vh] xl:max-h-[calc(100vh-260px)] overflow-y-auto p-4 sm:p-5">
+        <div className="w-full min-w-0 flex flex-col rounded-2xl bg-neutral-surface shadow-sm border border-neutral-border overflow-hidden xl:sticky xl:top-4 xl:max-h-[calc(100vh-140px)]">
+          <div className="flex-1 min-h-[220px] max-h-[48vh] xl:max-h-none overflow-y-auto p-4 sm:p-5">
             <CartTable
               lines={lines}
               onQuantityChange={changeQuantity}
