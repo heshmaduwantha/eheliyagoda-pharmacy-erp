@@ -25,7 +25,7 @@ export async function getControlledDrugRegister(actorUserId: string): Promise<Re
     },
     select: {
       id: true,
-      patient: { select: { name: true, patientReference: true } },
+      patient: { select: { name: true, phone: true, nic: true, patientReference: true } },
       prescriberName: true,
       prescriberRef: true,
       capturedBy: { select: { name: true } },
@@ -52,6 +52,8 @@ export async function getControlledDrugRegister(actorUserId: string): Promise<Re
       expiryDate: line.batch.expiryDate ? line.batch.expiryDate.toISOString().slice(0, 10) : null,
       qtyDispensed: line.qtyBase.toFixed(3),
       patientName: prescription.patient?.name ?? "Unknown",
+      patientNic: prescription.patient?.nic ?? null,
+      patientPhone: prescription.patient?.phone ?? null,
       patientReference: prescription.patient?.patientReference ?? null,
       prescriberName: prescription.prescriberName ?? "Unknown",
       prescriberReference: prescription.prescriberRef ?? "Unknown",

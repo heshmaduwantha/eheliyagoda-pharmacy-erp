@@ -149,6 +149,8 @@ export type ControlledDrugRegisterRow = {
   expiryDate: ISODate | null;
   qtyDispensed: QuantityString;
   patientName: string;
+  patientNic: string | null;
+  patientPhone: string | null;
   patientReference: string | null;
   prescriberName: string;
   prescriberReference: string;
