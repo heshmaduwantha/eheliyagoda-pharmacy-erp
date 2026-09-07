@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { CircleAlert, CircleCheck, Search } from "lucide-react";
+import { Barcode, CircleAlert, CircleCheck, Keyboard, Search, Sparkles, X, Zap } from "lucide-react";
 import { completeSaleAction } from "@/modules/sales/sale.actions";
 import { lookupProductByBarcodeAction } from "@/modules/sales/pos.actions";
 import type { PrescriptionDecisionInput } from "@/modules/prescriptions/prescription.types";
@@ -52,6 +52,7 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
   const [discountValue, setDiscountValue] = useState<number>(0);
   const [isSearching, startSearchTransition] = useTransition();
   const [isCompletingSale, setIsCompletingSale] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const searchCacheRef = useRef(new Map<string, PosProductSearchResult[]>());
   const saleSubmissionRef = useRef<{ requestId: string | null; inFlight: boolean }>({
     requestId: null,
@@ -73,6 +74,38 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
   );
   const promptedProductCount = lines.filter((line) => line.prescriptionRule === "PROMPT_SKIPPABLE").length;
   const controlledProductCount = lines.filter((line) => line.prescriptionRule === "HARD_REQUIRED_CONTROLLED").length;
+
+  // Global Keyboard Shortcuts (F2: Search focus, ArrowUp/ArrowDown: adjust quantity)
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (paymentOpen || promptOpen || controlledDrugOpen || selectedLine || isCompletingSale || receipt) {
+        return;
+      }
+
+      if (e.key === "F2") {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select();
+        return;
+      }
+
+      if ((e.key === "ArrowUp" || e.key === "ArrowDown") && !e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey && !e.isComposing) {
+        if (lines.length === 0) return;
+
+        const targetId = (lastAddedLineId && lines.some((l) => l.id === lastAddedLineId))
+          ? lastAddedLineId
+          : lines[lines.length - 1].id;
+
+        e.preventDefault();
+        const delta = e.key === "ArrowUp" ? 1 : -1;
+        setLines((current) => current.map((line) => line.id === targetId
+          ? updateCartLineQuantity(line, Math.max(1, line.quantity + delta))
+          : line));
+      }
+    };
+    window.addEventListener("keydown", handleGlobalKeyDown);
+    return () => window.removeEventListener("keydown", handleGlobalKeyDown);
+  }, [paymentOpen, promptOpen, controlledDrugOpen, selectedLine, isCompletingSale, receipt, lines, lastAddedLineId]);
 
   // Auto-dismiss notice toasts after 3.5 seconds
   useEffect(() => {
@@ -164,7 +197,7 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
       }
     });
 
-    setNotice({ tone: "success", message: `${product.name} added to the cart.` });
+    setNotice({ tone: "success", message: `${product.name} added to cart.` });
   };
 
   const changeQuantity = (lineId: string, quantity: number) => {
@@ -317,16 +350,23 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
   }
 
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-center justify-between shrink-0 mb-1">
-        <h1 className="text-2xl font-black tracking-tight text-neutral-text sm:text-3xl">
-          Point of Sale
-        </h1>
+    <div className="flex flex-col gap-3">
+      {/* Title Header */}
+      <div className="flex items-center justify-between shrink-0">
+        <div>
+          <h1 className="text-xl font-bold tracking-tight text-neutral-text sm:text-2xl">
+            Point of Sale
+          </h1>
+          <p className="text-xs text-neutral-muted">
+            Quick cashier counter billing & stock deduction
+          </p>
+        </div>
       </div>
 
+      {/* Notice Banner */}
       {notice ? (
         <div
-          className={`mt-2 flex items-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold ${
+          className={`flex items-center justify-between gap-2 rounded-xl border px-4 py-3 text-xs font-semibold shadow-2xs ${
             notice.tone === "success"
               ? "border-status-success-bg bg-status-success-bg text-status-success-text"
               : notice.tone === "warning"
@@ -334,42 +374,39 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
                 : "border-status-danger-bg bg-status-danger-bg text-status-danger-text"
           }`}
         >
-          {notice.tone === "success" ? (
-            <CircleCheck className="size-4" />
-          ) : (
-            <CircleAlert className="size-4" />
-          )}
-          {notice.message}
+          <div className="flex items-center gap-2">
+            {notice.tone === "success" ? (
+              <CircleCheck className="size-4 shrink-0" />
+            ) : (
+              <CircleAlert className="size-4 shrink-0" />
+            )}
+            <span>{notice.message}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setNotice(null)}
+            className="p-1 rounded hover:bg-black/5 transition"
+          >
+            <X className="size-3.5" />
+          </button>
         </div>
       ) : null}
 
-      <div className="mt-2 grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_540px] 2xl:grid-cols-[minmax(0,1fr)_600px] pb-6">
-        {/* Left main area with Search Input */}
+      {/* Main Grid */}
+      <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(0,1fr)_460px] 2xl:grid-cols-[minmax(0,1fr)_520px] pb-6">
+        {/* Left Column: Search & Available Products */}
         <div className="min-w-0 flex flex-col gap-4">
-          <label className="flex items-center gap-3 rounded-2xl bg-neutral-surface px-4 py-3 shadow-xs border border-neutral-border focus-within:border-brand-default focus-within:ring-4 focus-within:ring-brand-default/10 transition-all">
-            <Search className="size-5 shrink-0 text-neutral-muted" />
+          <label className="flex items-center gap-3 rounded-xl bg-neutral-surface px-4 py-3 shadow-2xs border border-neutral-border focus-within:border-brand-default focus-within:ring-2 focus-within:ring-brand-default/15 transition-all">
+            <Search className="size-4 shrink-0 text-neutral-muted" />
             <input
-              className="min-w-0 flex-1 bg-transparent py-1 text-base font-medium outline-none text-neutral-text placeholder:font-normal placeholder:text-neutral-muted"
+              ref={searchInputRef}
+              className="min-w-0 flex-1 bg-transparent py-0.5 text-sm font-medium outline-none text-neutral-text placeholder:font-normal placeholder:text-neutral-muted"
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={async (e) => {
-                if ((e.key === "ArrowUp" || e.key === "ArrowDown") && !query.trim()
-                  && !e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey
-                  && !e.nativeEvent.isComposing && !paymentOpen && !promptOpen
-                  && !controlledDrugOpen && !selectedLine && !isCompletingSale && !receipt) {
-                  if (!lines.some((line) => line.id === lastAddedLineId)) return;
-                  e.preventDefault();
-                  const delta = e.key === "ArrowUp" ? 1 : -1;
-                  setLines((current) => current.map((line) => line.id === lastAddedLineId
-                    ? updateCartLineQuantity(line, Math.max(1, line.quantity + delta))
-                    : line));
-                  return;
-                }
                 if (e.key === "Enter" && query.trim()) {
                   e.preventDefault();
                   const trimmed = query.trim();
                   try {
-                    // Resolve scans against the barcode table before using name results.
-                    // Search results may still belong to the previous debounced query.
                     const barcodeResult = await lookupProductByBarcodeAction(trimmed);
                     if (barcodeResult) {
                       await addProduct(barcodeResult.product, barcodeResult.matchedUnit);
@@ -392,6 +429,16 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
               placeholder="Search medicine or scan barcode…"
               value={query}
             />
+
+            {query ? (
+              <button
+                type="button"
+                onClick={() => setQuery("")}
+                className="p-1 rounded text-neutral-muted hover:text-neutral-text transition"
+              >
+                <X className="size-4" />
+              </button>
+            ) : null}
           </label>
 
           <ProductSearchPanel
@@ -405,9 +452,9 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
           />
         </div>
 
-        {/* Right sidebar cart */}
-        <div className="w-full min-w-0 flex flex-col rounded-2xl bg-neutral-surface shadow-sm border border-neutral-border overflow-hidden xl:sticky xl:top-4 xl:max-h-[calc(100vh-140px)]">
-          <div className="flex-1 min-h-[220px] max-h-[48vh] xl:max-h-none overflow-y-auto p-4 sm:p-5">
+        {/* Right Column: Current Sale Cart */}
+        <div className="w-full min-w-0 flex flex-col rounded-xl bg-neutral-surface shadow-xs border border-neutral-border overflow-hidden xl:sticky xl:top-4 xl:max-h-[calc(100vh-130px)]">
+          <div className="flex-1 min-h-[220px] max-h-[48vh] xl:max-h-none overflow-y-auto p-4 sm:p-4">
             <CartTable
               lines={lines}
               onQuantityChange={changeQuantity}
@@ -417,7 +464,7 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
               onBatchPreview={receiveBatchPreview}
             />
           </div>
-          <div className="shrink-0 border-t border-neutral-border bg-neutral-bg/40 p-5">
+          <div className="shrink-0 border-t border-neutral-border bg-neutral-bg/40 p-4">
             <PosSummaryPanel
               {...totals}
               discountType={discountType}
@@ -435,6 +482,7 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
           </div>
         </div>
       </div>
+
 
       {selectedLine ? (
         <UnitSelectorModal line={selectedLine} onClose={() => setSelectedLine(null)} onSelect={changeUnit} />

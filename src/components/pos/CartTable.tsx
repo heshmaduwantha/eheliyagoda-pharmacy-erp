@@ -17,11 +17,13 @@ export function CartTable(props: Props) {
   return (
     <div className="flex flex-col h-full">
       <div className="mb-3 flex items-center justify-between border-b border-neutral-border pb-2.5 px-1">
-        <h2 className="font-black text-sm text-neutral-text uppercase tracking-wider">Current bill</h2>
-        <span className="text-xs font-semibold text-neutral-muted">{props.lines.length} line{props.lines.length === 1 ? "" : "s"}</span>
+        <h2 className="font-semibold text-xs text-neutral-muted uppercase tracking-wider">Current bill</h2>
+        <span className="text-xs font-semibold text-neutral-text bg-brand-pale px-2 py-0.5 rounded-md">
+          {props.lines.length} {props.lines.length === 1 ? "item" : "items"}
+        </span>
       </div>
 
-      <div className="px-1 flex flex-col gap-2">
+      <div className="px-0.5 flex flex-col gap-2">
         {props.lines.map((line) => (
           <CartLine 
             key={line.id} 
@@ -34,13 +36,15 @@ export function CartTable(props: Props) {
           />
         ))}
         {props.lines.length === 0 && (
-          <div className="flex h-full min-h-64 flex-col items-center justify-center text-center">
-            <ShoppingCart className="size-12 text-slate-300" strokeWidth={1.5} />
-            <h3 className="mt-4 text-sm font-semibold text-neutral-muted">Cart is empty</h3>
-            <p className="mt-1 text-[11px] text-neutral-muted/70">Scan a barcode or choose a product.</p>
+          <div className="flex h-full min-h-[220px] flex-col items-center justify-center text-center p-6 rounded-xl border border-dashed border-neutral-border bg-neutral-bg/20">
+            <ShoppingCart className="size-10 text-neutral-muted opacity-40 mb-2" strokeWidth={1.5} />
+            <h3 className="text-sm font-semibold text-neutral-text">Cart is empty</h3>
+            <p className="mt-1 text-xs text-neutral-muted">Scan a barcode or select a product.</p>
           </div>
         )}
       </div>
     </div>
   );
 }
+
+

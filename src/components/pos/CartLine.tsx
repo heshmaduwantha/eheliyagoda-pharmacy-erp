@@ -31,14 +31,16 @@ export function CartLine({ line, onQuantityChange, onSelectUnit, onRemove, onCha
   }, [id, productId, unitId, quantity, retry, onBatchPreview]);
 
   return (
-    <article className="rounded-xl border border-neutral-border bg-neutral-surface p-3 shadow-xs transition-shadow hover:shadow-sm">
+    <article className="rounded-xl border border-neutral-border bg-neutral-surface p-3 shadow-2xs transition-shadow hover:shadow-xs">
       <div className="flex gap-2.5">
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0 flex-1">
-              <h3 className="font-bold text-sm text-neutral-text truncate" title={line.productName}>{line.productName}</h3>
+              <h3 className="font-semibold text-sm text-neutral-text truncate" title={line.productName}>
+                {line.productName}
+              </h3>
               {line.primaryBarcode ? (
-                <p className="text-[10px] text-neutral-muted truncate" title={line.primaryBarcode}>
+                <p className="text-[11px] text-neutral-muted truncate" title={line.primaryBarcode}>
                   Barcode: {line.primaryBarcode}
                 </p>
               ) : null}
@@ -66,7 +68,7 @@ export function CartLine({ line, onQuantityChange, onSelectUnit, onRemove, onCha
                 </button>
                 <input
                   aria-label="Quantity"
-                  className="w-10 border-x border-neutral-border bg-transparent text-center text-xs font-bold outline-none"
+                  className="w-10 border-x border-neutral-border bg-transparent text-center text-xs font-semibold outline-none text-neutral-text"
                   min="1"
                   step="1"
                   aria-keyshortcuts="ArrowUp ArrowDown"
@@ -83,6 +85,7 @@ export function CartLine({ line, onQuantityChange, onSelectUnit, onRemove, onCha
                   <Plus className="size-3" />
                 </button>
               </div>
+
               <button
                 className="flex h-8 items-center justify-between gap-1.5 rounded-lg border border-neutral-border bg-white px-2.5 text-left text-xs font-semibold text-neutral-text transition-colors hover:border-brand-default/40"
                 onClick={() => onSelectUnit(line)}
@@ -95,7 +98,7 @@ export function CartLine({ line, onQuantityChange, onSelectUnit, onRemove, onCha
 
             <div className="text-right shrink-0">
               <p className="text-[10px] font-medium text-neutral-muted">{formatLkr(line.unitPrice)}</p>
-              <p className="text-sm font-black text-brand-default tracking-tight">{formatLkr(line.lineTotal)}</p>
+              <p className="text-sm font-bold text-brand-default tracking-tight">{formatLkr(line.lineTotal)}</p>
             </div>
           </div>
 
@@ -113,3 +116,5 @@ export function CartLine({ line, onQuantityChange, onSelectUnit, onRemove, onCha
     </article>
   );
 }
+
+

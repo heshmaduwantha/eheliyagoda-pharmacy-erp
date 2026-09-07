@@ -45,21 +45,27 @@ export function PaymentModal({ open, mode, total, onClose, onComplete }: Props) 
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[80] grid place-items-center bg-slate-950/40 p-4 backdrop-blur-sm">
-      <section aria-modal="true" className="w-full max-w-lg rounded-3xl bg-neutral-surface p-6 shadow-2xl sm:p-7" role="dialog">
+    <div className="fixed inset-0 z-[80] grid place-items-center bg-neutral-text/40 p-4 backdrop-blur-xs">
+      <section aria-modal="true" className="w-full max-w-lg rounded-2xl bg-neutral-surface p-6 shadow-xl sm:p-7 border border-neutral-border" role="dialog">
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-brand-default">Payment</p>
-            <h2 className="mt-1 text-2xl font-black text-neutral-text">Collect {formatLkr(total)}</h2>
+            <p className="text-xs font-semibold uppercase tracking-wider text-brand-default">Payment</p>
+            <h2 className="mt-1 text-2xl font-bold text-neutral-text">Collect {formatLkr(total)}</h2>
           </div>
-          <button aria-label="Close" className="grid size-9 place-items-center rounded-full text-neutral-muted hover:bg-slate-100" onClick={onClose} type="button">
+          <button
+            aria-label="Close"
+            className="grid size-8 place-items-center rounded-full text-neutral-muted hover:bg-neutral-bg hover:text-neutral-text transition"
+            onClick={onClose}
+            type="button"
+          >
             <X className="size-5" />
           </button>
         </div>
+
         <div className="mt-6 grid min-w-0 gap-4 sm:grid-cols-2">
-          <label className="grid gap-2 text-sm font-bold text-neutral-text">
+          <label className="grid gap-1.5 text-xs font-semibold text-neutral-text">
             Cash amount
-            <span className="flex min-w-0 items-center gap-2 rounded-xl border border-neutral-border bg-neutral-surface px-3 shadow-sm transition focus-within:border-brand-default focus-within:ring-2 focus-within:ring-brand-default/15">
+            <span className="flex min-w-0 items-center gap-2 rounded-xl border border-neutral-border bg-neutral-surface px-3 shadow-2xs transition focus-within:border-brand-default focus-within:ring-2 focus-within:ring-brand-default/15">
               <Banknote className="size-4 shrink-0 text-neutral-muted" />
               <input
                 className={moneyInputClass}
@@ -73,9 +79,9 @@ export function PaymentModal({ open, mode, total, onClose, onComplete }: Props) 
               />
             </span>
           </label>
-          <label className="grid gap-2 text-sm font-bold text-neutral-text">
+          <label className="grid gap-1.5 text-xs font-semibold text-neutral-text">
             Card amount
-            <span className="flex min-w-0 items-center gap-2 rounded-xl border border-neutral-border bg-neutral-surface px-3 shadow-sm transition focus-within:border-brand-default focus-within:ring-2 focus-within:ring-brand-default/15">
+            <span className="flex min-w-0 items-center gap-2 rounded-xl border border-neutral-border bg-neutral-surface px-3 shadow-2xs transition focus-within:border-brand-default focus-within:ring-2 focus-within:ring-brand-default/15">
               <CreditCard className="size-4 shrink-0 text-neutral-muted" />
               <input
                 className={moneyInputClass}
@@ -90,28 +96,32 @@ export function PaymentModal({ open, mode, total, onClose, onComplete }: Props) 
             </span>
           </label>
         </div>
-        <label className="mt-4 grid gap-2 text-sm font-bold text-neutral-text">
+
+        <label className="mt-4 grid gap-1.5 text-xs font-semibold text-neutral-text">
           Card reference
           <input
-            className="w-full rounded-xl border border-neutral-border bg-neutral-surface px-4 py-3 text-sm font-semibold text-neutral-text shadow-sm outline-none transition placeholder:font-medium placeholder:text-neutral-muted focus:border-brand-default focus:ring-2 focus:ring-brand-default/15"
+            className="w-full rounded-xl border border-neutral-border bg-neutral-surface px-4 py-2.5 text-xs font-semibold text-neutral-text shadow-2xs outline-none transition placeholder:font-normal placeholder:text-neutral-muted focus:border-brand-default focus:ring-2 focus:ring-brand-default/15"
             onChange={(event) => setCardReference(event.target.value)}
             placeholder="Optional reference / last 4 digits"
             value={cardReference}
           />
         </label>
-        <div className={`mt-5 flex items-center justify-between rounded-2xl p-4 ${remaining === 0 ? "bg-status-success-bg text-status-success-text" : "bg-status-warning-bg text-status-warning-text"}`}>
-          <span className="text-sm font-bold">Remaining amount</span>
-          <strong className="text-xl">{formatLkr(remaining)}</strong>
+
+        <div className={`mt-5 flex items-center justify-between rounded-xl p-3.5 ${remaining === 0 ? "bg-status-success-bg text-status-success-text" : "bg-status-warning-bg text-status-warning-text"}`}>
+          <span className="text-xs font-bold">Remaining amount</span>
+          <strong className="text-lg font-bold">{formatLkr(remaining)}</strong>
         </div>
-        <div className="mt-5 flex items-start gap-2 rounded-xl bg-neutral-bg p-3 text-xs leading-5 text-neutral-muted">
+
+        <div className="mt-4 flex items-start gap-2 rounded-xl bg-neutral-bg p-3 text-xs leading-5 text-neutral-muted">
           <ShieldCheck className="mt-0.5 size-4 shrink-0 text-brand-default" />
           Complete after any required prescription checks.
         </div>
+
         <div className="mt-6 grid grid-cols-2 gap-3">
-          <button className="rounded-xl border border-neutral-border px-4 py-3 font-bold text-neutral-muted" onClick={onClose} type="button">
+          <button className="rounded-xl border border-neutral-border px-4 py-2.5 font-semibold text-xs text-neutral-muted hover:bg-neutral-bg transition" onClick={onClose} type="button">
             Cancel
           </button>
-          <button className="rounded-xl bg-brand-default px-4 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-40" disabled={!valid} onClick={() => onComplete(payments)} type="button">
+          <button className="rounded-xl bg-brand-default px-4 py-2.5 font-bold text-xs text-white hover:bg-brand-hover transition disabled:cursor-not-allowed disabled:bg-neutral-border disabled:text-neutral-muted" disabled={!valid} onClick={() => onComplete(payments)} type="button">
             Continue
           </button>
         </div>
@@ -119,3 +129,5 @@ export function PaymentModal({ open, mode, total, onClose, onComplete }: Props) 
     </div>
   );
 }
+
+
