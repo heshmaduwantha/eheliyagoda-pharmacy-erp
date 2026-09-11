@@ -7,7 +7,7 @@ import { idleFormState } from "@/lib/forms";
 import { updateProductSettingsAction } from "./product-settings.actions";
 
 export function ProductSettingsForm({ product }: { product: {
-  id: string; primaryBarcode: string; reorderLevel: string; baseUnitName: string;
+  id: string; name: string; strength?: string; primaryBarcode: string; reorderLevel: string; baseUnitName: string;
   isControlled: boolean; prescriptionRule: PrescriptionRule;
 } }) {
   const [state, action] = useActionState(updateProductSettingsAction, idleFormState);
@@ -18,6 +18,16 @@ export function ProductSettingsForm({ product }: { product: {
     <form action={action} className="space-y-6 rounded-2xl border border-neutral-border bg-neutral-surface p-6 shadow-sm sm:p-7">
       <input type="hidden" name="productId" value={product.id} />
       
+      <div className="grid gap-6 sm:grid-cols-2">
+        <Field label="Product Name" htmlFor="name" error={state.status === "error" ? state.fieldErrors?.name : undefined}>
+          <input className={inputClass} id="name" name="name" defaultValue={product.name} maxLength={200} required placeholder="Product brand/trade name" />
+        </Field>
+
+        <Field label="Strength / Dosage" htmlFor="strength" error={state.status === "error" ? state.fieldErrors?.strength : undefined} hint="e.g. 500mg, 10ml, 250mcg">
+          <input className={inputClass} id="strength" name="strength" defaultValue={product.strength ?? ""} maxLength={80} placeholder="e.g. 500mg" />
+        </Field>
+      </div>
+
       <div className="grid gap-6 sm:grid-cols-2">
         <Field label="Primary Barcode" htmlFor="primaryBarcode" error={state.status === "error" ? state.fieldErrors?.primaryBarcode : undefined}>
           <input className={inputClass} id="primaryBarcode" name="primaryBarcode" defaultValue={product.primaryBarcode} maxLength={120} placeholder="Scan or enter barcode" />

@@ -89,8 +89,18 @@ export async function getGrn(id: string) {
     where: { id },
     include: {
       supplier: true,
-      lines: { include: { product: { select: { name: true, genericName: true, productType: true } }, unit: true, batch: { select: { id: true } } } },
-      invoice: true,
+      lines: {
+        include: {
+          product: { select: { name: true, genericName: true, productType: true } },
+          unit: true,
+          batch: { select: { id: true, batchNo: true, qtyOnHandBase: true } },
+        },
+      },
+      invoice: {
+        include: {
+          payments: true,
+        },
+      },
     },
   });
 
@@ -104,9 +114,39 @@ export async function getGrn(id: string) {
     });
   }
 
+  let canVoid = true;
+  let voidDisabledReason: string | undefined;
+
+  if (grn.status === GrnStatus.CANCELLED) {
+    canVoid = false;
+    voidDisabledReason = "This GRN is already voided/cancelled.";
+  } else if (grn.status === GrnStatus.CONFIRMED) {
+    if (grn.invoice) {
+      if (grn.invoice.payments && grn.invoice.payments.length > 0) {
+        canVoid = false;
+        voidDisabledReason = "Cannot void GRN because payments have already been recorded for its supplier invoice.";
+      } else if (grn.invoice.status === SupplierInvoiceStatus.PAID) {
+        canVoid = false;
+        voidDisabledReason = "Cannot void GRN with a paid invoice.";
+      }
+    }
+
+    if (canVoid) {
+      for (const line of grn.lines) {
+        if (line.batch && line.batch.qtyOnHandBase.lt(line.qtyBase)) {
+          canVoid = false;
+          voidDisabledReason = `Cannot void GRN because stock from batch ${line.batch.batchNo ?? "item"} has already been sold, transferred, or returned.`;
+          break;
+        }
+      }
+    }
+  }
+
   return {
     ...grn,
     receivedBy: receivedByUser,
+    canVoid,
+    voidDisabledReason,
   };
 }
 

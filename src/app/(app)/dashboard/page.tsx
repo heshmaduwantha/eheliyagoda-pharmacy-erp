@@ -89,7 +89,7 @@ async function renderDashboardPage() {
           hint="At or below reorder level"
         />
         <KpiCard
-          href="/stock"
+          href="/stock/expiry"
           icon={<CalendarClock className="size-5" />}
           iconBg="bg-red-100"
           iconColor="text-red-500"

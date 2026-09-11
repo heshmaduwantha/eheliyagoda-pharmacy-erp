@@ -17,6 +17,7 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
     select: {
       id: true,
       name: true,
+      strength: true,
       baseUnitName: true,
       reorderLevel: true,
       isControlled: true,
@@ -50,6 +51,8 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
       <ProductSettingsForm
         product={{
           id: product.id,
+          name: product.name,
+          strength: product.strength ?? "",
           baseUnitName: product.baseUnitName,
           primaryBarcode: product.barcodes[0]?.barcode ?? "",
           reorderLevel: product.reorderLevel.toString(),

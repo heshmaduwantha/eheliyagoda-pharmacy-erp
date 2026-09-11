@@ -105,8 +105,8 @@ const grnLineSchema = z.object({
   supplierBatchNo: z.string().trim().max(80).optional(),
   expiryDate: z.string().trim().optional(),
   mrp: z.coerce.number().nonnegative().optional(),
-  costPrice: z.coerce.number().positive("Cost price must be greater than 0"),
-  sellingPrice: z.coerce.number().positive("Selling price must be greater than 0"),
+  costPrice: z.coerce.number().min(0, "Cost price cannot be negative"),
+  sellingPrice: z.coerce.number().min(0, "Selling price cannot be negative"),
 });
 
 const createGrnSchema = z.object({
@@ -117,6 +117,7 @@ const createGrnSchema = z.object({
 
 export async function createGrnDraftAction(_prev: FormState, formData: FormData): Promise<FormState> {
   const actor = await requirePermission("grn.manage", { onDenied: "throw" });
+  const actionType = String(formData.get("actionType") ?? "draft");
 
   let lines: unknown = [];
   try {
@@ -144,16 +145,24 @@ export async function createGrnDraftAction(_prev: FormState, formData: FormData)
   try {
     const grn = await createGrnDraft(parsed.data, actor.id);
     grnId = grn.id;
+    if (actionType === "confirm") {
+      await confirmGrn(grnId, actor.id);
+    }
   } catch (error) {
     return { status: "error", message: error instanceof Error ? error.message : "Failed to save GRN." };
   }
 
   revalidatePath("/stock/grn");
+  revalidatePath(`/stock/grn/${grnId}`);
+  revalidatePath("/stock");
+  revalidatePath("/stock/batches");
+  revalidatePath("/dashboard");
   redirect(`/stock/grn/${grnId}`);
 }
 
 export async function updateGrnDraftAction(grnId: string, _prev: FormState, formData: FormData): Promise<FormState> {
   const actor = await requirePermission("grn.manage", { onDenied: "throw" });
+  const actionType = String(formData.get("actionType") ?? "draft");
 
   let lines: unknown = [];
   try {
@@ -179,12 +188,18 @@ export async function updateGrnDraftAction(grnId: string, _prev: FormState, form
 
   try {
     await updateGrnDraft(grnId, parsed.data, actor.id);
+    if (actionType === "confirm") {
+      await confirmGrn(grnId, actor.id);
+    }
   } catch (error) {
-    return { status: "error", message: error instanceof Error ? error.message : "Failed to update GRN draft." };
+    return { status: "error", message: error instanceof Error ? error.message : "Failed to update GRN." };
   }
 
   revalidatePath("/stock/grn");
   revalidatePath(`/stock/grn/${grnId}`);
+  revalidatePath("/stock");
+  revalidatePath("/stock/batches");
+  revalidatePath("/dashboard");
   redirect(`/stock/grn/${grnId}`);
 }
 
@@ -206,7 +221,9 @@ export async function voidGrnAction(grnId: string, reason?: string): Promise<For
     await voidGrn(grnId, actor.id, reason);
     revalidatePath("/stock/grn");
     revalidatePath(`/stock/grn/${grnId}`);
+    revalidatePath("/stock");
     revalidatePath("/stock/batches");
+    revalidatePath("/dashboard");
     revalidatePath("/reports/stock-movements");
     return { status: "success", message: "GRN has been voided/cancelled successfully." };
   } catch (error) {

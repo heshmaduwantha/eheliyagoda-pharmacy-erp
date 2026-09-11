@@ -6,6 +6,7 @@ import { requirePermission } from "@/modules/auth/permissions";
 import { getGrn } from "@/modules/procurement/grn.service";
 import { listActiveSuppliers } from "@/modules/procurement/supplier.service";
 import { searchProducts } from "@/modules/catalog/catalog.service";
+import { SetBreadcrumb } from "@/components/layout/breadcrumbs";
 import { GrnForm, type GrnFormInitialData } from "@/modules/procurement/grn-form";
 
 export default async function EditGrnDraftPage({ params }: { params: Promise<{ id: string }> }) {
@@ -42,6 +43,7 @@ export default async function EditGrnDraftPage({ params }: { params: Promise<{ i
 
   return (
     <div className="mx-auto max-w-5xl">
+      <SetBreadcrumb segment={id} label={grn.grnNo} />
       <PageHeader
         action={
           <Link className="inline-flex items-center gap-2 rounded-xl border border-neutral-border bg-neutral-surface px-4 py-2 text-sm font-semibold text-neutral-muted" href={`/stock/grn/${grn.id}`}>

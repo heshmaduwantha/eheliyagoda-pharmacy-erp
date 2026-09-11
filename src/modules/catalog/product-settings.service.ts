@@ -5,6 +5,8 @@ import { writeAuditLog } from "@/modules/audit/audit.service";
 
 export const productSettingsSchema = z.object({
   productId: z.string().uuid(),
+  name: z.string().trim().min(1, "Product name is required").max(200),
+  strength: z.string().trim().max(80).optional().nullable(),
   primaryBarcode: z.string().trim().max(120),
   reorderLevel: z.coerce.number().min(0).max(99999999999.999).refine(
     (value) => new Prisma.Decimal(value).decimalPlaces() <= 3,
@@ -44,14 +46,16 @@ export async function updateProductSettings(input: z.input<typeof productSetting
       }
     }
     const product = await tx.product.update({ where: { id: before.id }, data: {
+      name: values.name,
+      strength: values.strength || null,
       reorderLevel: values.reorderLevel,
       isControlled: values.isControlled,
       prescriptionRule: values.isControlled ? PrescriptionRule.HARD_REQUIRED_CONTROLLED : values.prescriptionRule,
     } });
     await writeAuditLog({
       actorUserId, action: "product.settings.updated", entityType: "PRODUCT", entityId: before.id,
-      beforeData: { primaryBarcode: existing?.barcode ?? null, reorderLevel: before.reorderLevel.toString(), isControlled: before.isControlled, prescriptionRule: before.prescriptionRule },
-      afterData: { primaryBarcode: values.primaryBarcode || null, reorderLevel: product.reorderLevel.toString(), isControlled: product.isControlled, prescriptionRule: product.prescriptionRule },
+      beforeData: { name: before.name, strength: before.strength, primaryBarcode: existing?.barcode ?? null, reorderLevel: before.reorderLevel.toString(), isControlled: before.isControlled, prescriptionRule: before.prescriptionRule },
+      afterData: { name: product.name, strength: product.strength, primaryBarcode: values.primaryBarcode || null, reorderLevel: product.reorderLevel.toString(), isControlled: product.isControlled, prescriptionRule: product.prescriptionRule },
     }, tx);
     return product;
   }, { maxWait: 5000, timeout: 10000 });

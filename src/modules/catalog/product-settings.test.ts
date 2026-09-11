@@ -8,7 +8,7 @@ import { resolvePrescriptionRequirement } from "@/modules/sales/prescription-rul
 import { getLowStockReport } from "@/modules/reports/inventory-report.service";
 
 test("product settings reject invalid alert quantities and oversized barcodes", () => {
-  const valid = { productId: randomUUID(), primaryBarcode: "", reorderLevel: 0, isControlled: false, prescriptionRule: "NONE" };
+  const valid = { productId: randomUUID(), name: "Test Product", primaryBarcode: "", reorderLevel: 0, isControlled: false, prescriptionRule: "NONE" };
   for (const reorderLevel of [-1, Infinity, 0.0001, 100000000000]) {
     assert.equal(productSettingsSchema.safeParse({ ...valid, reorderLevel }).success, false);
   }
@@ -40,7 +40,7 @@ test("settings edits preserve stock/units/prices, update lookups and prescriptio
       id: ids[1], name: `${prefix}-other`, productType: "MEDICINE", baseUnitName: "Tablet",
       barcodes: { create: { barcode: `${prefix}-taken`, isPrimary: true } },
     } });
-    const settings = { productId: product.id, primaryBarcode: `${prefix}-first`, reorderLevel: 6, isControlled: true, prescriptionRule: "NONE" as const };
+    const settings = { productId: product.id, name: `${prefix}-medicine`, primaryBarcode: `${prefix}-first`, reorderLevel: 6, isControlled: true, prescriptionRule: "NONE" as const };
     await updateProductSettings(settings, actor.id);
     assert.equal((await lookupBarcode(settings.primaryBarcode))?.unit?.id, base.id);
     assert.equal((await resolvePrescriptionRequirement([{ productId: product.id }])).rule, "HARD_REQUIRED_CONTROLLED");

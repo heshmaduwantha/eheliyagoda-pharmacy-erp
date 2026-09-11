@@ -27,18 +27,18 @@ export default async function GrnDetailPage({ params }: { params: Promise<{ id: 
       <PageHeader
         action={
           <div className="flex flex-wrap items-center gap-2">
-            <Link className="inline-flex items-center gap-2 rounded-xl border border-neutral-border bg-neutral-surface px-4 py-2 text-sm font-semibold text-neutral-muted hover:bg-neutral-bg" href="/stock/grn">
-              <ArrowLeft className="size-4" /> Back
+            <Link className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-border bg-neutral-surface px-3 py-1.5 text-xs font-bold text-neutral-muted hover:bg-neutral-bg" href="/stock/grn">
+              <ArrowLeft className="size-3.5" /> Back
             </Link>
-            <PrintGrnNoteButton grnId={grn.id} label="Print GRN Note" variant="outline" />
+            {grn.status === "CONFIRMED" && (
+              <PrintGrnNoteButton grnId={grn.id} label="Print GRN Note" variant="outline" />
+            )}
             {grn.status === "DRAFT" && (
-              <Link className="inline-flex items-center gap-2 rounded-xl bg-brand-default px-4 py-2 text-sm font-semibold text-white hover:bg-brand-hover" href={`/stock/grn/${grn.id}/edit`}>
+              <Link className="inline-flex items-center gap-1.5 rounded-lg bg-brand-default px-3 py-1.5 text-xs font-bold text-white hover:bg-brand-hover" href={`/stock/grn/${grn.id}/edit`}>
                 Edit draft
               </Link>
             )}
-            {grn.status !== "CANCELLED" && (
-              <VoidGrnButton grnId={grn.id} />
-            )}
+            <VoidGrnButton grnId={grn.id} disabled={!grn.canVoid} isDraft={grn.status === "DRAFT"} />
           </div>
         }
         description={`Supplier: ${grn.supplier.name}`}

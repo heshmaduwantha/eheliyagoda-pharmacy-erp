@@ -8,10 +8,14 @@ import { formatMoney } from "@/lib/money";
 import { idleFormState } from "@/lib/forms";
 import { createGrnDraftAction, updateGrnDraftAction } from "./actions";
 
+import { VoidGrnButton } from "./void-grn-button";
+
 export type GrnFormProduct = {
   id: string;
   name: string;
   productType: "MEDICINE" | "GENERAL_ITEM";
+  baseUnitName?: string;
+  defaultSellingPrice?: number | null;
   units: { id: string; unitName: string; isPurchaseDefault: boolean }[];
 };
 
@@ -74,12 +78,17 @@ export function GrnForm({
   const onProductChange = (index: number, productId: string) => {
     const product = productById.get(productId);
     const defaultUnit = product?.units.find((u) => u.isPurchaseDefault) ?? product?.units[0];
-    updateLine(index, { productId, unitId: defaultUnit?.id ?? "" });
+    const defaultSellingPrice = product?.defaultSellingPrice != null ? String(product.defaultSellingPrice) : "";
+    updateLine(index, {
+      productId,
+      unitId: defaultUnit?.id ?? "",
+      sellingPrice: lines[index]?.sellingPrice || defaultSellingPrice,
+    });
   };
 
   const linesPayload = JSON.stringify(
     lines
-      .filter((l) => l.productId && l.unitId && Number(l.qtyInUnit) > 0 && Number(l.costPrice) > 0 && Number(l.sellingPrice) > 0)
+      .filter((l) => l.productId && l.unitId && Number(l.qtyInUnit) > 0)
       .map((l) => ({
         productId: l.productId,
         unitId: l.unitId,
@@ -87,8 +96,8 @@ export function GrnForm({
         supplierBatchNo: l.supplierBatchNo.trim() || undefined,
         expiryDate: l.expiryDate || undefined,
         mrp: l.mrp ? Number(l.mrp) : undefined,
-        costPrice: Number(l.costPrice),
-        sellingPrice: Number(l.sellingPrice),
+        costPrice: Number(l.costPrice) || 0,
+        sellingPrice: Number(l.sellingPrice) || 0,
       })),
   );
 
@@ -209,8 +218,30 @@ export function GrnForm({
       </div>
 
       <FormAlert state={state} />
-      <div>
-        <SubmitButton>Save draft</SubmitButton>
+
+      <div className="flex flex-wrap items-center justify-between gap-4 pt-2 border-t border-neutral-border/80">
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="submit"
+            name="actionType"
+            value="draft"
+            className="inline-flex items-center gap-2 rounded-xl border border-neutral-border bg-neutral-surface px-5 py-2.5 text-xs font-bold text-neutral-text transition hover:bg-neutral-bg shadow-sm"
+          >
+            Save draft
+          </button>
+          <button
+            type="submit"
+            name="actionType"
+            value="confirm"
+            className="inline-flex items-center gap-2 rounded-xl bg-brand-default px-5 py-2.5 text-xs font-bold text-white transition hover:bg-brand-hover shadow-sm"
+          >
+            Complete GRN
+          </button>
+        </div>
+
+        {initialData?.id && (
+          <VoidGrnButton grnId={initialData.id} isDraft={true} />
+        )}
       </div>
     </form>
   );

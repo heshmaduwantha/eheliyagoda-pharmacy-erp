@@ -11,8 +11,12 @@ import { productSettingsSchema, updateProductSettings } from "./product-settings
 export async function updateProductSettingsAction(_previous: FormState, formData: FormData): Promise<FormState> {
   const actor = await requirePermission("product.manage", { onDenied: "throw" });
   const parsed = productSettingsSchema.safeParse({
-    productId: formData.get("productId"), primaryBarcode: formData.get("primaryBarcode"),
-    reorderLevel: formData.get("reorderLevel"), isControlled: formData.get("isControlled") === "on",
+    productId: formData.get("productId"),
+    name: formData.get("name"),
+    strength: formData.get("strength"),
+    primaryBarcode: formData.get("primaryBarcode"),
+    reorderLevel: formData.get("reorderLevel"),
+    isControlled: formData.get("isControlled") === "on",
     prescriptionRule: formData.get("prescriptionRule"),
   });
   if (!parsed.success) return { status: "error", message: "Please check the highlighted fields.", fieldErrors: toFieldErrors(parsed.error.flatten().fieldErrors) };
@@ -25,6 +29,8 @@ export async function updateProductSettingsAction(_previous: FormState, formData
   invalidatePosInitialCatalogCache();
   invalidateAlertCountsCache();
   for (const tag of ["pos-catalog", "dashboard", "alerts"]) revalidateTag(tag);
-  revalidatePath("/", "layout");
+  revalidatePath("/products");
+  revalidatePath(`/products/${parsed.data.productId}/edit`);
+  revalidatePath("/pos");
   return { status: "success", message: "Product settings saved. Refresh any already-open POS screen to load the updated settings." };
 }
