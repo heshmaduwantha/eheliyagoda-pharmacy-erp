@@ -26,10 +26,20 @@ export function ReceiptModal({ receipt, onClose }: { receipt: SaleReceipt | null
         </div>
 
         <div className="text-center">
-          <CheckCircle2 className="mx-auto size-14 text-emerald-500" />
-          <h2 className="mt-4 text-2xl font-black text-neutral-text">Sale completed</h2>
-          <p className="mt-1 text-xs font-medium text-neutral-muted">{receipt.saleNumber}</p>
-          <p className="mt-1 text-xs text-neutral-muted">{receipt.completedAt}</p>
+          <CheckCircle2 className="mx-auto size-12 text-emerald-500" />
+          <h2 className="mt-2 text-xl font-black text-neutral-text">Sale completed</h2>
+          <p className="mt-1 text-sm font-extrabold uppercase tracking-wide text-brand-default">
+            Eheliyagoda Pharmacy &amp; Grocery
+          </p>
+          <div className="mt-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs text-neutral-muted">
+            <span className="font-semibold text-neutral-text">{receipt.saleNumber}</span>
+            <span>·</span>
+            <span>{receipt.completedAt}</span>
+            <span>·</span>
+            <span className="rounded-md bg-slate-100 px-2 py-0.5 font-bold text-slate-700">
+              Cashier: {receipt.cashierName || "Pavithra"}
+            </span>
+          </div>
         </div>
 
         <div className="mt-6 space-y-3 border-y border-dashed border-neutral-border py-4">

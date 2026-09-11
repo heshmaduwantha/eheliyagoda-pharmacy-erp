@@ -87,6 +87,7 @@ export type SaleReceipt = {
   saleNumber: string;
   status: SaleStatus;
   completedAt: ISODateTime;
+  cashierName?: string;
   subtotal: MoneyString;
   discountAmount: MoneyString;
   taxAmount: MoneyString;

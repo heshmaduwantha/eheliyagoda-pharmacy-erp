@@ -1,4 +1,4 @@
-import { Search, Plus, ChevronDown } from "lucide-react";
+import { Search, Plus, ChevronDown, Pencil } from "lucide-react";
 import Link from "next/link";
 import { formatMoney, formatQty } from "@/lib/money";
 import { requirePermission } from "@/modules/auth/permissions";
@@ -137,7 +137,16 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
                         {product.defaultSellingPrice ? formatMoney(product.defaultSellingPrice) : "—"}
                         <span className="ml-1 text-xs font-normal text-neutral-muted">/{product.baseUnitName}</span>
                       </td>
-                      <td className="px-5 py-3.5"><Link href={`/products/${product.id}/edit`} className="font-bold text-brand-default hover:underline" aria-label={`Edit ${product.name}`}>Edit</Link></td>
+                      <td className="px-5 py-3.5">
+                        <Link
+                          href={`/products/${product.id}/edit`}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-brand-default/30 bg-brand-pale px-3 py-1.5 text-xs font-bold text-brand-default shadow-xs transition hover:bg-brand-default hover:text-white"
+                          aria-label={`Edit ${product.name}`}
+                        >
+                          <Pencil className="size-3.5" />
+                          Edit
+                        </Link>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

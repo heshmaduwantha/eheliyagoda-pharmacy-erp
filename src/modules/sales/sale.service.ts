@@ -285,6 +285,7 @@ function buildReceipt(input: {
   saleNumber: string;
   status: SaleStatus;
   completedAt: Date;
+  cashierName?: string;
   subtotal: Prisma.Decimal;
   discountAmount: Prisma.Decimal;
   taxAmount: Prisma.Decimal;
@@ -357,6 +358,7 @@ function buildReceipt(input: {
     saleNumber: input.saleNumber,
     status: input.status,
     completedAt: toIso(input.completedAt),
+    cashierName: input.cashierName,
     subtotal: input.subtotal.toFixed(2),
     discountAmount: input.discountAmount.toFixed(2),
     taxAmount: input.taxAmount.toFixed(2),
@@ -495,6 +497,7 @@ export async function getSaleReceiptById(saleId: string): Promise<SaleReceipt | 
       taxAmount: true,
       total: true,
       completedAt: true,
+      cashier: { select: { name: true, username: true } },
       lines: {
         select: {
           id: true,
@@ -554,6 +557,7 @@ export async function getSaleReceiptById(saleId: string): Promise<SaleReceipt | 
     discountAmount: sale.discountAmount,
     taxAmount: sale.taxAmount,
     total: sale.total,
+    cashierName: sale.cashier?.name || sale.cashier?.username,
     allocations,
     payments: sale.payments,
   });
@@ -895,6 +899,7 @@ export async function completeSale(input: SaleCompletionInput, actor: CurrentUse
       discountAmount,
       taxAmount,
       total,
+      cashierName: actor.name || actor.username,
       allocations,
       payments: createdPayments,
     });
