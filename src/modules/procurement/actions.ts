@@ -225,8 +225,8 @@ export async function voidGrnAction(grnId: string, reason?: string): Promise<For
     revalidatePath("/stock/batches");
     revalidatePath("/dashboard");
     revalidatePath("/reports/stock-movements");
-    return { status: "success", message: "GRN has been voided/cancelled successfully." };
+    return { status: "success", message: "Draft GRN has been cancelled successfully." };
   } catch (error) {
-    return { status: "error", message: error instanceof Error ? error.message : "Failed to void GRN." };
+    return { status: "error", message: error instanceof Error ? error.message : "Failed to cancel draft GRN." };
   }
 }

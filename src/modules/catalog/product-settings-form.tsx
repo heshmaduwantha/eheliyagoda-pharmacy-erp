@@ -19,12 +19,14 @@ export function ProductSettingsForm({ product }: { product: {
       <input type="hidden" name="productId" value={product.id} />
       
       <div className="grid gap-6 sm:grid-cols-2">
-        <Field label="Product Name" htmlFor="name" error={state.status === "error" ? state.fieldErrors?.name : undefined}>
-          <input className={inputClass} id="name" name="name" defaultValue={product.name} maxLength={200} required placeholder="Product brand/trade name" />
+        <Field label="Product Name" htmlFor="name" hint="Product name cannot be edited" error={state.status === "error" ? state.fieldErrors?.name : undefined}>
+          <input type="hidden" name="name" value={product.name} />
+          <input className={`${inputClass} bg-slate-100 text-neutral-muted cursor-not-allowed`} id="name" disabled value={product.name} />
         </Field>
 
-        <Field label="Strength / Dosage" htmlFor="strength" error={state.status === "error" ? state.fieldErrors?.strength : undefined} hint="e.g. 500mg, 10ml, 250mcg">
-          <input className={inputClass} id="strength" name="strength" defaultValue={product.strength ?? ""} maxLength={80} placeholder="e.g. 500mg" />
+        <Field label="Strength / Dosage" htmlFor="strength" hint="Strength cannot be edited" error={state.status === "error" ? state.fieldErrors?.strength : undefined}>
+          <input type="hidden" name="strength" value={product.strength ?? ""} />
+          <input className={`${inputClass} bg-slate-100 text-neutral-muted cursor-not-allowed`} id="strength" disabled value={product.strength ?? ""} />
         </Field>
       </div>
 

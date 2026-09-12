@@ -40,14 +40,17 @@ function parsePositiveFactor(value: number, unitName: string) {
   }
 }
 
-/** Lists/searches active products with their units and barcodes for catalog screens. */
 export async function searchProducts(
-  options: { query?: string; filter?: string; page?: number; pageSize?: number } = {}
+  options: { query?: string; filter?: string; page?: number; pageSize?: number; includeDisabled?: boolean } = {}
 ) {
-  const { query, filter, page = 1, pageSize = 10 } = options;
+  const { query, filter, page = 1, pageSize = 10, includeDisabled = false } = options;
   const trimmed = query?.trim();
 
   const where: Prisma.ProductWhereInput = {};
+
+  if (!includeDisabled && filter !== "disabled") {
+    where.isActive = true;
+  }
   
   if (trimmed) {
     where.OR = [
@@ -59,6 +62,8 @@ export async function searchProducts(
   
   if (filter === "controlled") {
     where.isControlled = true;
+  } else if (filter === "disabled") {
+    where.isActive = false;
   }
 
   const [data, total] = await Promise.all([
@@ -166,4 +171,31 @@ export async function createProduct(input: CreateProductInput, actorUserId: stri
 
     return product;
   }, { maxWait: 5_000, timeout: 10_000 });
+}
+
+export async function setProductActive(productId: string, isActive: boolean, actorUserId: string) {
+  return prisma.$transaction(async (tx) => {
+    const product = await tx.product.findUnique({ where: { id: productId } });
+    if (!product) throw new Error("Product not found.");
+    if (product.isActive === isActive) return product;
+
+    const updated = await tx.product.update({
+      where: { id: productId },
+      data: { isActive },
+    });
+
+    await writeAuditLog(
+      {
+        actorUserId,
+        action: isActive ? "product.activated" : "product.deactivated",
+        entityType: "PRODUCT",
+        entityId: productId,
+        beforeData: { isActive: product.isActive },
+        afterData: { isActive: updated.isActive, name: updated.name },
+      },
+      tx,
+    );
+
+    return updated;
+  });
 }

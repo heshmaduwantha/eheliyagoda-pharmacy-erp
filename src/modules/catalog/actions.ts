@@ -5,7 +5,7 @@ import { PrescriptionRule, ProductType } from "@prisma/client";
 import { z } from "zod";
 import { type FormState, toFieldErrors } from "@/lib/forms";
 import { requirePermission } from "@/modules/auth/permissions";
-import { createProduct } from "./catalog.service";
+import { createProduct, setProductActive } from "./catalog.service";
 import { UNIT_OPTIONS } from "./unit-options";
 
 const unitSchema = z.object({
@@ -97,4 +97,15 @@ export async function createProductAction(_prev: FormState, formData: FormData):
       : message;
     return { status: "error", message: friendly };
   }
+}
+
+export async function setProductActiveAction(productId: string, isActive: boolean) {
+  const actor = await requirePermission("product.manage", { onDenied: "throw" });
+  const validProductId = z.string().uuid().parse(productId);
+  const product = await setProductActive(validProductId, isActive, actor.id);
+  revalidatePath("/products");
+  revalidatePath(`/products/${productId}`);
+  revalidatePath("/pos");
+  revalidatePath("/stock/grn/new");
+  return { id: product.id, name: product.name, isActive: product.isActive };
 }

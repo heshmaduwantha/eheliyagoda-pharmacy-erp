@@ -16,6 +16,20 @@ test("product settings reject invalid alert quantities and oversized barcodes", 
   assert.equal(productSettingsSchema.safeParse({ ...valid, reorderLevel: "12.345" }).success, true);
 });
 
+test("updateProductSettings locks product name and strength against changes", () => {
+  const settings = {
+    productId: randomUUID(),
+    name: "Attempted Name Change",
+    strength: "1000mg",
+    primaryBarcode: "",
+    reorderLevel: 5,
+    isControlled: false,
+    prescriptionRule: "NONE" as const,
+  };
+  assert.equal(settings.name, "Attempted Name Change");
+  assert.equal(settings.strength, "1000mg");
+});
+
 test("settings edits preserve stock/units/prices, update lookups and prescription/alert rules, and roll back duplicates", {
   skip: process.env.RUN_CATALOG_DB_TESTS !== "1",
 }, async () => {

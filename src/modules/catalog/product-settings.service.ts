@@ -46,8 +46,8 @@ export async function updateProductSettings(input: z.input<typeof productSetting
       }
     }
     const product = await tx.product.update({ where: { id: before.id }, data: {
-      name: values.name,
-      strength: values.strength || null,
+      name: before.name,
+      strength: before.strength,
       reorderLevel: values.reorderLevel,
       isControlled: values.isControlled,
       prescriptionRule: values.isControlled ? PrescriptionRule.HARD_REQUIRED_CONTROLLED : values.prescriptionRule,

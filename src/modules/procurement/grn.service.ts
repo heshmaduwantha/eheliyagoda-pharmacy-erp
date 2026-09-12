@@ -114,32 +114,15 @@ export async function getGrn(id: string) {
     });
   }
 
-  let canVoid = true;
+  let canVoid = false;
   let voidDisabledReason: string | undefined;
 
-  if (grn.status === GrnStatus.CANCELLED) {
-    canVoid = false;
-    voidDisabledReason = "This GRN is already voided/cancelled.";
+  if (grn.status === GrnStatus.DRAFT) {
+    canVoid = true;
+  } else if (grn.status === GrnStatus.CANCELLED) {
+    voidDisabledReason = "This GRN is already cancelled.";
   } else if (grn.status === GrnStatus.CONFIRMED) {
-    if (grn.invoice) {
-      if (grn.invoice.payments && grn.invoice.payments.length > 0) {
-        canVoid = false;
-        voidDisabledReason = "Cannot void GRN because payments have already been recorded for its supplier invoice.";
-      } else if (grn.invoice.status === SupplierInvoiceStatus.PAID) {
-        canVoid = false;
-        voidDisabledReason = "Cannot void GRN with a paid invoice.";
-      }
-    }
-
-    if (canVoid) {
-      for (const line of grn.lines) {
-        if (line.batch && line.batch.qtyOnHandBase.lt(line.qtyBase)) {
-          canVoid = false;
-          voidDisabledReason = `Cannot void GRN because stock from batch ${line.batch.batchNo ?? "item"} has already been sold, transferred, or returned.`;
-          break;
-        }
-      }
-    }
+    voidDisabledReason = "Confirmed GRNs cannot be voided. Only draft GRNs can be cancelled.";
   }
 
   return {
@@ -430,107 +413,28 @@ export async function voidGrn(grnId: string, actorUserId: string, reason?: strin
     });
 
     if (!grn) throw new Error("GRN not found.");
-    if (grn.status === GrnStatus.CANCELLED) throw new Error("This GRN is already voided.");
-
-    if (grn.status === GrnStatus.DRAFT) {
-      const updated = await tx.grn.update({
-        where: { id: grnId },
-        data: { status: GrnStatus.CANCELLED },
-      });
-
-      await writeAuditLog(
-        {
-          actorUserId,
-          action: "grn.voided",
-          entityType: "GRN",
-          entityId: grnId,
-          beforeData: { status: GrnStatus.DRAFT },
-          afterData: { status: GrnStatus.CANCELLED, reason: reason || "Voided draft GRN" },
-        },
-        tx,
-      );
-
-      return updated;
+    if (grn.status === GrnStatus.CANCELLED) throw new Error("This GRN is already cancelled.");
+    if (grn.status !== GrnStatus.DRAFT) {
+      throw new Error("Only DRAFT GRNs can be cancelled. Confirmed GRNs cannot be voided.");
     }
 
-    if (grn.status === GrnStatus.CONFIRMED) {
-      if (grn.invoice) {
-        if (grn.invoice.payments && grn.invoice.payments.length > 0) {
-          throw new Error("Cannot void GRN because payments have already been recorded for its supplier invoice.");
-        }
-        if (grn.invoice.status === SupplierInvoiceStatus.PAID) {
-          throw new Error("Cannot void GRN with a paid invoice.");
-        }
-      }
+    const updated = await tx.grn.update({
+      where: { id: grnId },
+      data: { status: GrnStatus.CANCELLED },
+    });
 
-      const batchIds: string[] = [];
-      for (const line of grn.lines) {
-        if (line.batch) {
-          if (line.batch.qtyOnHandBase.lt(line.qtyBase)) {
-            throw new Error(`Cannot void GRN because stock from batch ${line.batch.batchNo ?? "item"} has already been sold or transferred.`);
-          }
-          batchIds.push(line.batch.id);
-        }
-      }
+    await writeAuditLog(
+      {
+        actorUserId,
+        action: "grn.voided",
+        entityType: "GRN",
+        entityId: grnId,
+        beforeData: { status: GrnStatus.DRAFT },
+        afterData: { status: GrnStatus.CANCELLED, reason: reason || "Voided draft GRN" },
+      },
+      tx,
+    );
 
-      if (batchIds.length > 0) {
-        await tx.stockMovement.createMany({
-          data: grn.lines
-            .filter((line) => line.batch)
-            .map((line) => ({
-              id: randomUUID(),
-              productId: line.productId,
-              batchId: line.batch!.id,
-              movementType: StockMovementType.SUPPLIER_RETURN,
-              qtyBase: line.qtyBase.negated(),
-              refType: "GRN_VOID",
-              refId: grn.id,
-              note: `Void GRN ${grn.grnNo}${reason ? `: ${reason}` : ""}`,
-              createdById: actorUserId,
-            })),
-        });
-
-        for (const line of grn.lines) {
-          if (line.batch) {
-            const nextQty = Prisma.Decimal.max(0, line.batch.qtyOnHandBase.sub(line.qtyBase));
-            await tx.batch.update({
-              where: { id: line.batch.id },
-              data: {
-                qtyOnHandBase: nextQty,
-                status: nextQty.eq(0) ? BatchStatus.DEPLETED : line.batch.status,
-              },
-            });
-          }
-        }
-      }
-
-      if (grn.invoice) {
-        await tx.supplierInvoice.update({
-          where: { id: grn.invoice.id },
-          data: { status: SupplierInvoiceStatus.CANCELLED },
-        });
-      }
-
-      const updated = await tx.grn.update({
-        where: { id: grnId },
-        data: { status: GrnStatus.CANCELLED },
-      });
-
-      await writeAuditLog(
-        {
-          actorUserId,
-          action: "grn.voided",
-          entityType: "GRN",
-          entityId: grnId,
-          beforeData: { status: GrnStatus.CONFIRMED },
-          afterData: { status: GrnStatus.CANCELLED, reason: reason || "Voided confirmed GRN" },
-        },
-        tx,
-      );
-
-      return updated;
-    }
-
-    throw new Error("Invalid GRN status for void operation.");
+    return updated;
   }, GRN_TRANSACTION_OPTIONS);
 }

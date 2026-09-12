@@ -4,6 +4,7 @@ import { formatMoney, formatQty } from "@/lib/money";
 import { requirePermission } from "@/modules/auth/permissions";
 import { searchProducts } from "@/modules/catalog/catalog.service";
 import { ProductForm } from "@/modules/catalog/product-form";
+import { ProductStatusToggle } from "@/modules/catalog/product-status-toggle";
 import { Pagination } from "@/components/ui/pagination";
 import { AutoSubmit } from "@/components/ui/auto-submit";
 
@@ -47,13 +48,19 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
               href="/products" 
               className={`rounded-full px-4 py-1.5 text-sm font-semibold transition ${!filter ? "bg-slate-800 text-white" : "bg-slate-100 text-neutral-muted hover:bg-slate-200"}`}
             >
-              All products
+              Active products
             </Link>
             <Link 
               href="/products?filter=controlled" 
               className={`rounded-full px-4 py-1.5 text-sm font-semibold transition ${filter === "controlled" ? "bg-red-100 text-status-danger-text" : "bg-slate-100 text-neutral-muted hover:bg-status-danger-bg hover:text-status-danger-text"}`}
             >
               Controlled drugs
+            </Link>
+            <Link 
+              href="/products?filter=disabled" 
+              className={`rounded-full px-4 py-1.5 text-sm font-semibold transition ${filter === "disabled" ? "bg-slate-800 text-white" : "bg-slate-100 text-neutral-muted hover:bg-slate-200"}`}
+            >
+              Disabled products
             </Link>
           </div>
           <form className="flex w-full max-w-sm items-center gap-2 rounded-xl border border-neutral-border bg-neutral-surface px-3 py-2 shadow-sm">
@@ -92,9 +99,10 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {products.map(product => (
-                    <tr key={product.id} className={`transition hover:bg-neutral-bg ${product.isControlled ? "bg-status-danger-bg/40" : "bg-neutral-surface"}`}>
+                    <tr key={product.id} className={`transition hover:bg-neutral-bg ${!product.isActive ? "bg-slate-50 opacity-75" : product.isControlled ? "bg-status-danger-bg/40" : "bg-neutral-surface"}`}>
                       <td className="px-5 py-3.5 font-bold text-neutral-text">
                         {product.name}
+                        {!product.isActive && <span className="ml-2 inline-flex items-center rounded-md bg-slate-200 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-700">Disabled</span>}
                         {product.isControlled && <span className="ml-2 inline-flex items-center rounded-md bg-red-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-status-danger-text">Controlled</span>}
                       </td>
                       <td className="px-5 py-3.5">{product.genericName || "—"}</td>
@@ -137,7 +145,7 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
                         {product.defaultSellingPrice ? formatMoney(product.defaultSellingPrice) : "—"}
                         <span className="ml-1 text-xs font-normal text-neutral-muted">/{product.baseUnitName}</span>
                       </td>
-                      <td className="px-5 py-3.5">
+                      <td className="px-5 py-3.5 flex items-center gap-2">
                         <Link
                           href={`/products/${product.id}/edit`}
                           className="inline-flex items-center gap-1.5 rounded-lg border border-brand-default/30 bg-brand-pale px-3 py-1.5 text-xs font-bold text-brand-default shadow-xs transition hover:bg-brand-default hover:text-white"
@@ -146,6 +154,7 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
                           <Pencil className="size-3.5" />
                           Edit
                         </Link>
+                        <ProductStatusToggle productId={product.id} productName={product.name} isActive={product.isActive} />
                       </td>
                     </tr>
                   ))}

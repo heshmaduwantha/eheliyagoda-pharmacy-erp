@@ -28,15 +28,11 @@ export function VoidGrnButton({
 
   if (disabled) return null;
 
-  const buttonText = isDraft ? "Cancel draft" : "Void GRN";
-  const modalTitle = isDraft ? "Cancel Draft Confirmation" : "Void GRN Confirmation";
-  const modalDesc = isDraft
-    ? "This action will mark the draft GRN as cancelled."
-    : "This action will reverse stock movements and cancel unpaid invoices.";
-  const modalQuestion = isDraft
-    ? "Are you sure you want to cancel this draft GRN?"
-    : "Are you sure you want to void this GRN?";
-  const actionButtonText = isDraft ? "Yes, Cancel Draft" : "Yes, Void GRN";
+  const buttonText = "Cancel draft";
+  const modalTitle = "Cancel Draft Confirmation";
+  const modalDesc = "This action will mark the draft GRN as cancelled.";
+  const modalQuestion = "Are you sure you want to cancel this draft GRN?";
+  const actionButtonText = "Yes, Cancel Draft";
 
   return (
     <>
@@ -79,7 +75,7 @@ export function VoidGrnButton({
 
             <input
               type="text"
-              placeholder={isDraft ? "Reason for cancelling (optional)..." : "Reason for voiding (e.g. Incorrect delivery, duplicate)..."}
+              placeholder="Reason for cancelling (optional)..."
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               className="w-full rounded-xl border border-neutral-border bg-slate-50 px-3.5 py-2 text-xs text-neutral-text focus:bg-white focus:outline-none focus:ring-2 focus:ring-red-500"
