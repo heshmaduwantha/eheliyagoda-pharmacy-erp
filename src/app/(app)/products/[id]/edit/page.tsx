@@ -28,6 +28,12 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
 
   if (!product) notFound();
 
+  const stockAgg = await prisma.batch.aggregate({
+    where: { productId: id, qtyOnHandBase: { gt: 0 } },
+    _sum: { qtyOnHandBase: true },
+  });
+  const stockOnHand = Number(stockAgg._sum.qtyOnHandBase ?? 0);
+
   return (
     <div className="mx-auto max-w-2xl space-y-6 py-2">
       <SetBreadcrumb segment={id} label={product.name} />
@@ -59,6 +65,7 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
           isControlled: product.isControlled,
           prescriptionRule: product.prescriptionRule,
         }}
+        stockOnHand={stockOnHand}
       />
     </div>
   );

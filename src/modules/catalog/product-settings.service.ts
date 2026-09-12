@@ -25,6 +25,16 @@ export async function updateProductSettings(input: z.input<typeof productSetting
       where: { id: values.productId }, include: { barcodes: true, units: true },
     });
     if (!before) throw new Error("Product not found.");
+
+    const stockAgg = await tx.batch.aggregate({
+      where: { productId: before.id, qtyOnHandBase: { gt: 0 } },
+      _sum: { qtyOnHandBase: true },
+    });
+    const stockOnHand = stockAgg._sum.qtyOnHandBase ?? new Prisma.Decimal(0);
+    if (stockOnHand.gt(0)) {
+      throw new Error(`Cannot edit product "${before.name}" because it currently has active stock on hand (${stockOnHand.toString()} ${before.baseUnitName}). Product settings can only be edited when stock is 0.`);
+    }
+
     const primary = before.barcodes.filter((barcode) => barcode.isPrimary);
     if (primary.length > 1) throw new Error("This product has multiple primary barcodes. Resolve them before editing.");
     const existing = primary[0];
@@ -46,8 +56,8 @@ export async function updateProductSettings(input: z.input<typeof productSetting
       }
     }
     const product = await tx.product.update({ where: { id: before.id }, data: {
-      name: before.name,
-      strength: before.strength,
+      name: values.name,
+      strength: values.strength || null,
       reorderLevel: values.reorderLevel,
       isControlled: values.isControlled,
       prescriptionRule: values.isControlled ? PrescriptionRule.HARD_REQUIRED_CONTROLLED : values.prescriptionRule,
