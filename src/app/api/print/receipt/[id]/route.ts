@@ -23,6 +23,8 @@ const receiptTemplate = `
       line-height: 1.35;
       color: #000000;
       background: #ffffff;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
     }
     .text-center { text-align: center; }
     .text-right { text-align: right; }
@@ -43,16 +45,17 @@ const receiptTemplate = `
       line-height: 1.2;
     }
     .brand-caption {
-      font-size: 9px;
-      font-weight: 600;
+      font-size: 9.5px;
+      font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.8px;
-      color: #555555;
+      color: #000000;
       margin-top: 2px;
     }
     .address-line {
       font-size: 9.5px;
-      color: #333333;
+      font-weight: 600;
+      color: #000000;
       margin-top: 3px;
       line-height: 1.3;
     }
@@ -67,11 +70,11 @@ const receiptTemplate = `
     }
 
     .meta-box {
-      background: #f8fafc;
+      background: #ffffff;
       border-radius: 4px;
       padding: 6px 8px;
       margin: 6px 0 8px;
-      border: 1px solid #e2e8f0;
+      border: 1px solid #000000;
       font-size: 10px;
     }
     .meta-row {
@@ -80,7 +83,7 @@ const receiptTemplate = `
       align-items: center;
       padding: 1px 0;
     }
-    .meta-label { color: #555555; font-weight: 500; }
+    .meta-label { color: #000000; font-weight: 600; }
     .meta-value { font-weight: 700; color: #000000; }
 
     table {
@@ -89,7 +92,7 @@ const receiptTemplate = `
       margin: 8px 0;
     }
     th {
-      font-size: 9px;
+      font-size: 9.5px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
       color: #000000;
@@ -100,7 +103,7 @@ const receiptTemplate = `
     td {
       padding: 5px 0;
       vertical-align: top;
-      border-bottom: 1px dashed #e2e8f0;
+      border-bottom: 1px dashed #000000;
     }
 
     .item-name {
@@ -111,7 +114,8 @@ const receiptTemplate = `
     }
     .item-details {
       font-size: 9.5px;
-      color: #444444;
+      font-weight: 600;
+      color: #000000;
       margin-top: 1.5px;
     }
 
@@ -124,9 +128,10 @@ const receiptTemplate = `
       justify-content: space-between;
       padding: 2.5px 0;
       font-size: 10.5px;
-      color: #333333;
+      font-weight: 600;
+      color: #000000;
     }
-    .totals-row.discount-row { color: #000000; font-weight: 600; }
+    .totals-row.discount-row { color: #000000; font-weight: 700; }
     .grand-total-card {
       border: 1.5px solid #000000;
       background: #ffffff;
@@ -145,10 +150,11 @@ const receiptTemplate = `
       margin-top: 14px;
       text-align: center;
       font-size: 9.5px;
-      color: #444444;
+      font-weight: 600;
+      color: #000000;
     }
     .footer-thankyou {
-      font-weight: 700;
+      font-weight: 800;
       color: #000000;
       font-size: 10.5px;
       margin-bottom: 2px;
@@ -171,7 +177,7 @@ const receiptTemplate = `
   <div class="brand-container">
     <div class="brand-title">Eheliyagoda Pharmacy<br>&amp; Grocery</div>
     <div class="brand-caption">Medisquare</div>
-    <div class="address-line">Main Street, Eheliyagoda<br>Tel: 036-2258900 / 077-1234567</div>
+    <div class="address-line">Main Street, Eheliyagoda<br>Tel: 036-2258900</div>
   </div>
 
   <div class="meta-box">

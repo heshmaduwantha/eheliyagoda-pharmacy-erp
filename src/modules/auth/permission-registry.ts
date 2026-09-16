@@ -50,6 +50,9 @@ export const permissionRegistry: PermissionDefinition[] = [
   { code: "controlled_drugs.sale.create", module: "controlled_drugs", resource: "sale", action: "create", description: "Create controlled-drug sales" },
   { code: "controlled_drugs.register.read", module: "controlled_drugs", resource: "register", action: "read", description: "View the controlled-drug register", isSensitive: true },
 
+  // Dashboard
+  { code: "dashboard.read", module: "dashboard", resource: "dashboard", action: "read", description: "View dashboard overview and metrics" },
+
   // Reports
   { code: "reports.read", module: "reports", resource: "workspace", action: "read", description: "Open the reports workspace" },
   { code: "reports.dashboard.read", module: "reports", resource: "dashboard", action: "read", description: "View dashboard summaries" },
@@ -80,7 +83,8 @@ export const permissionRegistry: PermissionDefinition[] = [
 export const permissionRegistryByCode = new Map(permissionRegistry.map((permission) => [permission.code, permission]));
 
 export const legacyPermissionAliases: Record<string, string> = {
-  "dashboard.view": "reports.dashboard.read",
+  "dashboard.view": "dashboard.read",
+  "reports.dashboard.read": "dashboard.read",
   "pos.access": "pos.sale.read",
   "sale.create": "pos.sale.create",
   "sale.void": "pos.sale.void",

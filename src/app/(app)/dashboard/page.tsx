@@ -24,7 +24,7 @@ export default function DashboardPage() {
 
 async function renderDashboardPage() {
   const user = await requireAuth();
-  await requirePermission("dashboard.view");
+  await requirePermission("dashboard.read");
 
   const metrics = await getDashboardMetrics();
   const weeklySales = await getDashboardWeeklySales();

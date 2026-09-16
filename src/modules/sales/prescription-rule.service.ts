@@ -53,7 +53,7 @@ export async function resolvePrescriptionRequirement(
     rule,
     promptedProductIds,
     controlledProductIds,
-    requiresPrescriptionDecision: rule === PrescriptionRule.PROMPT_SKIPPABLE,
+    requiresPrescriptionDecision: false,
     requiresControlledDetails: rule === PrescriptionRule.HARD_REQUIRED_CONTROLLED,
   };
 }

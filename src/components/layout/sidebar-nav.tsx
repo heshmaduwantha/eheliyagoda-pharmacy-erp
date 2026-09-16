@@ -4,10 +4,12 @@ import { NavigationLink as Link } from "./navigation-link";
 import { usePathname } from "next/navigation";
 import { BarChart3, Banknote, Boxes, ClipboardList, LayoutDashboard, PackagePlus, PackageSearch, ReceiptText, Settings, ShoppingCart, Truck, UsersRound, type LucideIcon } from "lucide-react";
 
+import { canonicalizePermissionCode } from "@/modules/auth/permission-registry";
+
 type NavItem = { label: string; href: string; permission: string; icon: LucideIcon; group: string };
 
 const items: NavItem[] = [
-  { label: "Dashboard", href: "/dashboard", permission: "reports.dashboard.read", icon: LayoutDashboard, group: "Main" },
+  { label: "Dashboard", href: "/dashboard", permission: "dashboard.read", icon: LayoutDashboard, group: "Main" },
   { label: "Billing", href: "/pos", permission: "pos.sale.read", icon: ShoppingCart, group: "Main" },
   
   { label: "Stock", href: "/stock", permission: "inventory.stock.read", icon: Boxes, group: "Inventory" },
@@ -38,7 +40,13 @@ export function SidebarNav({
   onNavigate?: () => void;
 }) {
   const pathname = usePathname();
-  const available = items.filter((item) => permissions.includes(item.permission));
+  const available = items.filter(
+    (item) =>
+      permissions.includes(item.permission) ||
+      permissions.includes(canonicalizePermissionCode(item.permission)) ||
+      (item.permission === "dashboard.read" &&
+        (permissions.includes("reports.dashboard.read") || permissions.includes("dashboard.view"))),
+  );
   const activeHref = available
     .filter((item) => pathname === item.href || pathname.startsWith(`${item.href}/`))
     .sort((left, right) => right.href.length - left.href.length)[0]?.href;

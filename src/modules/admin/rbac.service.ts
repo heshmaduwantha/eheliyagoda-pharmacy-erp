@@ -301,6 +301,7 @@ async function assertOwnerPermissionSet(client: DbClient, roleId: string, permis
   const expectedCodes = uniqueStrings(
     permissionRegistry
       .map((permission) => permission.code)
+      .map(canonicalizePermissionCode)
       .filter((code) => code !== "system.under_construction" && code !== "under_construction"),
   );
   const actualCodes = uniqueStrings(permissionCodes.map(canonicalizePermissionCode));
@@ -1225,6 +1226,7 @@ export async function seedAllPermissionsAndRoles(client: DbClient = prisma) {
         "inventory.stock.read",
         "inventory.product.read",
         "inventory.batch.read",
+        "dashboard.read",
         "reports.read",
         "reports.dashboard.read",
         "reports.sales.read",
@@ -1270,6 +1272,7 @@ export async function seedAllPermissionsAndRoles(client: DbClient = prisma) {
       isSystem: true,
       permissionCodes: [
         "audit.read",
+        "dashboard.read",
         "reports.read",
         "reports.dashboard.read",
         "reports.sales.read",

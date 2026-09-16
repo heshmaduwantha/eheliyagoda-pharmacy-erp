@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { Barcode, CircleAlert, CircleCheck, Keyboard, Search, Sparkles, X, Zap } from "lucide-react";
+import { Barcode, CircleAlert, CircleCheck, FileCheck2, Keyboard, Search, Sparkles, X, Zap } from "lucide-react";
 import { completeSaleAction } from "@/modules/sales/sale.actions";
 import { lookupProductByBarcodeAction } from "@/modules/sales/pos.actions";
 import type { PrescriptionDecisionInput } from "@/modules/prescriptions/prescription.types";
@@ -47,6 +47,7 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
   const [notice, setNotice] = useState<Notice>(null);
   const [pendingPayments, setPendingPayments] = useState<PosPaymentInput[] | null>(null);
   const [promptOpen, setPromptOpen] = useState(false);
+  const [optionalPrescription, setOptionalPrescription] = useState<PrescriptionDecisionInput | undefined>(undefined);
   const [controlledDrugOpen, setControlledDrugOpen] = useState(false);
   const [discountType, setDiscountType] = useState<"AMOUNT" | "PERCENT">("AMOUNT");
   const [discountValue, setDiscountValue] = useState<number>(0);
@@ -240,6 +241,7 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
     setLines([]);
     setDiscountValue(0);
     setDiscountType("AMOUNT");
+    setOptionalPrescription(undefined);
     if (!preserveReceipt) {
       setNotice(null);
       setReceipt(null);
@@ -278,7 +280,7 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
         expectedTotal: totals.total.toFixed(2),
         discountAmount: totals.discount.toFixed(2),
         taxAmount: totals.tax.toFixed(2),
-        prescription,
+        prescription: prescription ?? optionalPrescription,
       });
 
       if (!result.ok) {
@@ -326,15 +328,11 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
       return;
     }
 
-    if (promptedProductCount > 0) {
-      setPromptOpen(true);
-      return;
-    }
-
-    void submitSale(payments);
+    void submitSale(payments, optionalPrescription);
   };
 
   const handlePromptDecision = (decision: PrescriptionDecisionInput) => {
+    setOptionalPrescription(decision);
     setPromptOpen(false);
     if (pendingPayments) void submitSale(pendingPayments, decision);
   };
@@ -455,6 +453,23 @@ export function PosWorkspace({ initialProducts }: { initialProducts: PosProductS
         {/* Right Column: Current Sale Cart */}
         <div className="w-full min-w-0 flex flex-col rounded-xl bg-neutral-surface shadow-xs border border-neutral-border overflow-hidden xl:sticky xl:top-4 xl:max-h-[calc(100vh-130px)]">
           <div className="flex-1 min-h-[220px] max-h-[48vh] xl:max-h-none overflow-y-auto p-4 sm:p-4">
+            {promptedProductCount > 0 && (
+              <div className="mb-3 flex items-center justify-between gap-2 rounded-xl border border-brand-default/20 bg-brand-pale/40 px-3.5 py-2 text-xs">
+                <span className="font-semibold text-brand-default">
+                  Prescription medicine in cart
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setPromptOpen(true)}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-brand-default/30 bg-white px-2.5 py-1 text-xs font-bold text-brand-default hover:bg-brand-pale transition shadow-2xs"
+                >
+                  <FileCheck2 className="size-3.5" />
+                  {optionalPrescription?.mode === "CAPTURED"
+                    ? "Prescription Recorded"
+                    : "Record Prescription (Optional)"}
+                </button>
+              </div>
+            )}
             <CartTable
               lines={lines}
               onQuantityChange={changeQuantity}
