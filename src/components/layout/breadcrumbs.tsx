@@ -46,6 +46,37 @@ export function SetBreadcrumb({ segment, label }: { segment: string; label: stri
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+function getFallbackLabelForSegment(segment: string, parentSegment: string | undefined): string {
+  const isUuid = UUID_REGEX.test(segment);
+  if (isUuid) {
+    switch (parentSegment?.toLowerCase()) {
+      case "roles":
+        return "Role Details";
+      case "users":
+        return "User Details";
+      case "products":
+        return "Product Details";
+      case "grn":
+        return "GRN Details";
+      case "suppliers":
+        return "Supplier Details";
+      case "prescriptions":
+        return "Prescription Details";
+      case "sales":
+        return "Sale Details";
+      default:
+        return "Details";
+    }
+  }
+
+  // Format standard segments (e.g., 'grn' -> 'GRN', 'pos' -> 'POS', 'admin' -> 'Admin')
+  if (segment.toLowerCase() === "grn") return "GRN";
+  if (segment.toLowerCase() === "pos") return "POS";
+  if (segment.toLowerCase() === "uat") return "UAT";
+
+  return segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, " ");
+}
+
 export function Breadcrumbs() {
   const pathname = usePathname();
   const { labels } = useContext(BreadcrumbContext);
@@ -54,22 +85,10 @@ export function Breadcrumbs() {
 
   const segments = pathname.split("/").filter(Boolean);
   const breadcrumbs = segments.map((segment, index) => {
-    let href = "/" + segments.slice(0, index + 1).join("/");
-    const isUuid = UUID_REGEX.test(segment);
+    const href = "/" + segments.slice(0, index + 1).join("/");
+    const prevSegment = index > 0 ? segments[index - 1] : undefined;
 
-    let label: string;
-    if (labels[segment]) {
-      label = labels[segment];
-    } else if (isUuid) {
-      label = "Product";
-    } else {
-      label = segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, " ");
-    }
-
-    if (isUuid && href.startsWith("/products/")) {
-      href = "/products";
-    }
-
+    const label = labels[segment] || getFallbackLabelForSegment(segment, prevSegment);
     const isLast = index === segments.length - 1;
 
     return { href, label, isLast };

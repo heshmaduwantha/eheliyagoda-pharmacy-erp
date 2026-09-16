@@ -6,6 +6,7 @@ import { formatDateOnly, formatDateTime } from "@/lib/date-format";
 import { formatMoney, formatQty } from "@/lib/money";
 import { requirePermission } from "@/modules/auth/permissions";
 import { getGrn } from "@/modules/procurement/grn.service";
+import { SetBreadcrumb } from "@/components/layout/breadcrumbs";
 import { ConfirmGrnButton } from "@/modules/procurement/confirm-grn-button";
 import { VoidGrnButton } from "@/modules/procurement/void-grn-button";
 import { PrintGrnNoteButton } from "@/components/inventory/PrintGrnNoteButton";
@@ -24,6 +25,7 @@ export default async function GrnDetailPage({ params }: { params: Promise<{ id: 
 
   return (
     <div className="grid gap-7">
+      <SetBreadcrumb segment={id} label={grn.grnNo} />
       <PageHeader
         action={
           <div className="flex flex-wrap items-center gap-2">

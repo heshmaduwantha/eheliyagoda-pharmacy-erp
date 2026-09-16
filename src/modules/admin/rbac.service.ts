@@ -1235,11 +1235,19 @@ export async function seedAllPermissionsAndRoles(client: DbClient = prisma) {
     {
       code: "cashier",
       name: "Cashier",
-      description: "POS sale capture only",
+      description: "POS billing, stock and expiry lookup, dashboard, and daily sales tally",
       isSystem: true,
       permissionCodes: [
         "pos.sale.read",
         "pos.sale.create",
+        "pos.cash_session.manage",
+        "inventory.stock.read",
+        "inventory.product.read",
+        "inventory.batch.read",
+        "dashboard.read",
+        "reports.read",
+        "reports.dashboard.read",
+        "reports.sales.read",
       ],
     },
     {

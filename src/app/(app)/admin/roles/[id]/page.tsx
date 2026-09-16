@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
+import { SetBreadcrumb } from "@/components/layout/breadcrumbs";
 import { RoleForm } from "@/modules/admin/role-form";
 import { getAdminRole } from "@/modules/admin/rbac.service";
 import { requirePermission } from "@/modules/auth/permissions";
@@ -13,6 +14,7 @@ export default async function AdminRoleDetailPage({ params }: { params: Promise<
 
   return (
     <div className="grid gap-6">
+      <SetBreadcrumb segment={id} label={role.name} />
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-2xl font-black tracking-tight text-neutral-text sm:text-3xl">{role.name}</h1>
