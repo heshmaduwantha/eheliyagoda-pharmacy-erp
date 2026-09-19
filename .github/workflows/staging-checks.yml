@@ -89,3 +89,32 @@ jobs:
 
       - name: Build
         run: corepack pnpm build
+
+  deploy:
+    name: Deploy to UAT
+    needs: check
+    if: github.event_name == 'push' && github.ref == 'refs/heads/uat_staging'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: medisquare-uat-deploy
+      cancel-in-progress: false
+
+    steps:
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.UAT_SSH_KEY }}" > ~/.ssh/uat_deploy_key
+          chmod 600 ~/.ssh/uat_deploy_key
+          ssh-keyscan -p "${{ secrets.UAT_PORT }}" -H "${{ secrets.UAT_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Deploy and health-check on VPS
+        run: |
+          ssh -i ~/.ssh/uat_deploy_key -p "${{ secrets.UAT_PORT }}" \
+            -o StrictHostKeyChecking=yes \
+            "${{ secrets.UAT_USER }}@${{ secrets.UAT_HOST }}" \
+            'set -e
+             cd /home/asiriservice/medisquare
+             git fetch origin
+             git checkout uat_staging
+             git reset --hard origin/uat_staging
+             bash scripts/deploy-uat.sh'

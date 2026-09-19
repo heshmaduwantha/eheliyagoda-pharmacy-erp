@@ -1,3 +1,4 @@
+import { userHasAdminRole } from "@/modules/auth/admin-approval";
 import type { Metadata } from "next";
 import Link from "next/link";
 
@@ -44,6 +45,7 @@ export default async function SalesPage({
   });
   const totalPages = Math.ceil(total / 10);
   const canVoid = hasPermission(user, "sale.void");
+  const needsAdminApproval = canVoid && !(await userHasAdminRole(user.id));
 
   return (
     <div className="flex flex-col gap-4 min-w-0">
@@ -92,7 +94,7 @@ export default async function SalesPage({
 
       {/* Sale list */}
       <section className="rounded-xl border border-neutral-border bg-neutral-surface shadow-sm">
-        <SalesTable canVoid={canVoid} sales={sales} />
+        <SalesTable canVoid={canVoid} needsAdminApproval={needsAdminApproval} sales={sales} />
         {sales.length > 0 && (
           <div className="border-t border-slate-100 p-4">
             <Pagination currentPage={currentPage} totalPages={totalPages} baseUrl="/sales" queryParams={{ status, q: params.q, from, to }} />

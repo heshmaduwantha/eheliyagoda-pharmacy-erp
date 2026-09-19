@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { ForbiddenError, UnauthorizedError, requirePermission } from "@/modules/auth/permissions";
+import { userHasAdminRole, verifyAdminApproval } from "@/modules/auth/admin-approval";
 import { SaleVoidError } from "./sale-void.types";
 import { voidSale } from "./sale-void.service";
 
@@ -13,13 +14,29 @@ const voidSaleSchema = z.object({
   refundMethod: z.enum(["CASH", "CARD"]).optional(),
   refundReference: z.string().trim().max(120).optional(),
   stockPolicy: z.enum(["NO_STOCK_RETURN", "RETURN_TO_ACTIVE"]).optional(),
+  adminUsername: z.string().trim().max(80).optional(),
+  adminPassword: z.string().max(255).optional(),
 });
 
 export async function voidSaleAction(rawInput: unknown) {
   try {
     const actor = await requirePermission("sale.void", { onDenied: "throw" });
-    const input = voidSaleSchema.parse(rawInput);
-    const saleVoid = await voidSale(input, actor);
+    const { adminUsername, adminPassword, ...input } = voidSaleSchema.parse(rawInput);
+
+    // Non-admin users need an admin's credentials to void a sale.
+    let approvedBy: { id: string; username: string } | undefined;
+    if (!(await userHasAdminRole(actor.id))) {
+      const approver = adminUsername && adminPassword ? await verifyAdminApproval(adminUsername, adminPassword) : null;
+      if (!approver) {
+        return {
+          ok: false as const,
+          error: { code: "ADMIN_APPROVAL_FAILED", message: "Admin username or password is incorrect.", details: null },
+        };
+      }
+      approvedBy = approver;
+    }
+
+    const saleVoid = await voidSale(input, actor, approvedBy);
     revalidatePath("/sales");
     revalidatePath("/dashboard");
     revalidatePath("/reports");

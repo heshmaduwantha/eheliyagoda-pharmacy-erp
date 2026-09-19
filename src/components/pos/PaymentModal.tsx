@@ -26,13 +26,22 @@ export function PaymentModal({ open, mode, total, onClose, onComplete }: Props) 
   const [cashAmount, setCashAmount] = useState("");
   const [cardAmount, setCardAmount] = useState("");
   const [cardReference, setCardReference] = useState("");
+  const [cashTouched, setCashTouched] = useState(false);
 
   useEffect(() => {
     if (!open) return;
-    setCashAmount(mode === "cash" ? total.toFixed(2) : "");
+    setCashAmount(mode === "card" ? "" : total.toFixed(2));
     setCardAmount(mode === "card" ? total.toFixed(2) : "");
     setCardReference("");
+    setCashTouched(false);
   }, [mode, open, total]);
+
+  function handleCardChange(value: string) {
+    setCardAmount(value);
+    if (cashTouched) return;
+    const suggested = Math.max(0, total - (Number(value) || 0));
+    setCashAmount(suggested > 0 ? suggested.toFixed(2) : "");
+  }
 
   const payments = useMemo<PosPaymentInput[]>(() => {
     const result: PosPaymentInput[] = [];
@@ -71,7 +80,10 @@ export function PaymentModal({ open, mode, total, onClose, onComplete }: Props) 
                 className={moneyInputClass}
                 inputMode="decimal"
                 min="0"
-                onChange={(event) => setCashAmount(event.target.value)}
+                onChange={(event) => {
+                  setCashTouched(true);
+                  setCashAmount(event.target.value);
+                }}
                 placeholder="0.00"
                 step="0.01"
                 type="number"
@@ -87,7 +99,7 @@ export function PaymentModal({ open, mode, total, onClose, onComplete }: Props) 
                 className={moneyInputClass}
                 inputMode="decimal"
                 min="0"
-                onChange={(event) => setCardAmount(event.target.value)}
+                onChange={(event) => handleCardChange(event.target.value)}
                 placeholder="0.00"
                 step="0.01"
                 type="number"

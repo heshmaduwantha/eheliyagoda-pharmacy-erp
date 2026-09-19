@@ -1,10 +1,11 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { type FormState, toFieldErrors } from "@/lib/forms";
 import { ForbiddenError, UnauthorizedError, requirePermission } from "@/modules/auth/permissions";
+import { invalidateUserSessionCache } from "@/modules/auth/session";
 import {
   createAdminRole,
   createAdminUser,
@@ -13,6 +14,12 @@ import {
   updateAdminRole,
   updateAdminUser,
 } from "./rbac.service";
+
+// Role/permission/user changes must apply immediately, not after the 60s user-session cache expires.
+function refreshUserSessions() {
+  invalidateUserSessionCache();
+  revalidateTag("user-session");
+}
 
 const userFormSchema = z.object({
   userId: z.string().uuid().optional(),
@@ -89,6 +96,7 @@ export async function saveUserAction(_prev: FormState, formData: FormData): Prom
       revalidatePath(`/admin/users/${user.id}`);
     }
 
+    refreshUserSessions();
     revalidatePath("/admin/roles");
     revalidatePath("/admin/permissions");
     return { status: "success", message: "User saved successfully." };
@@ -143,6 +151,7 @@ export async function saveRoleAction(_prev: FormState, formData: FormData): Prom
       revalidatePath(`/admin/roles/${role.id}`);
     }
 
+    refreshUserSessions();
     revalidatePath("/admin/users");
     revalidatePath("/admin/permissions");
     return { status: "success", message: "Role saved successfully." };
@@ -198,6 +207,7 @@ export async function toggleUserActiveAction(_prev: FormState, formData: FormDat
     const userId = z.string().uuid().parse(formData.get("userId"));
     const nextActive = String(formData.get("nextActive")) === "true";
     await setUserActive(userId, nextActive, actor);
+    refreshUserSessions();
     revalidatePath("/admin/users");
     revalidatePath(`/admin/users/${userId}`);
     return { status: "success", message: `User ${nextActive ? "activated" : "deactivated"} successfully.` };

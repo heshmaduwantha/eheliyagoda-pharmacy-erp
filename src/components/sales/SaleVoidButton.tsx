@@ -10,29 +10,50 @@ type Props = {
   saleId: string;
   saleNumber: string;
   total: string;
+  needsAdminApproval: boolean;
 };
 
-export function SaleVoidButton({ saleId, saleNumber, total }: Props) {
+export function SaleVoidButton({ saleId, saleNumber, total, needsAdminApproval }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState("");
   const [refundMethod, setRefundMethod] = useState<"" | "CASH" | "CARD">("");
   const [refundReference, setRefundReference] = useState("");
   const [stockPolicy, setStockPolicy] = useState<"NO_STOCK_RETURN" | "RETURN_TO_ACTIVE">("NO_STOCK_RETURN");
+  const [step, setStep] = useState<"details" | "approval">("details");
+  const [adminUsername, setAdminUsername] = useState("");
+  const [adminPassword, setAdminPassword] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const canSubmit = reason.trim().length > 0 && !isPending;
+  const onApprovalStep = needsAdminApproval && step === "approval";
+  const canSubmit =
+    reason.trim().length > 0 && !isPending && (!onApprovalStep || (adminUsername.trim().length > 0 && adminPassword.length > 0));
 
   const reset = () => {
     setReason("");
     setRefundMethod("");
     setRefundReference("");
     setStockPolicy("NO_STOCK_RETURN");
+    setStep("details");
+    setAdminUsername("");
+    setAdminPassword("");
+  };
+
+  const close = () => {
+    setOpen(false);
+    setStep("details");
+    setAdminUsername("");
+    setAdminPassword("");
   };
 
   const submit = () => {
     if (!canSubmit) return;
+    if (needsAdminApproval && step === "details") {
+      setNotice(null);
+      setStep("approval");
+      return;
+    }
     setNotice(null);
     startTransition(() => {
       void voidSaleAction({
@@ -42,9 +63,12 @@ export function SaleVoidButton({ saleId, saleNumber, total }: Props) {
         refundMethod: refundMethod || undefined,
         refundReference: refundReference.trim() || undefined,
         stockPolicy,
+        adminUsername: needsAdminApproval ? adminUsername.trim() : undefined,
+        adminPassword: needsAdminApproval ? adminPassword : undefined,
       }).then((result) => {
         if (!result.ok) {
           setNotice(result.error.message);
+          if (result.error.code === "ADMIN_APPROVAL_FAILED") setAdminPassword("");
           return;
         }
         setOpen(false);
@@ -60,6 +84,7 @@ export function SaleVoidButton({ saleId, saleNumber, total }: Props) {
           className="inline-flex items-center gap-2 rounded-xl border border-status-danger-bg bg-status-danger-bg px-3 py-2 text-sm font-bold text-status-danger-text transition hover:bg-status-danger-bg disabled:cursor-not-allowed disabled:opacity-50"
         onClick={() => {
           setNotice(null);
+          setStep("details");
           setOpen(true);
         }}
         type="button"
@@ -83,14 +108,41 @@ export function SaleVoidButton({ saleId, saleNumber, total }: Props) {
                 aria-label="Close"
                 className="grid size-9 place-items-center rounded-full text-neutral-muted hover:bg-slate-100"
                 disabled={isPending}
-                onClick={() => setOpen(false)}
+                onClick={close}
                 type="button"
               >
                 <X className="size-5" />
               </button>
             </div>
 
-            <div className="mt-6 grid gap-4 sm:grid-cols-2">
+            {onApprovalStep ? (
+              <div className="mt-6 grid gap-4">
+                <div className="rounded-2xl border border-status-warning-bg bg-status-warning-bg p-4 text-sm leading-6 text-status-warning-text">
+                  Step 2 of 2: an admin must approve this void. Enter an admin&apos;s username and password.
+                </div>
+                <label className="grid gap-2 text-sm font-bold text-neutral-text">
+                  Admin username
+                  <input
+                    autoComplete="off"
+                    className="rounded-xl border border-neutral-border px-4 py-3 font-normal outline-none focus:border-rose-400"
+                    onChange={(event) => setAdminUsername(event.target.value)}
+                    value={adminUsername}
+                  />
+                </label>
+                <label className="grid gap-2 text-sm font-bold text-neutral-text">
+                  Admin password
+                  <input
+                    autoComplete="new-password"
+                    className="rounded-xl border border-neutral-border px-4 py-3 font-normal outline-none focus:border-rose-400"
+                    onChange={(event) => setAdminPassword(event.target.value)}
+                    type="password"
+                    value={adminPassword}
+                  />
+                </label>
+              </div>
+            ) : null}
+
+            <div className={`mt-6 grid gap-4 sm:grid-cols-2 ${onApprovalStep ? "hidden" : ""}`}>
               <label className="grid gap-2 text-sm font-bold text-neutral-text sm:col-span-2">
                 Void reason
                 <textarea
@@ -148,7 +200,7 @@ export function SaleVoidButton({ saleId, saleNumber, total }: Props) {
               </label>
             </div>
 
-            <div className="mt-4 rounded-2xl border border-status-warning-bg bg-status-warning-bg p-4 text-sm leading-6 text-status-warning-text">
+            <div className={`mt-4 rounded-2xl border border-status-warning-bg bg-status-warning-bg p-4 text-sm leading-6 text-status-warning-text ${onApprovalStep ? "hidden" : ""}`}>
               <div className="flex items-start gap-2">
                 <CircleAlert className="mt-0.5 size-4 shrink-0" />
                 <p>
@@ -168,18 +220,31 @@ export function SaleVoidButton({ saleId, saleNumber, total }: Props) {
               <button
                 className="rounded-xl border border-neutral-border px-4 py-3 font-bold text-neutral-muted"
                 disabled={isPending}
-                onClick={() => setOpen(false)}
+                onClick={close}
                 type="button"
               >
                 Cancel
               </button>
+              {onApprovalStep ? (
+                <button
+                  className="rounded-xl border border-neutral-border px-4 py-3 font-bold text-neutral-muted"
+                  disabled={isPending}
+                  onClick={() => {
+                    setNotice(null);
+                    setStep("details");
+                  }}
+                  type="button"
+                >
+                  Back
+                </button>
+              ) : null}
               <button
                 className="rounded-xl bg-rose-700 px-4 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-40"
                 disabled={!canSubmit}
                 onClick={submit}
                 type="button"
               >
-                {isPending ? "Voiding..." : "Confirm void"}
+                {isPending ? "Voiding..." : needsAdminApproval && step === "details" ? "Continue" : onApprovalStep ? "Verify & void" : "Confirm void"}
               </button>
             </div>
           </section>

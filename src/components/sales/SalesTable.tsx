@@ -13,7 +13,7 @@ function statusBadge(status: string) {
   return { label: "Held", cls: "bg-status-warning-bg text-status-warning-text border border-status-warning-bg" };
 }
 
-export function SalesTable({ sales, canVoid }: { sales: SaleVoidListItem[]; canVoid: boolean }) {
+export function SalesTable({ sales, canVoid, needsAdminApproval }: { sales: SaleVoidListItem[]; canVoid: boolean; needsAdminApproval: boolean }) {
   const [activeSale, setActiveSale] = useState<SaleVoidListItem | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -69,7 +69,7 @@ export function SalesTable({ sales, canVoid }: { sales: SaleVoidListItem[]; canV
                     <td className="px-5 py-3.5">
                       <div className="flex flex-wrap items-center gap-2">
                         {canVoid && sale.status === "COMPLETED" && (
-                          <SaleVoidButton saleId={sale.saleId} saleNumber={sale.saleNumber} total={sale.total} />
+                          <SaleVoidButton needsAdminApproval={needsAdminApproval} saleId={sale.saleId} saleNumber={sale.saleNumber} total={sale.total} />
                         )}
                         <button
                           className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-border bg-neutral-surface px-3 py-1.5 text-xs font-bold text-brand-default transition hover:bg-brand-pale hover:border-brand-default cursor-pointer"

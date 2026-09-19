@@ -278,7 +278,11 @@ export async function listSalesForVoidPage(filters: SaleVoidListFilters = {}): P
   return { data: rows.map(toSaleListItem), total };
 }
 
-export async function voidSale(input: VoidSaleInput, actor: CurrentUser): Promise<SaleVoidResult> {
+export async function voidSale(
+  input: VoidSaleInput,
+  actor: CurrentUser,
+  approvedBy?: { id: string; username: string },
+): Promise<SaleVoidResult> {
   validateActor(actor);
 
   const reason = input.reason.trim();
@@ -457,6 +461,8 @@ export async function voidSale(input: VoidSaleInput, actor: CurrentUser): Promis
           refundMethod,
           refundReference,
           stockPolicy,
+          approvedByAdminId: approvedBy?.id ?? null,
+          approvedByAdminUsername: approvedBy?.username ?? null,
           returnedStockMovementCount: returnedStockMovements.length,
         },
       },

@@ -1,0 +1,646 @@
+[2026-09-12T11:16:09Z] Starting deploy of 0a6d146d683c6e3f57bc698e2a06a731819224b9 (previous: 0a6d146d683c6e3f57bc698e2a06a731819224b9)
+Lockfile is up to date, resolution step is skipped
+Already up to date
+
+   ╭──────────────────────────────────────────────╮
+   │                                              │
+   │     Update available! 10.12.4 → 12.4.1.      │
+   │     Changelog: https://pnpm.io/v/12.4.1      │
+   │   To update, run: corepack use pnpm@12.4.1   │
+   │                                              │
+   ╰──────────────────────────────────────────────╯
+
+
+╭ Warning ─────────────────────────────────────────────────────────────────────╮
+│                                                                              │
+│   Ignored build scripts: @prisma/client, @prisma/engines, esbuild, prisma,   │
+│   sharp, unrs-resolver.                                                      │
+│   Run "pnpm approve-builds" to pick which dependencies should be allowed     │
+│   to run scripts.                                                            │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+Done in 2.3s using pnpm v10.12.4
+
+> medisquare-pharmacy-clinic-erp@0.1.0 build /home/asiriservice/medisquare
+> pnpm prisma:generate && next build
+
+
+> medisquare-pharmacy-clinic-erp@0.1.0 prisma:generate /home/asiriservice/medisquare
+> node scripts/with-database-url.mjs prisma generate
+
+Environment variables loaded from .env
+Prisma schema loaded from prisma/schema.prisma
+
+✔ Generated Prisma Client (v6.19.3) to ./node_modules/.pnpm/@prisma+client@6.19.3_prisma@6.19.3_typescript@5.9.3__typescript@5.9.3/node_modules/@prisma/client in 962ms
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+Tip: Need your database queries to be 1000x faster? Accelerate offers you that and more: https://pris.ly/tip-2-accelerate
+
+   ▲ Next.js 15.5.19
+   - Environments: .env
+
+   Creating an optimized production build ...
+ ⚠ Compiled with warnings in 18.3s
+
+./node_modules/.pnpm/handlebars@4.7.9/node_modules/handlebars/lib/index.js
+require.extensions is not supported by webpack. Use a loader instead.
+
+Import trace for requested module:
+./node_modules/.pnpm/handlebars@4.7.9/node_modules/handlebars/lib/index.js
+./src/app/api/print/batch-label/[id]/route.ts
+
+./node_modules/.pnpm/handlebars@4.7.9/node_modules/handlebars/lib/index.js
+require.extensions is not supported by webpack. Use a loader instead.
+
+Import trace for requested module:
+./node_modules/.pnpm/handlebars@4.7.9/node_modules/handlebars/lib/index.js
+./src/app/api/print/batch-label/[id]/route.ts
+
+./node_modules/.pnpm/handlebars@4.7.9/node_modules/handlebars/lib/index.js
+require.extensions is not supported by webpack. Use a loader instead.
+
+Import trace for requested module:
+./node_modules/.pnpm/handlebars@4.7.9/node_modules/handlebars/lib/index.js
+./src/app/api/print/batch-label/[id]/route.ts
+
+ ✓ Compiled successfully in 21.9s
+   Linting and checking validity of types ...
+
+./src/app/(public)/login/LoginForm.tsx
+28:6  Warning: React Hook useEffect has a missing dependency: 'loadingMessages.length'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/(public)/login/page.tsx
+2:23  Warning: 'UserRound' is defined but never used.  @typescript-eslint/no-unused-vars
+2:34  Warning: 'LockKeyhole' is defined but never used.  @typescript-eslint/no-unused-vars
+5:10  Warning: 'loginAction' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/components/pos/BatchPreviewCard.tsx
+4:61  Warning: 'CalendarClock' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/components/pos/PosWorkspace.tsx
+4:10  Warning: 'Barcode' is defined but never used.  @typescript-eslint/no-unused-vars
+4:45  Warning: 'Keyboard' is defined but never used.  @typescript-eslint/no-unused-vars
+4:63  Warning: 'Sparkles' is defined but never used.  @typescript-eslint/no-unused-vars
+4:76  Warning: 'Zap' is defined but never used.  @typescript-eslint/no-unused-vars
+17:3  Warning: 'canCartLineFulfilSelectedBatch' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/modules/procurement/grn-form.tsx
+6:28  Warning: 'SubmitButton' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/modules/procurement/grn.service.ts
+2:10  Warning: 'BatchStatus' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/modules/procurement/void-grn-button.tsx
+11:3  Warning: 'isDraft' is defined but never used.  @typescript-eslint/no-unused-vars
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules
+   Collecting page data ...
+   Generating static pages (0/37) ...
+   Generating static pages (9/37) 
+   Generating static pages (18/37) 
+   Generating static pages (27/37) 
+ ✓ Generating static pages (37/37)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                 Size  First Load JS
+┌ ○ /                                      150 B         103 kB
+├ ○ /_not-found                            992 B         103 kB
+├ ƒ /admin                                 150 B         103 kB
+├ ƒ /admin/audit                         2.85 kB         109 kB
+├ ƒ /admin/permissions                     806 B         103 kB
+├ ƒ /admin/roles                           956 B         107 kB
+├ ƒ /admin/roles/[id]                      128 B         111 kB
+├ ƒ /admin/roles/new                       128 B         111 kB
+├ ƒ /admin/settings                        806 B         103 kB
+├ ƒ /admin/users                           956 B         107 kB
+├ ƒ /admin/users/[id]                      128 B         109 kB
+├ ƒ /admin/users/new                       128 B         109 kB
+├ ƒ /api/pos/search                        150 B         103 kB
+├ ƒ /api/print/batch-label/[id]            150 B         103 kB
+├ ƒ /api/print/grn/[id]                    150 B         103 kB
+├ ƒ /api/print/receipt/[id]                150 B         103 kB
+├ ƒ /api/print/supplier-payment/[id]       150 B         103 kB
+├ ƒ /dashboard                             187 B         106 kB
+├ ƒ /expenses                            5.13 kB         111 kB
+├ ƒ /forbidden                             187 B         106 kB
+├ ○ /icon.png                                0 B            0 B
+├ ƒ /login                               4.52 kB         112 kB
+├ ƒ /pos                                 13.3 kB         116 kB
+├ ƒ /products                            6.79 kB         113 kB
+├ ƒ /products/[id]/edit                  3.92 kB         110 kB
+├ ƒ /reports                             1.82 kB         108 kB
+├ ƒ /sales                               5.46 kB         112 kB
+├ ○ /setup                                2.6 kB         105 kB
+├ ƒ /stock                               2.42 kB         109 kB
+├ ƒ /stock/batch-expiry                    177 B         106 kB
+├ ƒ /stock/batches                       3.31 kB         122 kB
+├ ƒ /stock/expiry                        3.57 kB         113 kB
+├ ƒ /stock/grn                            1.2 kB         107 kB
+├ ƒ /stock/grn/[id]                      3.39 kB         110 kB
+├ ƒ /stock/grn/[id]/edit                 1.23 kB         113 kB
+├ ƒ /stock/grn/new                         186 B         112 kB
+├ ƒ /stock/movements                     1.37 kB         111 kB
+├ ƒ /suppliers                           4.84 kB         120 kB
+├ ƒ /suppliers/payments                  5.57 kB         112 kB
+├ ƒ /suppliers/returns                   4.99 kB         111 kB
+├ ƒ /training                            17.1 kB         123 kB
+├ ƒ /training/glossary                     187 B         106 kB
+├ ƒ /training/modules/[slug]             1.66 kB         113 kB
+├ ƒ /training/scenarios/[slug]           1.66 kB         113 kB
+├ ƒ /training/troubleshooting              187 B         106 kB
+└ ƒ /under-construction                   1.1 kB         109 kB
++ First Load JS shared by all             102 kB
+  ├ chunks/8920-2cb58a4a5dc86203.js      46.2 kB
+  ├ chunks/acfafb44-5b2d50c78ab1fa6b.js  54.2 kB
+  └ other shared chunks (total)          1.94 kB
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+[2026-09-12T11:17:15Z] Restarting PM2 process 'medisquare'
+[2026-09-12T11:17:16Z] Waiting for health check at http://localhost:4444/
+[2026-09-12T11:17:19Z] Health check passed. Deploy of 0a6d146d683c6e3f57bc698e2a06a731819224b9 successful.
+[2026-09-19T14:46:12Z] Starting deploy of 8f78f2bb54516f4d4ef935248b0f498bfa82cadd (previous: 26f4e986d2765a9d33ca323b49ed551554f03bc5)
+Lockfile is up to date, resolution step is skipped
+Already up to date
+
+   ╭──────────────────────────────────────────────╮
+   │                                              │
+   │     Update available! 10.12.4 → 12.4.2.      │
+   │     Changelog: https://pnpm.io/v/12.4.2      │
+   │   To update, run: corepack use pnpm@12.4.2   │
+   │                                              │
+   ╰──────────────────────────────────────────────╯
+
+
+╭ Warning ─────────────────────────────────────────────────────────────────────╮
+│                                                                              │
+│   Ignored build scripts: @prisma/client, @prisma/engines, esbuild, prisma,   │
+│   sharp, unrs-resolver.                                                      │
+│   Run "pnpm approve-builds" to pick which dependencies should be allowed     │
+│   to run scripts.                                                            │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+Done in 704ms using pnpm v10.12.4
+
+> medisquare-pharmacy-clinic-erp@0.1.0 build /home/asiriservice/medisquare
+> pnpm prisma:generate && next build
+
+
+> medisquare-pharmacy-clinic-erp@0.1.0 prisma:generate /home/asiriservice/medisquare
+> node scripts/with-database-url.mjs prisma generate
+
+Environment variables loaded from .env
+Prisma schema loaded from prisma/schema.prisma
+
+✔ Generated Prisma Client (v6.19.3) to ./node_modules/.pnpm/@prisma+client@6.19.3_prisma@6.19.3_typescript@5.9.3__typescript@5.9.3/node_modules/@prisma/client in 290ms
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+Tip: Need your database queries to be 1000x faster? Accelerate offers you that and more: https://pris.ly/tip-2-accelerate
+
+   ▲ Next.js 15.5.19
+   - Environments: .env
+
+   Creating an optimized production build ...
+ ⚠ Compiled with warnings in 7.1s
+
+./node_modules/.pnpm/handlebars@4.7.9/node_modules/handlebars/lib/index.js
+require.extensions is not supported by webpack. Use a loader instead.
+
+Import trace for requested module:
+./node_modules/.pnpm/handlebars@4.7.9/node_modules/handlebars/lib/index.js
+./src/app/api/print/batch-label/[id]/route.ts
+
+./node_modules/.pnpm/handlebars@4.7.9/node_modules/handlebars/lib/index.js
+require.extensions is not supported by webpack. Use a loader instead.
+
+Import trace for requested module:
+./node_modules/.pnpm/handlebars@4.7.9/node_modules/handlebars/lib/index.js
+./src/app/api/print/batch-label/[id]/route.ts
+
+./node_modules/.pnpm/handlebars@4.7.9/node_modules/handlebars/lib/index.js
+require.extensions is not supported by webpack. Use a loader instead.
+
+Import trace for requested module:
+./node_modules/.pnpm/handlebars@4.7.9/node_modules/handlebars/lib/index.js
+./src/app/api/print/batch-label/[id]/route.ts
+
+ ✓ Compiled successfully in 9.0s
+   Linting and checking validity of types ...
+
+./src/app/(public)/login/LoginForm.tsx
+28:6  Warning: React Hook useEffect has a missing dependency: 'loadingMessages.length'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/(public)/login/page.tsx
+2:23  Warning: 'UserRound' is defined but never used.  @typescript-eslint/no-unused-vars
+2:34  Warning: 'LockKeyhole' is defined but never used.  @typescript-eslint/no-unused-vars
+5:10  Warning: 'loginAction' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/components/pos/BatchPreviewCard.tsx
+4:61  Warning: 'CalendarClock' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/components/pos/PosWorkspace.tsx
+4:10  Warning: 'Barcode' is defined but never used.  @typescript-eslint/no-unused-vars
+4:57  Warning: 'Keyboard' is defined but never used.  @typescript-eslint/no-unused-vars
+4:75  Warning: 'Sparkles' is defined but never used.  @typescript-eslint/no-unused-vars
+4:88  Warning: 'Zap' is defined but never used.  @typescript-eslint/no-unused-vars
+17:3  Warning: 'canCartLineFulfilSelectedBatch' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/modules/procurement/grn-form.tsx
+6:28  Warning: 'SubmitButton' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/modules/procurement/grn.service.ts
+2:10  Warning: 'BatchStatus' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/modules/procurement/void-grn-button.tsx
+11:3  Warning: 'isDraft' is defined but never used.  @typescript-eslint/no-unused-vars
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules
+   Collecting page data ...
+   Generating static pages (0/37) ...
+   Generating static pages (9/37) 
+   Generating static pages (18/37) 
+   Generating static pages (27/37) 
+ ✓ Generating static pages (37/37)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                 Size  First Load JS
+┌ ○ /                                      150 B         103 kB
+├ ○ /_not-found                            992 B         103 kB
+├ ƒ /admin                                 150 B         103 kB
+├ ƒ /admin/audit                         2.85 kB         109 kB
+├ ƒ /admin/permissions                     806 B         103 kB
+├ ƒ /admin/roles                           956 B         107 kB
+├ ƒ /admin/roles/[id]                    1.36 kB         112 kB
+├ ƒ /admin/roles/new                       187 B         111 kB
+├ ƒ /admin/settings                        806 B         103 kB
+├ ƒ /admin/users                           956 B         107 kB
+├ ƒ /admin/users/[id]                    1.36 kB         110 kB
+├ ƒ /admin/users/new                       186 B         109 kB
+├ ƒ /api/pos/search                        150 B         103 kB
+├ ƒ /api/print/batch-label/[id]            150 B         103 kB
+├ ƒ /api/print/grn/[id]                    150 B         103 kB
+├ ƒ /api/print/receipt/[id]                150 B         103 kB
+├ ƒ /api/print/supplier-payment/[id]       150 B         103 kB
+├ ƒ /dashboard                             187 B         106 kB
+├ ƒ /expenses                            5.12 kB         111 kB
+├ ƒ /forbidden                             187 B         106 kB
+├ ○ /icon.png                                0 B            0 B
+├ ƒ /login                               4.52 kB         112 kB
+├ ƒ /pos                                 13.5 kB         116 kB
+├ ƒ /products                            6.81 kB         113 kB
+├ ƒ /products/[id]/edit                  4.04 kB         110 kB
+├ ƒ /reports                             1.82 kB         108 kB
+├ ƒ /sales                               5.47 kB         112 kB
+├ ○ /setup                               2.61 kB         105 kB
+├ ƒ /stock                               2.42 kB         109 kB
+├ ƒ /stock/batch-expiry                    177 B         106 kB
+├ ƒ /stock/batches                       3.32 kB         122 kB
+├ ƒ /stock/expiry                        3.57 kB         113 kB
+├ ƒ /stock/grn                            1.2 kB         107 kB
+├ ƒ /stock/grn/[id]                      4.32 kB         111 kB
+├ ƒ /stock/grn/[id]/edit                 1.36 kB         113 kB
+├ ƒ /stock/grn/new                         186 B         112 kB
+├ ƒ /stock/movements                     1.37 kB         111 kB
+├ ƒ /suppliers                           4.86 kB         120 kB
+├ ƒ /suppliers/payments                  5.57 kB         112 kB
+├ ƒ /suppliers/returns                   4.99 kB         111 kB
+├ ƒ /training                            17.1 kB         123 kB
+├ ƒ /training/glossary                     187 B         106 kB
+├ ƒ /training/modules/[slug]             1.66 kB         113 kB
+├ ƒ /training/scenarios/[slug]           1.66 kB         113 kB
+├ ƒ /training/troubleshooting              187 B         106 kB
+└ ƒ /under-construction                   1.1 kB         109 kB
++ First Load JS shared by all             102 kB
+  ├ chunks/8920-2cb58a4a5dc86203.js      46.2 kB
+  ├ chunks/acfafb44-5b2d50c78ab1fa6b.js  54.2 kB
+  └ other shared chunks (total)          1.94 kB
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+[2026-09-19T14:46:55Z] Restarting PM2 process 'medisquare'
+[2026-09-19T14:46:55Z] Waiting for health check at http://localhost:4444/
+[2026-09-19T14:46:58Z] Health check passed. Deploy of 8f78f2bb54516f4d4ef935248b0f498bfa82cadd successful.
+[2026-09-19T15:09:39Z] Starting deploy of 57d8e95a447516109157ffc393508b2b06e8aa50 (previous: 8f78f2b)
+Lockfile is up to date, resolution step is skipped
+Already up to date
+
+╭ Warning ─────────────────────────────────────────────────────────────────────╮
+│                                                                              │
+│   Ignored build scripts: @prisma/client, @prisma/engines, esbuild, prisma,   │
+│   sharp, unrs-resolver.                                                      │
+│   Run "pnpm approve-builds" to pick which dependencies should be allowed     │
+│   to run scripts.                                                            │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+Done in 688ms using pnpm v10.12.4
+
+> medisquare-pharmacy-clinic-erp@0.1.0 build /home/asiriservice/medisquare
+> pnpm prisma:generate && next build
+
+
+> medisquare-pharmacy-clinic-erp@0.1.0 prisma:generate /home/asiriservice/medisquare
+> node scripts/with-database-url.mjs prisma generate
+
+Environment variables loaded from .env
+Prisma schema loaded from prisma/schema.prisma
+
+✔ Generated Prisma Client (v6.19.3) to ./node_modules/.pnpm/@prisma+client@6.19.3_prisma@6.19.3_typescript@5.9.3__typescript@5.9.3/node_modules/@prisma/client in 273ms
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+Tip: Need your database queries to be 1000x faster? Accelerate offers you that and more: https://pris.ly/tip-2-accelerate
+
+   ▲ Next.js 15.5.19
+   - Environments: .env
+
+   Creating an optimized production build ...
+ ⚠ Compiled with warnings in 5.4s
+
+./node_modules/.pnpm/handlebars@4.7.9/node_modules/handlebars/lib/index.js
+require.extensions is not supported by webpack. Use a loader instead.
+
+Import trace for requested module:
+./node_modules/.pnpm/handlebars@4.7.9/node_modules/handlebars/lib/index.js
+./src/app/api/print/batch-label/[id]/route.ts
+
+./node_modules/.pnpm/handlebars@4.7.9/node_modules/handlebars/lib/index.js
+require.extensions is not supported by webpack. Use a loader instead.
+
+Import trace for requested module:
+./node_modules/.pnpm/handlebars@4.7.9/node_modules/handlebars/lib/index.js
+./src/app/api/print/batch-label/[id]/route.ts
+
+./node_modules/.pnpm/handlebars@4.7.9/node_modules/handlebars/lib/index.js
+require.extensions is not supported by webpack. Use a loader instead.
+
+Import trace for requested module:
+./node_modules/.pnpm/handlebars@4.7.9/node_modules/handlebars/lib/index.js
+./src/app/api/print/batch-label/[id]/route.ts
+
+ ✓ Compiled successfully in 7.2s
+   Linting and checking validity of types ...
+
+./src/app/(public)/login/LoginForm.tsx
+28:6  Warning: React Hook useEffect has a missing dependency: 'loadingMessages.length'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/(public)/login/page.tsx
+2:23  Warning: 'UserRound' is defined but never used.  @typescript-eslint/no-unused-vars
+2:34  Warning: 'LockKeyhole' is defined but never used.  @typescript-eslint/no-unused-vars
+5:10  Warning: 'loginAction' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/components/pos/BatchPreviewCard.tsx
+4:61  Warning: 'CalendarClock' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/components/pos/PosWorkspace.tsx
+4:10  Warning: 'Barcode' is defined but never used.  @typescript-eslint/no-unused-vars
+4:57  Warning: 'Keyboard' is defined but never used.  @typescript-eslint/no-unused-vars
+4:75  Warning: 'Sparkles' is defined but never used.  @typescript-eslint/no-unused-vars
+4:88  Warning: 'Zap' is defined but never used.  @typescript-eslint/no-unused-vars
+17:3  Warning: 'canCartLineFulfilSelectedBatch' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/modules/procurement/grn-form.tsx
+6:28  Warning: 'SubmitButton' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/modules/procurement/grn.service.ts
+2:10  Warning: 'BatchStatus' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/modules/procurement/void-grn-button.tsx
+11:3  Warning: 'isDraft' is defined but never used.  @typescript-eslint/no-unused-vars
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules
+   Collecting page data ...
+   Generating static pages (0/37) ...
+   Generating static pages (9/37) 
+   Generating static pages (18/37) 
+   Generating static pages (27/37) 
+ ✓ Generating static pages (37/37)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                 Size  First Load JS
+┌ ○ /                                      150 B         103 kB
+├ ○ /_not-found                            992 B         103 kB
+├ ƒ /admin                                 150 B         103 kB
+├ ƒ /admin/audit                         2.85 kB         109 kB
+├ ƒ /admin/permissions                     806 B         103 kB
+├ ƒ /admin/roles                           956 B         107 kB
+├ ƒ /admin/roles/[id]                    1.36 kB         112 kB
+├ ƒ /admin/roles/new                       187 B         111 kB
+├ ƒ /admin/settings                        806 B         103 kB
+├ ƒ /admin/users                           956 B         107 kB
+├ ƒ /admin/users/[id]                    1.36 kB         110 kB
+├ ƒ /admin/users/new                       186 B         109 kB
+├ ƒ /api/pos/search                        150 B         103 kB
+├ ƒ /api/print/batch-label/[id]            150 B         103 kB
+├ ƒ /api/print/grn/[id]                    150 B         103 kB
+├ ƒ /api/print/receipt/[id]                150 B         103 kB
+├ ƒ /api/print/supplier-payment/[id]       150 B         103 kB
+├ ƒ /dashboard                             187 B         106 kB
+├ ƒ /expenses                            5.12 kB         111 kB
+├ ƒ /forbidden                             187 B         106 kB
+├ ○ /icon.png                                0 B            0 B
+├ ƒ /login                               4.52 kB         112 kB
+├ ƒ /pos                                 13.5 kB         116 kB
+├ ƒ /products                            6.81 kB         113 kB
+├ ƒ /products/[id]/edit                  4.04 kB         110 kB
+├ ƒ /reports                             1.82 kB         108 kB
+├ ƒ /sales                               5.47 kB         112 kB
+├ ○ /setup                               2.61 kB         105 kB
+├ ƒ /stock                               2.42 kB         109 kB
+├ ƒ /stock/batch-expiry                    177 B         106 kB
+├ ƒ /stock/batches                       3.32 kB         122 kB
+├ ƒ /stock/expiry                        3.57 kB         113 kB
+├ ƒ /stock/grn                            1.2 kB         107 kB
+├ ƒ /stock/grn/[id]                      4.32 kB         111 kB
+├ ƒ /stock/grn/[id]/edit                 1.36 kB         113 kB
+├ ƒ /stock/grn/new                         186 B         112 kB
+├ ƒ /stock/movements                     1.37 kB         111 kB
+├ ƒ /suppliers                           4.86 kB         120 kB
+├ ƒ /suppliers/payments                  5.57 kB         112 kB
+├ ƒ /suppliers/returns                   4.99 kB         111 kB
+├ ƒ /training                            17.1 kB         123 kB
+├ ƒ /training/glossary                     187 B         106 kB
+├ ƒ /training/modules/[slug]             1.66 kB         113 kB
+├ ƒ /training/scenarios/[slug]           1.66 kB         113 kB
+├ ƒ /training/troubleshooting              187 B         106 kB
+└ ƒ /under-construction                   1.1 kB         109 kB
++ First Load JS shared by all             102 kB
+  ├ chunks/8920-2cb58a4a5dc86203.js      46.2 kB
+  ├ chunks/acfafb44-5b2d50c78ab1fa6b.js  54.2 kB
+  └ other shared chunks (total)          1.94 kB
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+[2026-09-19T15:10:27Z] Restarting PM2 process 'medisquare'
+[2026-09-19T15:10:27Z] Waiting for health check at http://localhost:4444/
+[2026-09-19T15:10:30Z] Health check passed. Deploy of 57d8e95a447516109157ffc393508b2b06e8aa50 successful.
+[2026-09-19T15:13:52Z] Starting deploy of 034c408595602c341bad1e8d816365a00e155e86 (previous: 57d8e95)
+Lockfile is up to date, resolution step is skipped
+Already up to date
+
+╭ Warning ─────────────────────────────────────────────────────────────────────╮
+│                                                                              │
+│   Ignored build scripts: @prisma/client, @prisma/engines, esbuild, prisma,   │
+│   sharp, unrs-resolver.                                                      │
+│   Run "pnpm approve-builds" to pick which dependencies should be allowed     │
+│   to run scripts.                                                            │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+Done in 934ms using pnpm v10.12.4
+
+> medisquare-pharmacy-clinic-erp@0.1.0 build /home/asiriservice/medisquare
+> pnpm prisma:generate && next build
+
+
+> medisquare-pharmacy-clinic-erp@0.1.0 prisma:generate /home/asiriservice/medisquare
+> node scripts/with-database-url.mjs prisma generate
+
+Environment variables loaded from .env
+Prisma schema loaded from prisma/schema.prisma
+
+✔ Generated Prisma Client (v6.19.3) to ./node_modules/.pnpm/@prisma+client@6.19.3_prisma@6.19.3_typescript@5.9.3__typescript@5.9.3/node_modules/@prisma/client in 293ms
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+Tip: Want to turn off tips and other hints? https://pris.ly/tip-4-nohints
+
+   ▲ Next.js 15.5.19
+   - Environments: .env
+
+   Creating an optimized production build ...
+ ⚠ Compiled with warnings in 7.6s
+
+./node_modules/.pnpm/handlebars@4.7.9/node_modules/handlebars/lib/index.js
+require.extensions is not supported by webpack. Use a loader instead.
+
+Import trace for requested module:
+./node_modules/.pnpm/handlebars@4.7.9/node_modules/handlebars/lib/index.js
+./src/app/api/print/batch-label/[id]/route.ts
+
+./node_modules/.pnpm/handlebars@4.7.9/node_modules/handlebars/lib/index.js
+require.extensions is not supported by webpack. Use a loader instead.
+
+Import trace for requested module:
+./node_modules/.pnpm/handlebars@4.7.9/node_modules/handlebars/lib/index.js
+./src/app/api/print/batch-label/[id]/route.ts
+
+./node_modules/.pnpm/handlebars@4.7.9/node_modules/handlebars/lib/index.js
+require.extensions is not supported by webpack. Use a loader instead.
+
+Import trace for requested module:
+./node_modules/.pnpm/handlebars@4.7.9/node_modules/handlebars/lib/index.js
+./src/app/api/print/batch-label/[id]/route.ts
+
+ ✓ Compiled successfully in 9.5s
+   Linting and checking validity of types ...
+
+./src/app/(public)/login/LoginForm.tsx
+28:6  Warning: React Hook useEffect has a missing dependency: 'loadingMessages.length'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/(public)/login/page.tsx
+2:23  Warning: 'UserRound' is defined but never used.  @typescript-eslint/no-unused-vars
+2:34  Warning: 'LockKeyhole' is defined but never used.  @typescript-eslint/no-unused-vars
+5:10  Warning: 'loginAction' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/components/pos/BatchPreviewCard.tsx
+4:61  Warning: 'CalendarClock' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/components/pos/PosWorkspace.tsx
+4:10  Warning: 'Barcode' is defined but never used.  @typescript-eslint/no-unused-vars
+4:57  Warning: 'Keyboard' is defined but never used.  @typescript-eslint/no-unused-vars
+4:75  Warning: 'Sparkles' is defined but never used.  @typescript-eslint/no-unused-vars
+4:88  Warning: 'Zap' is defined but never used.  @typescript-eslint/no-unused-vars
+17:3  Warning: 'canCartLineFulfilSelectedBatch' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/modules/procurement/grn-form.tsx
+6:28  Warning: 'SubmitButton' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/modules/procurement/grn.service.ts
+2:10  Warning: 'BatchStatus' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/modules/procurement/void-grn-button.tsx
+11:3  Warning: 'isDraft' is defined but never used.  @typescript-eslint/no-unused-vars
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules
+   Collecting page data ...
+   Generating static pages (0/37) ...
+   Generating static pages (9/37) 
+   Generating static pages (18/37) 
+   Generating static pages (27/37) 
+ ✓ Generating static pages (37/37)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                 Size  First Load JS
+┌ ○ /                                      150 B         103 kB
+├ ○ /_not-found                            992 B         103 kB
+├ ƒ /admin                                 150 B         103 kB
+├ ƒ /admin/audit                         2.85 kB         109 kB
+├ ƒ /admin/permissions                     806 B         103 kB
+├ ƒ /admin/roles                           956 B         107 kB
+├ ƒ /admin/roles/[id]                    1.36 kB         112 kB
+├ ƒ /admin/roles/new                       187 B         111 kB
+├ ƒ /admin/settings                        806 B         103 kB
+├ ƒ /admin/users                           956 B         107 kB
+├ ƒ /admin/users/[id]                    1.36 kB         110 kB
+├ ƒ /admin/users/new                       186 B         109 kB
+├ ƒ /api/pos/search                        150 B         103 kB
+├ ƒ /api/print/batch-label/[id]            150 B         103 kB
+├ ƒ /api/print/grn/[id]                    150 B         103 kB
+├ ƒ /api/print/receipt/[id]                150 B         103 kB
+├ ƒ /api/print/supplier-payment/[id]       150 B         103 kB
+├ ƒ /dashboard                             187 B         106 kB
+├ ƒ /expenses                            5.12 kB         111 kB
+├ ƒ /forbidden                             187 B         106 kB
+├ ○ /icon.png                                0 B            0 B
+├ ƒ /login                               4.52 kB         112 kB
+├ ƒ /pos                                 13.5 kB         116 kB
+├ ƒ /products                            6.81 kB         113 kB
+├ ƒ /products/[id]/edit                  4.04 kB         110 kB
+├ ƒ /reports                             1.82 kB         108 kB
+├ ƒ /sales                               5.47 kB         112 kB
+├ ○ /setup                               2.61 kB         105 kB
+├ ƒ /stock                               2.42 kB         109 kB
+├ ƒ /stock/batch-expiry                    177 B         106 kB
+├ ƒ /stock/batches                       3.32 kB         122 kB
+├ ƒ /stock/expiry                        3.57 kB         113 kB
+├ ƒ /stock/grn                            1.2 kB         107 kB
+├ ƒ /stock/grn/[id]                      4.32 kB         111 kB
+├ ƒ /stock/grn/[id]/edit                 1.36 kB         113 kB
+├ ƒ /stock/grn/new                         186 B         112 kB
+├ ƒ /stock/movements                     1.37 kB         111 kB
+├ ƒ /suppliers                           4.86 kB         120 kB
+├ ƒ /suppliers/payments                  5.57 kB         112 kB
+├ ƒ /suppliers/returns                   4.99 kB         111 kB
+├ ƒ /training                            17.1 kB         123 kB
+├ ƒ /training/glossary                     187 B         106 kB
+├ ƒ /training/modules/[slug]             1.66 kB         113 kB
+├ ƒ /training/scenarios/[slug]           1.66 kB         113 kB
+├ ƒ /training/troubleshooting              187 B         106 kB
+└ ƒ /under-construction                   1.1 kB         109 kB
++ First Load JS shared by all             102 kB
+  ├ chunks/8920-2cb58a4a5dc86203.js      46.2 kB
+  ├ chunks/acfafb44-5b2d50c78ab1fa6b.js  54.2 kB
+  └ other shared chunks (total)          1.94 kB
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+[2026-09-19T15:14:38Z] Restarting PM2 process 'medisquare'
+[2026-09-19T15:14:38Z] Waiting for health check at http://localhost:4444/
+[2026-09-19T15:14:41Z] Health check passed. Deploy of 034c408595602c341bad1e8d816365a00e155e86 successful.
