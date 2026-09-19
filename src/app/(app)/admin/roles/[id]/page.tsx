@@ -1,16 +1,18 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { SetBreadcrumb } from "@/components/layout/breadcrumbs";
 import { RoleForm } from "@/modules/admin/role-form";
 import { getAdminRole } from "@/modules/admin/rbac.service";
 import { requirePermission } from "@/modules/auth/permissions";
+import { DEV_ROLE_CODE, hasDevRoleAccess } from "@/modules/admin/dev-role-gate";
 
 export default async function AdminRoleDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  await requirePermission("admin.roles.manage");
+  const user = await requirePermission("admin.roles.manage");
   const { id } = await params;
   const role = await getAdminRole(id);
   if (!role) notFound();
+  if (role.code === DEV_ROLE_CODE && !(await hasDevRoleAccess(user))) redirect("/admin/roles");
 
   return (
     <div className="grid gap-6">

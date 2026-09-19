@@ -4,6 +4,8 @@ import { requirePermission } from "@/modules/auth/permissions";
 import { listAdminRoles } from "@/modules/admin/rbac.service";
 import { Pagination } from "@/components/ui/pagination";
 import { AutoSubmit } from "@/components/ui/auto-submit";
+import { DEV_ROLE_CODE, hasDevRoleAccess } from "@/modules/admin/dev-role-gate";
+import { DevRoleOpenButton } from "@/modules/admin/dev-role-open-button";
 
 type Params = { search?: string; status?: string; page?: string };
 
@@ -13,7 +15,8 @@ function normalizeStatus(value?: string) {
 }
 
 export default async function AdminRolesPage({ searchParams }: { searchParams: Promise<Params> }) {
-  await requirePermission("admin.roles.manage");
+  const user = await requirePermission("admin.roles.manage");
+  const devAccess = await hasDevRoleAccess(user);
   const params = await searchParams;
   const status = normalizeStatus(params.status);
   const currentPage = Math.max(1, parseInt(params.page ?? "1", 10) || 1);
@@ -84,9 +87,13 @@ export default async function AdminRolesPage({ searchParams }: { searchParams: P
                       <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${role.isActive ? "bg-status-success-bg text-status-success-text" : "bg-status-danger-bg text-status-danger-text"}`}>{role.isActive ? "Active" : "Inactive"}</span>
                     </td>
                     <td className="px-5 py-3.5 text-right">
-                      <Link className="rounded-lg border border-neutral-border bg-neutral-surface px-3 py-2 text-sm font-semibold text-neutral-text hover:bg-neutral-bg" href={`/admin/roles/${role.id}`}>
-                        Open
-                      </Link>
+                      {role.code === DEV_ROLE_CODE && !devAccess ? (
+                        <DevRoleOpenButton roleId={role.id} />
+                      ) : (
+                        <Link className="rounded-lg border border-neutral-border bg-neutral-surface px-3 py-2 text-sm font-semibold text-neutral-text hover:bg-neutral-bg" href={`/admin/roles/${role.id}`}>
+                          Open
+                        </Link>
+                      )}
                     </td>
                   </tr>
                 ))
