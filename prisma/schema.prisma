@@ -21,6 +21,7 @@ model User {
   pharmacistRegistrationRef     String?            @db.VarChar(120)
   pharmacistCertificateFileUrl  String?            @db.VarChar(2048)
   pharmacistCertificateVerified Boolean            @default(false)
+  activeSessionId               String?            @db.VarChar(64)
   auditLogs                     AuditLog[]         @relation("AuditActor")
   sales                         Sale[]             @relation("SaleCashier")
   saleVoids                     SaleVoid[]         @relation("SaleVoidActor")

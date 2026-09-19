@@ -1,0 +1,1 @@
+ALTER TABLE "User" ADD COLUMN "activeSessionId" VARCHAR(64);

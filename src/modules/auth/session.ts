@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import { cache } from "react";
@@ -24,8 +25,8 @@ export type CurrentUser = {
   permissions: string[];
 };
 
-async function createSessionToken(userId: string) {
-  return new SignJWT({})
+async function createSessionToken(userId: string, sessionId: string) {
+  return new SignJWT({ sid: sessionId })
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(userId)
     .setIssuer("medisquare")
@@ -35,7 +36,7 @@ async function createSessionToken(userId: string) {
     .sign(signingKey);
 }
 
-async function readSessionUserId() {
+async function readSession() {
   const token = (await cookies()).get(sessionCookieName)?.value;
   if (!token) return null;
 
@@ -45,24 +46,40 @@ async function readSessionUserId() {
       issuer: "medisquare",
       audience: "medisquare-app",
     });
-    return payload.sub ?? null;
+    if (!payload.sub || typeof payload.sid !== "string") return null;
+    return { userId: payload.sub, sessionId: payload.sid };
   } catch {
     return null;
   }
 }
 
+/** Only the most recent login stays valid: the token's session id must match the one stored on the user. */
+async function readSessionUserId() {
+  const session = await readSession();
+  if (!session) return null;
+  const row = await prisma.user.findUnique({ where: { id: session.userId }, select: { activeSessionId: true } });
+  return row?.activeSessionId === session.sessionId ? session.userId : null;
+}
+
 export async function createSession(userId: string) {
-  const token = await createSessionToken(userId);
+  const sessionId = randomUUID();
+  // Replacing the stored id signs out every other device/browser for this user.
+  await prisma.user.update({ where: { id: userId }, data: { activeSessionId: sessionId } });
+  const token = await createSessionToken(userId, sessionId);
+  // No maxAge: a browser-session cookie, so closing the browser logs the user out.
   (await cookies()).set(sessionCookieName, token, {
     httpOnly: true,
     sameSite: "lax",
     secure: appUrlIsHttps,
-    maxAge: sessionDurationSeconds,
     path: "/",
   });
 }
 
 export async function clearSession() {
+  const session = await readSession();
+  if (session) {
+    await prisma.user.updateMany({ where: { id: session.userId, activeSessionId: session.sessionId }, data: { activeSessionId: null } });
+  }
   (await cookies()).delete(sessionCookieName);
 }
 
