@@ -299,7 +299,7 @@ export async function getStockMovementList(filters: InventoryFilterInput = {}): 
       ? [
           { product: { name: { contains: query, mode: "insensitive" as const } } },
           { batch: { batchNo: { contains: query, mode: "insensitive" as const } } },
-          { batch: { supplierBatchNo: { contains: query, mode: "insensitive" as const } } },
+          { batch: { grnLine: { grn: { supplier: { name: { contains: query, mode: "insensitive" as const } } } } } },
           { refType: { contains: query, mode: "insensitive" as const } },
           { refId: { contains: query, mode: "insensitive" as const } },
         ]
@@ -311,7 +311,12 @@ export async function getStockMovementList(filters: InventoryFilterInput = {}): 
       where,
       include: {
         product: { select: { name: true, baseUnitName: true } },
-        batch: { select: { batchNo: true, supplierBatchNo: true } },
+        batch: {
+          select: {
+            batchNo: true,
+            grnLine: { select: { grn: { select: { supplier: { select: { name: true } } } } } },
+          },
+        },
       },
       orderBy: { createdAt: "desc" },
       skip: (page - 1) * pageSize,
@@ -331,7 +336,7 @@ export async function getStockMovementList(filters: InventoryFilterInput = {}): 
     occurredAt: row.createdAt.toISOString(),
     productName: row.product.name,
     batchNumber: row.batch.batchNo,
-    supplierLotNumber: row.batch.supplierBatchNo,
+    supplierName: row.batch.grnLine?.grn.supplier.name ?? null,
     movementType: row.movementType,
     direction: (row.qtyBase.gt(0) ? "IN" : "OUT") as StockMovementDirection,
     qtyBase: row.qtyBase.toFixed(3),

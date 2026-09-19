@@ -52,7 +52,7 @@ export type StockMovementRecord = {
   occurredAt: ISODateTime;
   productName: string;
   batchNumber: string | null;
-  supplierLotNumber: string | null;
+  supplierName: string | null;
   movementType: StockMovementType;
   direction: StockMovementDirection;
   qtyBase: QuantityString;

@@ -54,7 +54,7 @@ export function StockMovementTable({ rows }: { rows: StockMovementRecord[] }) {
                 "Date",
                 "Product",
                 "System Batch",
-                "Supplier Lot",
+                "Supplier Name",
                 "Movement Type",
                 "Direction",
                 "Qty Base",
@@ -74,7 +74,7 @@ export function StockMovementTable({ rows }: { rows: StockMovementRecord[] }) {
                   <td className="px-5 py-4 text-neutral-muted">{formatMovementDate(movement.occurredAt)}</td>
                   <td className="px-5 py-4 font-bold text-neutral-text">{movement.productName}</td>
                   <td className="px-5 py-4 font-semibold text-neutral-muted">{movement.batchNumber ?? "—"}</td>
-                  <td className="px-5 py-4 font-semibold text-neutral-muted">{movement.supplierLotNumber ?? "—"}</td>
+                  <td className="px-5 py-4 font-semibold text-neutral-muted">{movement.supplierName ?? "—"}</td>
                   <td className="px-5 py-4">
                     <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${movementStyle[movement.movementType]}`}>
                       {movementLabel[movement.movementType]}
