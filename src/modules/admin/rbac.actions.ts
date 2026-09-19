@@ -5,10 +5,8 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { type FormState, toFieldErrors } from "@/lib/forms";
 import { ForbiddenError, UnauthorizedError, requirePermission } from "@/modules/auth/permissions";
-import { isUnderConstructionCode, isUnderConstructionPasswordValid } from "./under-construction-gate";
 import {
   createAdminRole,
-  getAdminRole,
   createAdminUser,
   createBootstrapOwner,
   setUserActive,
@@ -105,11 +103,6 @@ export async function saveUserAction(_prev: FormState, formData: FormData): Prom
   }
 }
 
-export async function verifyUnderConstructionPasswordAction(password: string): Promise<boolean> {
-  await requirePermission("admin.roles.manage", { onDenied: "throw" });
-  return isUnderConstructionPasswordValid(password);
-}
-
 export async function saveRoleAction(_prev: FormState, formData: FormData): Promise<FormState> {
   try {
     const actor = await requirePermission("admin.roles.manage", { onDenied: "throw" });
@@ -130,14 +123,6 @@ export async function saveRoleAction(_prev: FormState, formData: FormData): Prom
         message: flat.formErrors[0] ?? "Please correct the highlighted fields.",
         fieldErrors: toFieldErrors(flat.fieldErrors),
       };
-    }
-
-    // Newly granting the under-construction lock needs the admin password.
-    const previousCodes = parsed.data.roleId ? (await getAdminRole(parsed.data.roleId))?.permissionCodes ?? [] : [];
-    const hadLock = previousCodes.some(isUnderConstructionCode);
-    if (!hadLock && parsed.data.permissionCodes.some(isUnderConstructionCode)
-      && !isUnderConstructionPasswordValid(String(formData.get("underConstructionPassword") ?? ""))) {
-      return { status: "error", message: "Admin password required to grant the Under Construction permission." };
     }
 
     const payload = {
