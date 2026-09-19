@@ -1,8 +1,8 @@
 "use client";
 
-import { useActionState, useEffect, useMemo, useRef } from "react";
-import { groupPermissionsByModule, permissionRegistry } from "@/modules/auth/permission-registry";
-import { saveRoleAction } from "./rbac.actions";
+import { useActionState, useEffect, useMemo, useRef, useState } from "react";
+import { canonicalizePermissionCode, groupPermissionsByModule, permissionRegistry } from "@/modules/auth/permission-registry";
+import { saveRoleAction, verifyUnderConstructionPasswordAction } from "./rbac.actions";
 import type { AdminRoleDetail } from "./rbac.service";
 import { idleFormState } from "@/lib/forms";
 import { Field, FormAlert, SubmitButton, inputClass } from "@/components/ui/form";
@@ -17,6 +17,10 @@ export function RoleForm({ role }: RoleFormProps) {
   const groups = useMemo(() => groupPermissionsByModule(permissionRegistry), []);
   const selectedCodes = useMemo(() => new Set(role?.permissionCodes ?? []), [role?.permissionCodes]);
   const isOwnerRole = role?.code === "owner";
+  const [ucPassword, setUcPassword] = useState("");
+  const [ucPrompt, setUcPrompt] = useState<HTMLInputElement | null>(null);
+  const [ucInput, setUcInput] = useState("");
+  const [ucError, setUcError] = useState("");
 
   useEffect(() => {
     if (state.status === "success") {
@@ -96,6 +100,13 @@ export function RoleForm({ role }: RoleFormProps) {
                       name="permissionCodes"
                       type="checkbox"
                       value={permission.code}
+                      onChange={canonicalizePermissionCode(permission.code) === "system.under_construction" ? (e) => {
+                        if (!e.currentTarget.checked) return;
+                        e.currentTarget.checked = false;
+                        setUcInput("");
+                        setUcError("");
+                        setUcPrompt(e.currentTarget);
+                      } : undefined}
                     />
                     <span className="min-w-0">
                       <span className="block font-semibold text-neutral-text">{permission.code}</span>
@@ -114,6 +125,35 @@ export function RoleForm({ role }: RoleFormProps) {
       </div>
 
       {isOwnerRole ? permissionRegistry.map((permission) => <input key={permission.code} name="permissionCodes" type="hidden" value={permission.code} />) : null}
+      <input name="underConstructionPassword" type="hidden" value={ucPassword} />
+      {ucPrompt ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setUcPrompt(null)}>
+          <div className="w-full max-w-sm rounded-2xl border border-neutral-border bg-neutral-surface p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-black text-neutral-text">Admin password required</h3>
+            <p className="mt-1 text-sm text-neutral-muted">Enter the admin password to grant the Under Construction permission.</p>
+            <input autoFocus className={`${inputClass} mt-4`} onChange={(e) => setUcInput(e.target.value)} placeholder="Password" type="password" value={ucInput} />
+            {ucError ? <p className="mt-2 text-sm font-semibold text-status-danger-text">{ucError}</p> : null}
+            <div className="mt-5 flex justify-end gap-2">
+              <button className="rounded-lg border border-neutral-border px-4 py-2 text-sm font-semibold text-neutral-text" onClick={() => setUcPrompt(null)} type="button">Cancel</button>
+              <button
+                className="rounded-lg bg-brand-default px-4 py-2 text-sm font-bold text-white"
+                onClick={async () => {
+                  if (await verifyUnderConstructionPasswordAction(ucInput)) {
+                    ucPrompt.checked = true;
+                    setUcPassword(ucInput);
+                    setUcPrompt(null);
+                  } else {
+                    setUcError("Incorrect password.");
+                  }
+                }}
+                type="button"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
       <FormAlert state={state} />
       <div>
         <SubmitButton>{role ? "Save role" : "Create role"}</SubmitButton>
