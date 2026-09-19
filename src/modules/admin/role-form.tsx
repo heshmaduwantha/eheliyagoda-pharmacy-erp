@@ -17,13 +17,6 @@ export function RoleForm({ role }: RoleFormProps) {
   const groups = useMemo(() => groupPermissionsByModule(permissionRegistry), []);
   const selectedCodes = useMemo(() => new Set(role?.permissionCodes ?? []), [role?.permissionCodes]);
   const isOwnerRole = role?.code === "owner";
-  // The "system" module (e.g. under-construction lock) is only editable on the development role.
-  const showSystemGroup = role?.code === "dev";
-  const visibleGroups = useMemo(() => groups.filter((group) => showSystemGroup || group.module !== "system"), [groups, showSystemGroup]);
-  const hiddenSystemCodes = useMemo(
-    () => showSystemGroup ? [] : groups.filter((group) => group.module === "system").flatMap((group) => group.permissions.map((p) => p.code)).filter((code) => selectedCodes.has(code)),
-    [groups, showSystemGroup, selectedCodes],
-  );
 
   useEffect(() => {
     if (state.status === "success") {
@@ -65,7 +58,7 @@ export function RoleForm({ role }: RoleFormProps) {
           <p className="text-xs text-neutral-muted">{permissionRegistry.length} seeded permissions</p>
         </div>
         <div className="mt-5 grid gap-4">
-          {visibleGroups.map((group) => (
+          {groups.map((group) => (
             <section className="rounded-2xl border border-neutral-border bg-neutral-bg p-4" key={group.module}>
               <div className="flex items-center justify-between gap-3">
                 <h4 className="text-sm font-bold uppercase tracking-widest text-brand-default">{group.module}</h4>
@@ -120,7 +113,6 @@ export function RoleForm({ role }: RoleFormProps) {
         </div>
       </div>
 
-      {hiddenSystemCodes.map((code) => <input key={code} name="permissionCodes" type="hidden" value={code} />)}
       {isOwnerRole ? permissionRegistry.map((permission) => <input key={permission.code} name="permissionCodes" type="hidden" value={permission.code} />) : null}
       <FormAlert state={state} />
       <div>

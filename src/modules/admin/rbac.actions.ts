@@ -5,7 +5,6 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { type FormState, toFieldErrors } from "@/lib/forms";
 import { ForbiddenError, UnauthorizedError, requirePermission } from "@/modules/auth/permissions";
-import { grantDevRoleUnlock, hasDevRoleAccess, isDevRoleId, isDevRolePasswordValid } from "./dev-role-gate";
 import {
   createAdminRole,
   createAdminUser,
@@ -104,22 +103,9 @@ export async function saveUserAction(_prev: FormState, formData: FormData): Prom
   }
 }
 
-export async function unlockDevRoleAction(_prev: FormState, formData: FormData): Promise<FormState> {
-  const actor = await requirePermission("admin.roles.manage", { onDenied: "throw" });
-  const roleId = z.string().uuid().safeParse(formData.get("roleId"));
-  if (!roleId.success || !(await isDevRoleId(roleId.data))) return { status: "error", message: "Invalid role." };
-  if (!isDevRolePasswordValid(String(formData.get("password") ?? ""))) return { status: "error", message: "Incorrect password." };
-  await grantDevRoleUnlock(actor);
-  redirect(`/admin/roles/${roleId.data}`);
-}
-
 export async function saveRoleAction(_prev: FormState, formData: FormData): Promise<FormState> {
   try {
     const actor = await requirePermission("admin.roles.manage", { onDenied: "throw" });
-    const targetRoleId = formData.get("roleId") ? String(formData.get("roleId")) : undefined;
-    if (targetRoleId && (await isDevRoleId(targetRoleId)) && !(await hasDevRoleAccess(actor))) {
-      return { status: "error", message: "Password required to edit the development role." };
-    }
     const permissionCodes = formData.getAll("permissionCodes").map((value) => String(value));
     const parsed = roleFormSchema.safeParse({
       roleId: formData.get("roleId") ? String(formData.get("roleId")) : undefined,
