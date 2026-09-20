@@ -118,8 +118,28 @@ export function AppShell({
                 <Brand compact />
               </Link>
 
-              <div className="ml-auto flex items-center gap-3">
+              <div className="ml-auto flex items-center gap-2.5 sm:gap-3">
                 <NotificationBell alerts={alerts} />
+
+                {/* Mobile User Initials & Logout */}
+                <div className="flex items-center gap-2 lg:hidden pl-1">
+                  <div
+                    className="grid size-8 shrink-0 place-items-center rounded-full bg-brand-default text-xs font-bold text-white shadow-sm"
+                    title={user.name}
+                  >
+                    {initials}
+                  </div>
+                  <form action={logoutAction} className="flex items-center">
+                    <button
+                      aria-label="Log out"
+                      title="Log out"
+                      className="grid size-8 place-items-center rounded-lg border border-neutral-border bg-neutral-surface text-neutral-muted transition hover:bg-neutral-bg hover:text-red-600 hover:border-red-200 active:scale-95 cursor-pointer"
+                      type="submit"
+                    >
+                      <LogOut className="size-4" />
+                    </button>
+                  </form>
+                </div>
               </div>
             </div>
           </header>
