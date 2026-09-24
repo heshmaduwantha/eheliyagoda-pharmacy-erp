@@ -11,12 +11,15 @@ import {
 import Link from "next/link";
 import { formatMoney } from "@/lib/money";
 import { withPerformanceTrace } from "@/lib/performance";
-import { requireAuth, requirePermission } from "@/modules/auth/permissions";
+import { requireAuth, requireAnyPermission } from "@/modules/auth/permissions";
+import { userHasAdminRole } from "@/modules/auth/admin-approval";
 import {
   getDashboardMetrics,
   getDashboardWeeklySales,
   getDashboardTopProducts,
+  getCashierDashboardMetrics,
 } from "@/modules/dashboard/dashboard.service";
+import { CashierDashboard } from "@/components/dashboard/CashierDashboard";
 
 export default function DashboardPage() {
   return withPerformanceTrace({ route: "/dashboard", method: "RSC" }, renderDashboardPage);
@@ -24,7 +27,14 @@ export default function DashboardPage() {
 
 async function renderDashboardPage() {
   const user = await requireAuth();
-  await requirePermission("dashboard.read");
+  await requireAnyPermission(["dashboard.read", "dashboard.cashier.read", "pos.sale.read"]);
+
+  const isAdmin = await userHasAdminRole(user.id);
+
+  if (!isAdmin) {
+    const cashierMetrics = await getCashierDashboardMetrics(user.id);
+    return <CashierDashboard data={cashierMetrics} user={user} />;
+  }
 
   const metrics = await getDashboardMetrics();
   const weeklySales = await getDashboardWeeklySales();

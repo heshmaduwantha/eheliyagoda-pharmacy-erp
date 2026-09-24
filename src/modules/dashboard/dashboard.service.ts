@@ -309,3 +309,128 @@ const fetchWatchlistFromDb = unstable_cache(
 export async function getDashboardWatchlist() {
   return await fetchWatchlistFromDb();
 }
+
+export type CashierDashboardData = {
+  todaySalesTotal: string;
+  todaySaleCount: number;
+  todayCashTotal: string;
+  todayCardTotal: string;
+  todayExpenseTotal: string;
+  todayExpenseCount: number;
+  recentSales: {
+    id: string;
+    saleNumber: string;
+    total: string;
+    status: string;
+    completedAt: Date | null;
+    createdAt: Date;
+    cashierName: string;
+    paymentMethod: string;
+  }[];
+  topSellingItems: {
+    productName: string;
+    unitsSold: number;
+    revenue: string;
+  }[];
+};
+
+export async function getCashierDashboardMetrics(cashierId?: string): Promise<CashierDashboardData> {
+  const today = startOfDay();
+  const tomorrow = addDays(today, 1);
+
+  const whereCompleted: Prisma.SaleWhereInput = {
+    status: "COMPLETED",
+    completedAt: { gte: today, lt: tomorrow },
+    ...(cashierId ? { cashierId } : {}),
+  };
+
+  const [completedSales, recentSalesRaw, topProductsRaw, expensesAgg] = await Promise.all([
+    prisma.sale.findMany({
+      where: whereCompleted,
+      select: {
+        total: true,
+        payments: {
+          select: {
+            method: true,
+            amount: true,
+          },
+        },
+      },
+    }),
+    prisma.sale.findMany({
+      where: {
+        createdAt: { gte: today, lt: tomorrow },
+        ...(cashierId ? { cashierId } : {}),
+      },
+      include: {
+        cashier: { select: { name: true, username: true } },
+        payments: { select: { method: true, amount: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 8,
+    }),
+    prisma.saleLine.groupBy({
+      by: ["productNameSnapshot"],
+      where: {
+        sale: whereCompleted,
+      },
+      _sum: {
+        qty: true,
+        lineTotal: true,
+      },
+      orderBy: {
+        _sum: {
+          qty: "desc",
+        },
+      },
+      take: 5,
+    }),
+    prisma.expense.aggregate({
+      where: {
+        deletedAt: null,
+        date: { gte: today, lt: tomorrow },
+      },
+      _sum: { amount: true },
+      _count: { id: true },
+    }),
+  ]);
+
+  let totalRevenue = new Prisma.Decimal(0);
+  let totalCash = new Prisma.Decimal(0);
+  let totalCard = new Prisma.Decimal(0);
+
+  for (const sale of completedSales) {
+    totalRevenue = totalRevenue.add(sale.total);
+    for (const payment of sale.payments) {
+      if (payment.method === "CASH") {
+        totalCash = totalCash.add(payment.amount);
+      } else if (payment.method === "CARD") {
+        totalCard = totalCard.add(payment.amount);
+      }
+    }
+  }
+
+  return {
+    todaySalesTotal: totalRevenue.toFixed(2),
+    todaySaleCount: completedSales.length,
+    todayCashTotal: totalCash.toFixed(2),
+    todayCardTotal: totalCard.toFixed(2),
+    todayExpenseTotal: (expensesAgg._sum.amount ?? new Prisma.Decimal(0)).toFixed(2),
+    todayExpenseCount: expensesAgg._count.id ?? 0,
+    recentSales: recentSalesRaw.map((sale) => ({
+      id: sale.id,
+      saleNumber: sale.saleNumber,
+      total: sale.total.toFixed(2),
+      status: sale.status,
+      completedAt: sale.completedAt,
+      createdAt: sale.createdAt,
+      cashierName: sale.cashier.name || sale.cashier.username,
+      paymentMethod: sale.payments.map((p) => p.method).join(", ") || "CASH",
+    })),
+    topSellingItems: topProductsRaw.map((item) => ({
+      productName: item.productNameSnapshot,
+      unitsSold: Number(item._sum.qty ?? 0),
+      revenue: (item._sum.lineTotal ?? new Prisma.Decimal(0)).toFixed(2),
+    })),
+  };
+}

@@ -52,6 +52,7 @@ export const permissionRegistry: PermissionDefinition[] = [
 
   // Dashboard
   { code: "dashboard.read", module: "dashboard", resource: "dashboard", action: "read", description: "View dashboard overview and metrics" },
+  { code: "dashboard.cashier.read", module: "dashboard", resource: "cashier_dashboard", action: "read", description: "View cashier operational dashboard" },
 
   // Reports
   { code: "reports.read", module: "reports", resource: "workspace", action: "read", description: "Open the reports workspace" },
@@ -84,6 +85,7 @@ export const permissionRegistryByCode = new Map(permissionRegistry.map((permissi
 
 export const legacyPermissionAliases: Record<string, string> = {
   "dashboard.view": "dashboard.read",
+  "cashier.dashboard.read": "dashboard.cashier.read",
   "reports.dashboard.read": "dashboard.read",
   "pos.access": "pos.sale.read",
   "sale.create": "pos.sale.create",

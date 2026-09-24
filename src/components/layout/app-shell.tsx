@@ -71,6 +71,7 @@ export function AppShell({
           <div className="mt-6 flex-1 overflow-y-auto no-scrollbar">
             <SidebarNav
               permissions={user.permissions}
+              roleCode={user.roleCode}
               collapsed={isCollapsed}
             />
           </div>
@@ -155,7 +156,7 @@ export function AppShell({
         </div>
 
         {/* Mobile bottom nav */}
-        <SidebarNav mobile permissions={user.permissions} />
+        <SidebarNav mobile permissions={user.permissions} roleCode={user.roleCode} />
       </div>
     </BreadcrumbProvider>
   );

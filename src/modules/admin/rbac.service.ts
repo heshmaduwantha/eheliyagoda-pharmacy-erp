@@ -579,6 +579,7 @@ export async function getAdminRole(roleId: string, client: DbClient = prisma): P
 }
 
 export async function listAdminPermissions(): Promise<AdminPermissionRow[]> {
+  await ensurePermissionCatalog();
   const permissions = await prisma.permission.findMany({
     where: { code: { in: permissionRegistry.map((permission) => permission.code) } },
     select: {
@@ -943,6 +944,7 @@ export async function createAdminRole(input: CreateRoleInput, actor: CurrentUser
 }
 
 async function syncRolePermissions(client: DbClient, roleId: string, permissionCodes: readonly string[], actorUserId?: string | null) {
+  await ensurePermissionCatalog(client);
   const normalizedCodes = uniqueStrings(permissionCodes.map(canonicalizePermissionCode));
   const permissions = await client.permission.findMany({
     where: { code: { in: normalizedCodes } },
@@ -1227,6 +1229,7 @@ export async function seedAllPermissionsAndRoles(client: DbClient = prisma) {
         "inventory.product.read",
         "inventory.batch.read",
         "dashboard.read",
+        "dashboard.cashier.read",
         "reports.read",
         "reports.dashboard.read",
         "reports.sales.read",
@@ -1235,7 +1238,7 @@ export async function seedAllPermissionsAndRoles(client: DbClient = prisma) {
     {
       code: "cashier",
       name: "Cashier",
-      description: "POS billing, stock and expiry lookup, dashboard, and daily sales tally",
+      description: "POS billing, stock and expiry lookup, counter dashboard, and daily sales tally",
       isSystem: true,
       permissionCodes: [
         "pos.sale.read",
@@ -1245,9 +1248,8 @@ export async function seedAllPermissionsAndRoles(client: DbClient = prisma) {
         "inventory.product.read",
         "inventory.batch.read",
         "dashboard.read",
-        "reports.read",
-        "reports.dashboard.read",
-        "reports.sales.read",
+        "dashboard.cashier.read",
+        "expenses.read",
       ],
     },
     {

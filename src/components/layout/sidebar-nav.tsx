@@ -30,23 +30,38 @@ const items: NavItem[] = [
 
 export function SidebarNav({
   permissions,
+  roleCode,
   mobile = false,
   collapsed = false,
   onNavigate,
 }: {
   permissions: string[];
+  roleCode?: string;
   mobile?: boolean;
   collapsed?: boolean;
   onNavigate?: () => void;
 }) {
   const pathname = usePathname();
-  const available = items.filter(
-    (item) =>
-      permissions.includes(item.permission) ||
-      permissions.includes(canonicalizePermissionCode(item.permission)) ||
-      (item.permission === "dashboard.read" &&
-        (permissions.includes("reports.dashboard.read") || permissions.includes("dashboard.view"))),
-  );
+  const isAdmin = roleCode === "admin" || roleCode === "owner";
+  const available = items
+    .filter((item) => {
+      // Dashboard is always visible to all authenticated users
+      if (item.href === "/dashboard") {
+        return true;
+      }
+      // Non-admins (cashiers) only see counter dashboard, POS, stock, expenses - no sale history or detailed analytics
+      if (!isAdmin && (item.href === "/sales" || item.href === "/reports")) {
+        return false;
+      }
+      return (
+        permissions.includes(item.permission) ||
+        permissions.includes(canonicalizePermissionCode(item.permission)) ||
+        (item.permission === "dashboard.read" &&
+          (permissions.includes("reports.dashboard.read") ||
+            permissions.includes("dashboard.view") ||
+            permissions.includes("dashboard.cashier.read")))
+      );
+    });
   const activeHref = available
     .filter((item) => pathname === item.href || pathname.startsWith(`${item.href}/`))
     .sort((left, right) => right.href.length - left.href.length)[0]?.href;
