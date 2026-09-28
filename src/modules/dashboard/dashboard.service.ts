@@ -310,13 +310,28 @@ export async function getDashboardWatchlist() {
   return await fetchWatchlistFromDb();
 }
 
+export type CashierShiftSummary = {
+  cashierId: string;
+  cashierName: string;
+  saleCount: number;
+  cashTotal: string;
+  cardTotal: string;
+  totalAmount: string;
+  isCurrentCashier: boolean;
+};
+
 export type CashierDashboardData = {
   todaySalesTotal: string;
   todaySaleCount: number;
   todayCashTotal: string;
   todayCardTotal: string;
+  myShiftSalesTotal: string;
+  myShiftSaleCount: number;
+  myShiftCashTotal: string;
+  myShiftCardTotal: string;
   todayExpenseTotal: string;
   todayExpenseCount: number;
+  cashierBreakdowns: CashierShiftSummary[];
   recentSales: {
     id: string;
     saleNumber: string;
@@ -334,21 +349,23 @@ export type CashierDashboardData = {
   }[];
 };
 
-export async function getCashierDashboardMetrics(cashierId?: string): Promise<CashierDashboardData> {
+export async function getCashierDashboardMetrics(currentCashierId?: string): Promise<CashierDashboardData> {
   const today = startOfDay();
   const tomorrow = addDays(today, 1);
 
   const whereCompleted: Prisma.SaleWhereInput = {
     status: "COMPLETED",
     completedAt: { gte: today, lt: tomorrow },
-    ...(cashierId ? { cashierId } : {}),
   };
 
-  const [completedSales, recentSalesRaw, topProductsRaw, expensesAgg] = await Promise.all([
+  const [allCompletedSales, recentSalesRaw, topProductsRaw, expensesAgg] = await Promise.all([
     prisma.sale.findMany({
       where: whereCompleted,
       select: {
+        id: true,
+        cashierId: true,
         total: true,
+        cashier: { select: { name: true, username: true } },
         payments: {
           select: {
             method: true,
@@ -360,7 +377,6 @@ export async function getCashierDashboardMetrics(cashierId?: string): Promise<Ca
     prisma.sale.findMany({
       where: {
         createdAt: { gte: today, lt: tomorrow },
-        ...(cashierId ? { cashierId } : {}),
       },
       include: {
         cashier: { select: { name: true, username: true } },
@@ -399,24 +415,86 @@ export async function getCashierDashboardMetrics(cashierId?: string): Promise<Ca
   let totalCash = new Prisma.Decimal(0);
   let totalCard = new Prisma.Decimal(0);
 
-  for (const sale of completedSales) {
+  let myRevenue = new Prisma.Decimal(0);
+  let myCash = new Prisma.Decimal(0);
+  let myCard = new Prisma.Decimal(0);
+  let myCount = 0;
+
+  // Group by cashier
+  type ShiftAccumulator = {
+    cashierId: string;
+    cashierName: string;
+    saleCount: number;
+    cashTotal: Prisma.Decimal;
+    cardTotal: Prisma.Decimal;
+    totalAmount: Prisma.Decimal;
+    isCurrentCashier: boolean;
+  };
+
+  const shiftsMap = new Map<string, ShiftAccumulator>();
+
+  for (const sale of allCompletedSales) {
     totalRevenue = totalRevenue.add(sale.total);
+    const cId = sale.cashierId;
+    const cName = sale.cashier.name || sale.cashier.username;
+    const isMe = Boolean(currentCashierId && cId === currentCashierId);
+
+    if (!shiftsMap.has(cId)) {
+      shiftsMap.set(cId, {
+        cashierId: cId,
+        cashierName: cName,
+        saleCount: 0,
+        cashTotal: new Prisma.Decimal(0),
+        cardTotal: new Prisma.Decimal(0),
+        totalAmount: new Prisma.Decimal(0),
+        isCurrentCashier: isMe,
+      });
+    }
+
+    const shift = shiftsMap.get(cId)!;
+    shift.saleCount += 1;
+    shift.totalAmount = shift.totalAmount.add(sale.total);
+
+    if (isMe) {
+      myCount += 1;
+      myRevenue = myRevenue.add(sale.total);
+    }
+
     for (const payment of sale.payments) {
       if (payment.method === "CASH") {
         totalCash = totalCash.add(payment.amount);
+        shift.cashTotal = shift.cashTotal.add(payment.amount);
+        if (isMe) myCash = myCash.add(payment.amount);
       } else if (payment.method === "CARD") {
         totalCard = totalCard.add(payment.amount);
+        shift.cardTotal = shift.cardTotal.add(payment.amount);
+        if (isMe) myCard = myCard.add(payment.amount);
       }
     }
   }
 
+  const cashierBreakdowns: CashierShiftSummary[] = Array.from(shiftsMap.values()).map((s) => ({
+    cashierId: s.cashierId,
+    cashierName: s.cashierName,
+    saleCount: s.saleCount,
+    cashTotal: s.cashTotal.toFixed(2),
+    cardTotal: s.cardTotal.toFixed(2),
+    totalAmount: s.totalAmount.toFixed(2),
+    isCurrentCashier: s.isCurrentCashier,
+  }));
+
   return {
     todaySalesTotal: totalRevenue.toFixed(2),
-    todaySaleCount: completedSales.length,
+    todaySaleCount: allCompletedSales.length,
     todayCashTotal: totalCash.toFixed(2),
     todayCardTotal: totalCard.toFixed(2),
+    myShiftSalesTotal: myRevenue.toFixed(2),
+    myShiftSaleCount: myCount,
+    myShiftCashTotal: myCash.toFixed(2),
+    myShiftCardTotal: myCard.toFixed(2),
     todayExpenseTotal: (expensesAgg._sum.amount ?? new Prisma.Decimal(0)).toFixed(2),
     todayExpenseCount: expensesAgg._count.id ?? 0,
+    cashierBreakdowns,
     recentSales: recentSalesRaw.map((sale) => ({
       id: sale.id,
       saleNumber: sale.saleNumber,
