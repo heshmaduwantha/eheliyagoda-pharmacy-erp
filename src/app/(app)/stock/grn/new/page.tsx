@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { requirePermission } from "@/modules/auth/permissions";
-import { searchProducts } from "@/modules/catalog/catalog.service";
+import { listActiveProductsForGrn } from "@/modules/catalog/catalog.service";
 import { listActiveSuppliers } from "@/modules/procurement/supplier.service";
 import { GrnForm } from "@/modules/procurement/grn-form";
 
 export default async function NewGrnPage() {
   await requirePermission("grn.manage");
-  const [suppliers, { data: products }] = await Promise.all([listActiveSuppliers(), searchProducts({ pageSize: 500 })]);
+  const [suppliers, products] = await Promise.all([listActiveSuppliers(), listActiveProductsForGrn()]);
 
   return (
     <div className="grid gap-6">

@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/ui/form";
 import { requirePermission } from "@/modules/auth/permissions";
 import { getGrn } from "@/modules/procurement/grn.service";
 import { listActiveSuppliers } from "@/modules/procurement/supplier.service";
-import { searchProducts } from "@/modules/catalog/catalog.service";
+import { listActiveProductsForGrn } from "@/modules/catalog/catalog.service";
 import { SetBreadcrumb } from "@/components/layout/breadcrumbs";
 import { GrnForm, type GrnFormInitialData } from "@/modules/procurement/grn-form";
 
@@ -19,9 +19,9 @@ export default async function EditGrnDraftPage({ params }: { params: Promise<{ i
     redirect(`/stock/grn/${grn.id}`);
   }
 
-  const [suppliers, { data: products }] = await Promise.all([
+  const [suppliers, products] = await Promise.all([
     listActiveSuppliers(),
-    searchProducts({ pageSize: 500 }),
+    listActiveProductsForGrn(),
   ]);
 
   const initialData: GrnFormInitialData = {

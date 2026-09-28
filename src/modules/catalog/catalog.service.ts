@@ -83,6 +83,17 @@ export async function searchProducts(
   return { data, total };
 }
 
+/** Active products with units — used to populate GRN product selectors. */
+export function listActiveProductsForGrn() {
+  return prisma.product.findMany({
+    where: { isActive: true },
+    include: {
+      units: { orderBy: { factorToBase: "asc" } },
+    },
+    orderBy: { name: "asc" },
+  });
+}
+
 /** Resolves a scanned barcode to a product + matched unit. Used by POS/GRN screens. */
 export async function lookupBarcode(barcode: string) {
   const trimmed = barcode.trim();

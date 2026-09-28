@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus } from "lucide-react";
+import { Barcode, Plus } from "lucide-react";
 import type { PosProductSearchResult } from "@/modules/sales/pos.types";
 import { formatLkr } from "@/modules/sales/pos.utils";
 
@@ -56,6 +56,12 @@ export function ProductSearchPanel({ products, query, onAddProduct, isLoading = 
                       <p className="truncate text-xs text-neutral-muted mt-0.5" title={product.genericName}>
                         {product.genericName}
                       </p>
+                    )}
+                    {product.primaryBarcode && (
+                      <div className="flex items-center gap-1 mt-1 text-[11px] font-mono text-neutral-muted truncate">
+                        <Barcode className="size-3 shrink-0" />
+                        <span title={product.primaryBarcode}>{product.primaryBarcode}</span>
+                      </div>
                     )}
                   </div>
                   <span className="shrink-0 text-sm font-bold text-brand-default">
