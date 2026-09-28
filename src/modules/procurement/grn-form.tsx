@@ -2,7 +2,7 @@
 
 import { useActionState, useMemo, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
-import { SearchableSelect } from "@/components/ui/searchable-select";
+import { SearchableSelect, type SearchableSelectAsyncItem } from "@/components/ui/searchable-select";
 import { Field, FormAlert, SubmitButton, inputClass } from "@/components/ui/form";
 import { formatMoney } from "@/lib/money";
 import { idleFormState } from "@/lib/forms";
@@ -74,22 +74,24 @@ export function GrnForm({
   const [lines, setLines] = useState<LineRow[]>(initialData?.lines.length ? initialData.lines : [emptyLine()]);
   const productById = useMemo(() => new Map(allProducts.map((p) => [p.id, p])), [allProducts]);
 
-  const onAsyncProductsLoaded = (newProducts: any[]) => {
+  const onAsyncProductsLoaded = (newProducts: SearchableSelectAsyncItem[]) => {
     if (!Array.isArray(newProducts)) return;
     setAllProducts((current) => {
       const map = new Map(current.map((p) => [p.id, p]));
       for (const p of newProducts) {
-        if (!map.has(p.id)) {
-          map.set(p.id, {
-            id: p.id,
-            name: p.name,
-            genericName: p.genericName,
-            strength: p.strength,
+        const id = String(p.id ?? "");
+        if (id && !map.has(id)) {
+          const units = Array.isArray(p.units) ? (p.units as GrnFormProduct["units"]) : [];
+          map.set(id, {
+            id,
+            name: String(p.name ?? ""),
+            genericName: p.genericName ?? null,
+            strength: p.strength ?? null,
             barcodes: p.barcodes || [],
-            productType: p.productType,
-            baseUnitName: p.baseUnitName,
+            productType: p.productType as GrnFormProduct["productType"],
+            baseUnitName: p.baseUnitName as string | undefined,
             defaultSellingPrice: p.defaultSellingPrice != null ? Number(p.defaultSellingPrice) : null,
-            units: (p.units || []).map((u: any) => ({
+            units: units.map((u) => ({
               id: u.id,
               unitName: u.unitName,
               factorToBase: Number(u.factorToBase) || 1,

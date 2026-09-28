@@ -9,7 +9,19 @@ export type SearchableSelectOption = {
   label: string;
   subLabel?: string;
   keywords?: string[];
-  raw?: any;
+  raw?: unknown;
+};
+
+export type SearchableSelectAsyncItem = {
+  id?: string;
+  value?: string;
+  name?: string;
+  label?: string;
+  subLabel?: string;
+  genericName?: string;
+  strength?: string;
+  barcodes?: string[];
+  [key: string]: unknown;
 };
 
 type SearchableSelectProps = {
@@ -22,7 +34,7 @@ type SearchableSelectProps = {
   id?: string;
   onChange?: (val: string) => void;
   asyncSearchUrl?: string;
-  onAsyncLoaded?: (data: any[]) => void;
+  onAsyncLoaded?: (data: SearchableSelectAsyncItem[]) => void;
 };
 
 export function SearchableSelect({
@@ -69,11 +81,11 @@ export function SearchableSelect({
         const data = await res.json();
         if (!isCancelled && Array.isArray(data)) {
           if (onAsyncLoaded) onAsyncLoaded(data);
-          const mapped: SearchableSelectOption[] = data.map((item: any) => ({
-            value: item.id || item.value,
-            label: item.name || item.label,
+          const mapped: SearchableSelectOption[] = data.map((item: SearchableSelectAsyncItem) => ({
+            value: String(item.id ?? item.value ?? ""),
+            label: String(item.name ?? item.label ?? ""),
             subLabel: item.subLabel || [item.genericName, item.strength, item.barcodes?.length ? `Barcode: ${item.barcodes.join(", ")}` : null].filter(Boolean).join(" • "),
-            keywords: [item.name, item.genericName, item.strength, ...(item.barcodes || [])].filter(Boolean),
+            keywords: [item.name, item.genericName, item.strength, ...(item.barcodes || [])].filter((v): v is string => Boolean(v)),
             raw: item,
           }));
           setAsyncOptions(mapped);
