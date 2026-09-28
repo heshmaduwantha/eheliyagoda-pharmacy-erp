@@ -9,8 +9,6 @@ import {
   Receipt,
   ShoppingCart,
   TrendingUp,
-  UserCheck,
-  Users,
 } from "lucide-react";
 import { formatMoney } from "@/lib/money";
 import type { CashierDashboardData } from "@/modules/dashboard/dashboard.service";
@@ -53,7 +51,7 @@ export function CashierDashboard({
               Welcome, {user.name}
             </h1>
             <p className="mt-1 text-sm text-neutral-muted">
-              Here is the pharmacy&apos;s full-day sales summary &amp; shift handover details for today.
+              Here is the pharmacy&apos;s daily sales summary for today.
             </p>
           </div>
 
@@ -70,12 +68,6 @@ export function CashierDashboard({
       </div>
 
       {/* ── 4 Key Counter KPI Cards (Entire Store Full-Day Total) ── */}
-      <div className="mb-2 flex items-center justify-between">
-        <h2 className="text-sm font-bold uppercase tracking-wider text-neutral-muted">
-          Store Full-Day Summary (Combined Total)
-        </h2>
-        <span className="text-xs text-neutral-muted">Reconciled at Day End</span>
-      </div>
       <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {/* Today's Total Sales */}
         <div className="group flex flex-col gap-3 rounded-2xl border border-neutral-border/70 bg-white p-5 shadow-sm transition hover:shadow-md hover:border-brand-default/40">
@@ -88,7 +80,7 @@ export function CashierDashboard({
             </span>
           </div>
           <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-neutral-muted">Total Day Sales</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-neutral-muted">Today&apos;s Total Sales</p>
             <p className="mt-1 text-2xl font-black tracking-tight text-neutral-text">
               {formatMoney(data.todaySalesTotal)}
             </p>
@@ -107,7 +99,7 @@ export function CashierDashboard({
             </span>
           </div>
           <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-neutral-muted">Total Cash Collected</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-neutral-muted">Cash Collected</p>
             <p className="mt-1 text-2xl font-black tracking-tight text-emerald-700">
               {formatMoney(data.todayCashTotal)}
             </p>
@@ -126,7 +118,7 @@ export function CashierDashboard({
             </span>
           </div>
           <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-neutral-muted">Total Card Payments</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-neutral-muted">Card Payments</p>
             <p className="mt-1 text-2xl font-black tracking-tight text-violet-700">
               {formatMoney(data.todayCardTotal)}
             </p>
@@ -155,128 +147,6 @@ export function CashierDashboard({
             <p className="mt-1 text-xs text-neutral-muted">{expenseHint}</p>
           </div>
         </Link>
-      </div>
-
-      {/* ── My Shift Sub-Panel (Personal Shift Metrics) ── */}
-      <div className="mb-6 rounded-2xl border border-brand-default/20 bg-brand-pale/20 p-4">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-2.5">
-            <div className="grid size-8 place-items-center rounded-lg bg-brand-default text-white">
-              <UserCheck className="size-4" />
-            </div>
-            <div>
-              <span className="text-xs font-bold uppercase tracking-wide text-brand-default">My Active Shift</span>
-              <p className="text-xs text-neutral-muted">Sales billed specifically under your login ({user.name})</p>
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-6">
-            <div>
-              <p className="text-[11px] font-semibold text-neutral-muted">My Bills</p>
-              <p className="text-sm font-bold text-neutral-text">{data.myShiftSaleCount} bills</p>
-            </div>
-            <div>
-              <p className="text-[11px] font-semibold text-neutral-muted">My Cash</p>
-              <p className="text-sm font-bold text-emerald-700">{formatMoney(data.myShiftCashTotal)}</p>
-            </div>
-            <div>
-              <p className="text-[11px] font-semibold text-neutral-muted">My Card</p>
-              <p className="text-sm font-bold text-violet-700">{formatMoney(data.myShiftCardTotal)}</p>
-            </div>
-            <div>
-              <p className="text-[11px] font-semibold text-neutral-muted">My Total Sales</p>
-              <p className="text-sm font-extrabold text-neutral-text">{formatMoney(data.myShiftSalesTotal)}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Shift Handover & Cashier Breakdown Table ── */}
-      <div className="mb-6 rounded-2xl border border-neutral-border/60 bg-white p-5 shadow-sm">
-        <div className="mb-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Users className="size-4.5 text-brand-default" />
-            <div>
-              <h2 className="text-base font-bold text-neutral-text">Today&apos;s Shifts &amp; Cashier Breakdown</h2>
-              <p className="text-xs text-neutral-muted">Individual shift summary for cash drawer handovers and reconciliation</p>
-            </div>
-          </div>
-        </div>
-
-        {data.cashierBreakdowns.length === 0 ? (
-          <div className="py-8 text-center text-xs text-neutral-muted">
-            No sales recorded by any cashier today yet.
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead>
-                <tr className="border-b border-neutral-border bg-neutral-bg/40 text-[11px] font-bold uppercase tracking-wider text-neutral-muted">
-                  <th className="py-2.5 px-3">Cashier / Staff</th>
-                  <th className="py-2.5 px-3">Status</th>
-                  <th className="py-2.5 px-3 text-right">Bills</th>
-                  <th className="py-2.5 px-3 text-right">Cash Collected</th>
-                  <th className="py-2.5 px-3 text-right">Card Payments</th>
-                  <th className="py-2.5 px-3 text-right font-bold">Total Sales</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-neutral-border/50">
-                {data.cashierBreakdowns.map((cashier) => (
-                  <tr
-                    key={cashier.cashierId}
-                    className={`transition hover:bg-neutral-bg/30 ${
-                      cashier.isCurrentCashier ? "bg-brand-pale/25 font-semibold" : ""
-                    }`}
-                  >
-                    <td className="py-3 px-3">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-neutral-text">{cashier.cashierName}</span>
-                        {cashier.isCurrentCashier && (
-                          <span className="rounded bg-brand-default/10 px-1.5 py-0.5 text-[10px] font-extrabold text-brand-default">
-                            You
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="py-3 px-3">
-                      {cashier.isCurrentCashier ? (
-                        <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700">
-                          Active Shift
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-medium text-neutral-600">
-                          Shift Handover
-                        </span>
-                      )}
-                    </td>
-                    <td className="py-3 px-3 text-right font-medium text-neutral-text">
-                      {cashier.saleCount}
-                    </td>
-                    <td className="py-3 px-3 text-right font-semibold text-emerald-700">
-                      {formatMoney(cashier.cashTotal)}
-                    </td>
-                    <td className="py-3 px-3 text-right font-semibold text-violet-700">
-                      {formatMoney(cashier.cardTotal)}
-                    </td>
-                    <td className="py-3 px-3 text-right font-black text-neutral-text">
-                      {formatMoney(cashier.totalAmount)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr className="border-t-2 border-neutral-border bg-neutral-bg/60 font-black text-neutral-text">
-                  <td className="py-3 px-3" colSpan={2}>
-                    Total Store Daily Sales
-                  </td>
-                  <td className="py-3 px-3 text-right">{data.todaySaleCount}</td>
-                  <td className="py-3 px-3 text-right text-emerald-800">{formatMoney(data.todayCashTotal)}</td>
-                  <td className="py-3 px-3 text-right text-violet-800">{formatMoney(data.todayCardTotal)}</td>
-                  <td className="py-3 px-3 text-right text-base text-brand-default">{formatMoney(data.todaySalesTotal)}</td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-        )}
       </div>
 
       {/* ── Fast Moving Products Today ── */}

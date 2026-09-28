@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { toDateWindow } from "./report.service";
 import type {
   CashCardSummaryRow,
+  CashierShiftReportRow,
+  CashierShiftReportSummary,
   DailySalesSummary,
   ProductSalesRow,
   ReportDateRange,
@@ -293,4 +295,96 @@ export async function getItemVelocityReport(range: ReportDateRange): Promise<Rep
 
   return { availability: "ready", summary: null, rows };
 }
+
+export async function getCashierShiftsReport(range: ReportDateRange): Promise<ReportResult<CashierShiftReportSummary, CashierShiftReportRow>> {
+  const { start, endExclusive } = toDateWindow(range);
+
+  const sales = await prisma.sale.findMany({
+    where: {
+      status: SaleStatus.COMPLETED,
+      completedAt: { gte: start, lt: endExclusive },
+    },
+    select: {
+      id: true,
+      cashierId: true,
+      total: true,
+      cashier: { select: { name: true, username: true } },
+      payments: { select: { method: true, amount: true } },
+    },
+    orderBy: { completedAt: "asc" },
+  });
+
+  if (!sales.length) {
+    return emptySalesReport("No completed sales recorded for this period.");
+  }
+
+  type ShiftAgg = {
+    cashierId: string;
+    cashierName: string;
+    username: string;
+    saleCount: number;
+    cashTotal: Prisma.Decimal;
+    cardTotal: Prisma.Decimal;
+    totalAmount: Prisma.Decimal;
+  };
+
+  const cashierMap = new Map<string, ShiftAgg>();
+  let grandTotal = new Prisma.Decimal(0);
+  let grandCash = new Prisma.Decimal(0);
+  let grandCard = new Prisma.Decimal(0);
+
+  for (const sale of sales) {
+    grandTotal = grandTotal.add(sale.total);
+    const cId = sale.cashierId;
+
+    if (!cashierMap.has(cId)) {
+      cashierMap.set(cId, {
+        cashierId: cId,
+        cashierName: sale.cashier.name || sale.cashier.username,
+        username: sale.cashier.username,
+        saleCount: 0,
+        cashTotal: new Prisma.Decimal(0),
+        cardTotal: new Prisma.Decimal(0),
+        totalAmount: new Prisma.Decimal(0),
+      });
+    }
+
+    const shift = cashierMap.get(cId)!;
+    shift.saleCount += 1;
+    shift.totalAmount = shift.totalAmount.add(sale.total);
+
+    for (const payment of sale.payments) {
+      if (payment.method === PaymentMethod.CASH) {
+        grandCash = grandCash.add(payment.amount);
+        shift.cashTotal = shift.cashTotal.add(payment.amount);
+      } else if (payment.method === PaymentMethod.CARD) {
+        grandCard = grandCard.add(payment.amount);
+        shift.cardTotal = shift.cardTotal.add(payment.amount);
+      }
+    }
+  }
+
+  const rows: CashierShiftReportRow[] = Array.from(cashierMap.values()).map((s) => ({
+    cashierId: s.cashierId,
+    cashierName: s.cashierName,
+    username: s.username,
+    saleCount: s.saleCount,
+    cashTotal: s.cashTotal.toFixed(2),
+    cardTotal: s.cardTotal.toFixed(2),
+    totalAmount: s.totalAmount.toFixed(2),
+  })).sort((a, b) => Number(new Prisma.Decimal(b.totalAmount).sub(new Prisma.Decimal(a.totalAmount))));
+
+  return {
+    availability: "ready",
+    summary: {
+      totalSales: grandTotal.toFixed(2),
+      totalCash: grandCash.toFixed(2),
+      totalCard: grandCard.toFixed(2),
+      totalSaleCount: sales.length,
+      activeCashierCount: cashierMap.size,
+    },
+    rows,
+  };
+}
+
 

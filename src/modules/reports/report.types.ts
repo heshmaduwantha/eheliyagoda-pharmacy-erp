@@ -6,6 +6,7 @@ export type ISODateTime = string;
 
 export type ReportType =
   | "daily-sales"
+  | "cashier-shifts"
   | "cash-card"
   | "product-sales"
   | "gross-profit"
@@ -18,6 +19,24 @@ export type ReportType =
   | "supplier-payments"
   | "expenses"
   | "controlled-drugs";
+
+export type CashierShiftReportRow = {
+  cashierId: string;
+  cashierName: string;
+  username: string;
+  saleCount: number;
+  cashTotal: MoneyString;
+  cardTotal: MoneyString;
+  totalAmount: MoneyString;
+};
+
+export type CashierShiftReportSummary = {
+  totalSales: MoneyString;
+  totalCash: MoneyString;
+  totalCard: MoneyString;
+  totalSaleCount: number;
+  activeCashierCount: number;
+};
 
 export type ReportDateRange = {
   from: ISODate;

@@ -14,7 +14,7 @@ import { getControlledDrugRegister } from "@/modules/reports/controlled-drug-rep
 import { getExpiredQuarantinedReport, getLowStockReport, getNearExpiryReport, getStockValuationReport } from "@/modules/reports/inventory-report.service";
 import { getExpensesSummary, getSupplierPayablesSummary, getSupplierPaymentsReport } from "@/modules/reports/payables-report.service";
 import { normalizeReportDateRange, normalizeReportType } from "@/modules/reports/report.service";
-import { getCashCardReport, getDailySalesReport, getGrossProfitReport, getItemVelocityReport, getProductWiseSalesReport } from "@/modules/reports/sales-report.service";
+import { getCashCardReport, getCashierShiftsReport, getDailySalesReport, getGrossProfitReport, getItemVelocityReport, getProductWiseSalesReport } from "@/modules/reports/sales-report.service";
 
 function todayRange() {
   const today = new Date().toISOString().slice(0, 10);
@@ -59,6 +59,7 @@ const rangeTabLabels: { key: string; label: string; getRange: () => { from: stri
 
 const reportTypeLabels: Record<string, string> = {
   "daily-sales": "Sales summary",
+  "cashier-shifts": "Cashier shifts / Handover 👥",
   "cash-card": "Cash vs card",
   "product-sales": "Sales by product",
   "gross-profit": "Gross profit",
@@ -105,6 +106,33 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
       <div className="grid gap-4">
         <SalesSummaryCards message={report.message} summary={report.summary} />
         <ReportMessage warnings={report.warnings} />
+      </div>
+    );
+  } else if (type === "cashier-shifts") {
+    const report = await getCashierShiftsReport(range);
+    content = (
+      <div className="grid gap-4">
+        <ReportMessage message={report.message} warnings={report.warnings} />
+        <FinanceSummaryCards
+          cards={[
+            { label: "Total Sales", value: formatMoney(report.summary?.totalSales ?? "0.00"), hint: `${report.summary?.totalSaleCount ?? 0} bills in range`, tone: "teal" },
+            { label: "Cash Drawer Total", value: formatMoney(report.summary?.totalCash ?? "0.00"), hint: "Total cash collected", tone: "blue" },
+            { label: "Card Total", value: formatMoney(report.summary?.totalCard ?? "0.00"), hint: "Total card payments", tone: "violet" },
+            { label: "Active Cashiers", value: String(report.summary?.activeCashierCount ?? 0), hint: "Staff with completed sales", tone: "amber" },
+          ]}
+        />
+        <ReportTable
+          emptyMessage={report.message ?? "No cashier shift sales found in this period."}
+          headers={["Cashier / Staff", "Username", "Bills", "Cash Collected", "Card Payments", "Total Sales"]}
+          rows={report.rows.map((row) => [
+            row.cashierName,
+            row.username,
+            String(row.saleCount),
+            formatMoney(row.cashTotal),
+            formatMoney(row.cardTotal),
+            formatMoney(row.totalAmount),
+          ])}
+        />
       </div>
     );
   } else if (type === "cash-card") {
