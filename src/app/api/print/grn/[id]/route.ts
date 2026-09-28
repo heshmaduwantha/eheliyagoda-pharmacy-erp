@@ -179,6 +179,7 @@ const grnPrintTemplate = `
         <div class="info-row">DELIVERY NOTE NUMBER: <span>{{supplierInvoiceNo}}</span></div>
         <div class="info-row">DELIVERY DATE: <span>{{formattedDate}}</span></div>
         <div class="info-row">CARRIER/DRIVER NAME: <span>Standard Delivery</span></div>
+        <div class="info-row">REMARK / NOTE: <span>{{notes}}</span></div>
       </div>
 
       <div>
@@ -248,11 +249,16 @@ const grnPrintTemplate = `
     </div>
 
     <div class="field-block" style="margin-top: 24px;">
-      <div class="section-header">COMMENTS:</div>
+      <div class="section-header">REMARKS / COMMENTS:</div>
+      {{#if hasNotes}}
+      <div style="padding: 8px 10px; border: 1px solid #000000; background: #fafafa; font-size: 11px; margin-top: 4px; min-height: 36px; line-height: 1.5;">
+        <strong>Remarks:</strong> {{notes}}
+      </div>
+      {{else}}
       <div class="underline-line"></div>
       <div class="underline-line"></div>
       <div class="underline-line"></div>
-      <div class="underline-line"></div>
+      {{/if}}
     </div>
   </div>
 </body>
@@ -311,6 +317,8 @@ export async function GET(
       supplierAddress: grn.supplier.address ?? "Eheliyagoda, Sri Lanka",
       supplierPhone: grn.supplier.phone ?? "—",
       receivedByName: grn.receivedBy?.name ?? "System Administrator",
+      notes: grn.notes && grn.notes.trim() ? grn.notes.trim() : "—",
+      hasNotes: Boolean(grn.notes && grn.notes.trim()),
       lines,
       totalItems: grn.lines.length,
       totalAmount: Number(grn.invoiceTotal).toFixed(2),

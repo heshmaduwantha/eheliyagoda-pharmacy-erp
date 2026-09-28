@@ -61,6 +61,7 @@ export default async function GrnListPage({ searchParams }: { searchParams: Prom
                 <th className="px-5 py-3.5 font-extrabold">Supplier</th>
                 <th className="px-5 py-3.5 font-extrabold">Date</th>
                 <th className="px-5 py-3.5 font-extrabold">Status</th>
+                <th className="px-5 py-3.5 font-extrabold">Remark</th>
                 <th className="px-5 py-3.5 font-extrabold text-right">Total Cost</th>
                 <th className="px-5 py-3.5" />
               </tr>
@@ -68,7 +69,7 @@ export default async function GrnListPage({ searchParams }: { searchParams: Prom
             <tbody className="divide-y divide-slate-100">
               {grns.length === 0 ? (
                 <tr>
-                  <td className="px-5 py-16 text-center text-neutral-muted" colSpan={6}>
+                  <td className="px-5 py-16 text-center text-neutral-muted" colSpan={7}>
                     No deliveries found.
                   </td>
                 </tr>
@@ -87,6 +88,9 @@ export default async function GrnListPage({ searchParams }: { searchParams: Prom
                         <span className={`inline-flex rounded-full px-2.5 py-0.5 text-[10px] tracking-wider uppercase font-bold ${status.cls}`}>
                           {status.label}
                         </span>
+                      </td>
+                      <td className="px-5 py-3.5 text-xs text-neutral-muted max-w-[200px] truncate" title={grn.notes ?? ""}>
+                        {grn.notes && grn.notes.trim() ? grn.notes : "—"}
                       </td>
                       <td className="px-5 py-3.5 text-right font-bold text-neutral-text">{formatMoney(grn.invoiceTotal)}</td>
                       <td className="px-5 py-3.5 text-right">

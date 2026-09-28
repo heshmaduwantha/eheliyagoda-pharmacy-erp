@@ -47,13 +47,18 @@ export default async function GrnDetailPage({ params }: { params: Promise<{ id: 
         title={grn.grnNo}
       />
 
-      <section className="grid gap-4 rounded-xl border border-neutral-border bg-neutral-surface p-5 shadow-sm sm:grid-cols-4 sm:p-6">
+      <section className="grid gap-4 rounded-xl border border-neutral-border bg-neutral-surface p-5 shadow-sm sm:grid-cols-5 sm:p-6">
         <Detail label="Status">
           <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${statusStyle[grn.status]}`}>{grn.status}</span>
         </Detail>
         <Detail label="Invoice no.">{grn.supplierInvoiceNo ?? "—"}</Detail>
         <Detail label="Invoice total">{formatMoney(grn.invoiceTotal)}</Detail>
         <Detail label="Received at">{formatDateTime(grn.receivedAt)}</Detail>
+        <Detail label="Remark / Note">
+          <span className={grn.notes ? "font-medium text-neutral-text" : "text-neutral-muted"}>
+            {grn.notes && grn.notes.trim() ? grn.notes : "—"}
+          </span>
+        </Detail>
       </section>
 
       <section className="overflow-hidden rounded-xl border border-neutral-border bg-neutral-surface shadow-sm">
