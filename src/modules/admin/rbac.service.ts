@@ -1026,14 +1026,17 @@ export async function updateAdminRole(roleId: string, input: UpdateRoleInput, ac
     if (current.code === "owner" && !input.isActive) {
       throw new Error("Owner role cannot be deactivated.");
     }
-    if (current.code !== "owner" && reservedRoleCodes.has(normalizedCode)) {
+    if (current.isSystem && normalizedCode !== current.code) {
+      throw new Error("System role code cannot be changed.");
+    }
+    if (!current.isSystem && reservedRoleCodes.has(normalizedCode)) {
       throw new Error("This role code is reserved for system roles.");
     }
 
     const updated = await tx.role.update({
       where: { id: roleId },
       data: {
-        code: current.code === "owner" ? current.code : normalizedCode,
+        code: current.isSystem ? current.code : normalizedCode,
         name: input.name.trim(),
         description: normalizeText(input.description),
         isActive: input.isActive,

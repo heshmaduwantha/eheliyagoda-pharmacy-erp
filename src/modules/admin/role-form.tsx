@@ -16,6 +16,7 @@ export function RoleForm({ role }: RoleFormProps) {
   const formRef = useRef<HTMLFormElement>(null);
   const groups = useMemo(() => groupPermissionsByModule(permissionRegistry), []);
   const selectedCodes = useMemo(() => new Set(role?.permissionCodes ?? []), [role?.permissionCodes]);
+  const isSystemRole = Boolean(role?.isSystem);
   const isOwnerRole = role?.code === "owner";
 
   useEffect(() => {
@@ -27,10 +28,9 @@ export function RoleForm({ role }: RoleFormProps) {
   return (
     <form action={formAction} className="grid gap-5" ref={formRef}>
       {role ? <input name="roleId" type="hidden" value={role.id} /> : null}
-      {isOwnerRole ? <input name="code" type="hidden" value={role?.code ?? "owner"} /> : null}
       <div className="grid gap-4 sm:grid-cols-2">
         <Field error={state.status === "error" ? state.fieldErrors?.code : undefined} htmlFor="code" label="Code">
-          <input className={inputClass} defaultValue={role?.code} id="code" name="code" placeholder="inventory_manager" readOnly={isOwnerRole} required />
+          <input className={inputClass} defaultValue={role?.code} id="code" name="code" placeholder="inventory_manager" readOnly={isSystemRole} required />
         </Field>
         <Field error={state.status === "error" ? state.fieldErrors?.name : undefined} htmlFor="name" label="Name">
           <input className={inputClass} defaultValue={role?.name} id="name" name="name" placeholder="Inventory Manager" required />
