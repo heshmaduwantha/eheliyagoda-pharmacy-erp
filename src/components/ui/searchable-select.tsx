@@ -7,6 +7,9 @@ import { ChevronDown, Check, Search } from "lucide-react";
 export type SearchableSelectOption = {
   value: string;
   label: string;
+  subLabel?: string;
+  keywords?: string[];
+  raw?: any;
 };
 
 type SearchableSelectProps = {
@@ -18,10 +21,12 @@ type SearchableSelectProps = {
   disabled?: boolean;
   id?: string;
   onChange?: (val: string) => void;
+  asyncSearchUrl?: string;
+  onAsyncLoaded?: (data: any[]) => void;
 };
 
 export function SearchableSelect({
-  options,
+  options: initialOptions,
   name,
   defaultValue = "",
   placeholder = "Select an option...",
@@ -29,15 +34,62 @@ export function SearchableSelect({
   disabled = false,
   id,
   onChange,
-  maxResults = 10,
+  asyncSearchUrl,
+  onAsyncLoaded,
+  maxResults = 30,
 }: SearchableSelectProps & { maxResults?: number }) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [selectedValue, setSelectedValue] = useState(defaultValue);
+  const [asyncOptions, setAsyncOptions] = useState<SearchableSelectOption[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [rect, setRect] = useState<{ top: number; left: number; width: number } | null>(null);
+
+  // Live database search when asyncSearchUrl is provided
+  useEffect(() => {
+    if (!isOpen || !asyncSearchUrl) return;
+    const trimmed = search.trim();
+    if (!trimmed) {
+      setAsyncOptions([]);
+      setIsLoading(false);
+      return;
+    }
+
+    let isCancelled = false;
+    setIsLoading(true);
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`${asyncSearchUrl}?q=${encodeURIComponent(trimmed)}`, {
+          cache: "no-store",
+        });
+        if (!res.ok) throw new Error("Search failed");
+        const data = await res.json();
+        if (!isCancelled && Array.isArray(data)) {
+          if (onAsyncLoaded) onAsyncLoaded(data);
+          const mapped: SearchableSelectOption[] = data.map((item: any) => ({
+            value: item.id || item.value,
+            label: item.name || item.label,
+            subLabel: item.subLabel || [item.genericName, item.strength, item.barcodes?.length ? `Barcode: ${item.barcodes.join(", ")}` : null].filter(Boolean).join(" • "),
+            keywords: [item.name, item.genericName, item.strength, ...(item.barcodes || [])].filter(Boolean),
+            raw: item,
+          }));
+          setAsyncOptions(mapped);
+        }
+      } catch {
+        // Silently fallback to local filtering on error
+      } finally {
+        if (!isCancelled) setIsLoading(false);
+      }
+    }, 200);
+
+    return () => {
+      isCancelled = true;
+      clearTimeout(timer);
+    };
+  }, [search, isOpen, asyncSearchUrl]);
 
   const updatePosition = () => {
     if (containerRef.current) {
@@ -92,18 +144,31 @@ export function SearchableSelect({
     setSelectedValue(defaultValue);
   }, [defaultValue]);
 
+  const combinedOptions = useMemo(() => {
+    if (asyncOptions.length === 0) return initialOptions;
+    const map = new Map<string, SearchableSelectOption>();
+    for (const opt of initialOptions) map.set(opt.value, opt);
+    for (const opt of asyncOptions) map.set(opt.value, opt);
+    return Array.from(map.values());
+  }, [initialOptions, asyncOptions]);
+
   const selectedOption = useMemo(
-    () => options.find((opt) => opt.value === selectedValue),
-    [options, selectedValue]
+    () => combinedOptions.find((opt) => opt.value === selectedValue),
+    [combinedOptions, selectedValue]
   );
 
   const allMatches = useMemo(() => {
-    if (!search) return options;
-    const lowerSearch = search.toLowerCase();
-    return options.filter((opt) =>
-      opt.label.toLowerCase().includes(lowerSearch)
-    );
-  }, [options, search]);
+    const trimmed = search.trim();
+    if (!trimmed) return combinedOptions;
+    if (asyncOptions.length > 0) return asyncOptions;
+    const lowerSearch = trimmed.toLowerCase();
+    return combinedOptions.filter((opt) => {
+      if (opt.label.toLowerCase().startsWith(lowerSearch)) return true;
+      if (opt.subLabel && opt.subLabel.toLowerCase().startsWith(lowerSearch)) return true;
+      if (opt.keywords && opt.keywords.some((k) => k.toLowerCase().startsWith(lowerSearch))) return true;
+      return false;
+    });
+  }, [combinedOptions, asyncOptions, search]);
 
   const filteredOptions = useMemo(() => {
     return allMatches.slice(0, maxResults);
@@ -122,10 +187,10 @@ export function SearchableSelect({
         position: "fixed",
         top: rect.top + 4,
         left: rect.left,
-        width: rect.width,
+        width: Math.max(rect.width, 300),
         zIndex: 9999,
       }}
-      className="max-h-60 overflow-hidden flex flex-col rounded-lg border border-neutral-border bg-neutral-surface shadow-xl"
+      className="max-h-64 overflow-hidden flex flex-col rounded-lg border border-neutral-border bg-neutral-surface shadow-xl"
     >
       <div className="bg-neutral-bg px-3 py-2 border-b border-neutral-border flex items-center gap-2">
         <Search className="size-4 text-neutral-muted shrink-0" />
@@ -133,7 +198,7 @@ export function SearchableSelect({
           ref={searchInputRef}
           type="text"
           className="w-full outline-none text-sm bg-transparent placeholder:text-neutral-muted"
-          placeholder="Search..."
+          placeholder="Type letters or numbers to search database..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           onKeyDown={(e) => {
@@ -143,12 +208,17 @@ export function SearchableSelect({
             }
           }}
         />
+        {isLoading && (
+          <span className="text-[11px] text-brand-default animate-pulse font-medium shrink-0">
+            Searching…
+          </span>
+        )}
       </div>
       
       <div className="flex-1 overflow-y-auto p-1">
         {filteredOptions.length === 0 ? (
           <div className="py-3 text-center text-sm text-neutral-muted">
-            No results found.
+            {isLoading ? "Searching database..." : "No results found."}
           </div>
         ) : (
           filteredOptions.map((opt) => (
@@ -156,13 +226,20 @@ export function SearchableSelect({
               key={opt.value}
               type="button"
               onClick={() => handleSelect(opt.value)}
-              className={`w-full flex items-center justify-between rounded-md px-2 py-1.5 text-sm transition-colors text-left ${
+              className={`w-full flex items-center justify-between rounded-md px-2.5 py-2 text-sm transition-colors text-left ${
                 selectedValue === opt.value
                   ? "bg-brand-pale text-brand-default font-semibold"
                   : "text-neutral-text hover:bg-slate-100"
               }`}
             >
-              <span className="truncate">{opt.label}</span>
+              <div className="min-w-0 flex-1 mr-2">
+                <p className="truncate text-xs font-semibold">{opt.label}</p>
+                {opt.subLabel && (
+                  <p className="truncate text-[11px] text-neutral-muted font-normal mt-0.5">
+                    {opt.subLabel}
+                  </p>
+                )}
+              </div>
               {selectedValue === opt.value && <Check className="size-4 shrink-0 text-brand-default" />}
             </button>
           ))

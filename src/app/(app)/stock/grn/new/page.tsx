@@ -34,6 +34,9 @@ export default async function NewGrnPage() {
             products={products.map((p) => ({
               id: p.id,
               name: p.name,
+              genericName: p.genericName,
+              strength: p.strength,
+              barcodes: p.barcodes.map((b) => b.barcode),
               productType: p.productType,
               baseUnitName: p.baseUnitName,
               defaultSellingPrice: p.defaultSellingPrice != null ? Number(p.defaultSellingPrice) : null,

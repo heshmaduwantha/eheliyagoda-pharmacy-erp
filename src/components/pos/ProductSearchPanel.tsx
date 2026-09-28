@@ -13,7 +13,7 @@ type Props = {
 };
 
 export function ProductSearchPanel({ products, query, onAddProduct, isLoading = false }: Props) {
-  const displayedProducts = query.trim() ? products.slice(0, 18) : products.slice(0, 6);
+  const displayedProducts = query.trim() ? products : products.slice(0, 12);
 
   return (
     <section className="flex flex-col gap-3">

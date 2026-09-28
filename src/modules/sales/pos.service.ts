@@ -356,9 +356,9 @@ export async function searchProductsForPos(query: string): Promise<PosProductSea
       where: {
         isActive: true,
         OR: [
-          { name: { contains: normalized, mode: "insensitive" } },
-          { genericName: { contains: normalized, mode: "insensitive" } },
-          { barcodes: { some: { barcode: { contains: normalized } } } },
+          { name: { startsWith: normalized, mode: "insensitive" } },
+          { genericName: { startsWith: normalized, mode: "insensitive" } },
+          { barcodes: { some: { barcode: { startsWith: normalized } } } },
         ],
       },
       select: productSelect,

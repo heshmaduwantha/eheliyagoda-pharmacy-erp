@@ -13,10 +13,13 @@ import { VoidGrnButton } from "./void-grn-button";
 export type GrnFormProduct = {
   id: string;
   name: string;
+  genericName?: string | null;
+  strength?: string | null;
+  barcodes?: string[];
   productType: "MEDICINE" | "GENERAL_ITEM";
   baseUnitName?: string;
   defaultSellingPrice?: number | null;
-  units: { id: string; unitName: string; isPurchaseDefault: boolean }[];
+  units: { id: string; unitName: string; factorToBase?: number; isPurchaseDefault: boolean }[];
 };
 
 type GrnFormSupplier = { id: string; name: string };
@@ -67,8 +70,37 @@ export function GrnForm({
     initialData ? updateGrnDraftAction.bind(null, initialData.id) : createGrnDraftAction,
     idleFormState
   );
+  const [allProducts, setAllProducts] = useState<GrnFormProduct[]>(products);
   const [lines, setLines] = useState<LineRow[]>(initialData?.lines.length ? initialData.lines : [emptyLine()]);
-  const productById = useMemo(() => new Map(products.map((p) => [p.id, p])), [products]);
+  const productById = useMemo(() => new Map(allProducts.map((p) => [p.id, p])), [allProducts]);
+
+  const onAsyncProductsLoaded = (newProducts: any[]) => {
+    if (!Array.isArray(newProducts)) return;
+    setAllProducts((current) => {
+      const map = new Map(current.map((p) => [p.id, p]));
+      for (const p of newProducts) {
+        if (!map.has(p.id)) {
+          map.set(p.id, {
+            id: p.id,
+            name: p.name,
+            genericName: p.genericName,
+            strength: p.strength,
+            barcodes: p.barcodes || [],
+            productType: p.productType,
+            baseUnitName: p.baseUnitName,
+            defaultSellingPrice: p.defaultSellingPrice != null ? Number(p.defaultSellingPrice) : null,
+            units: (p.units || []).map((u: any) => ({
+              id: u.id,
+              unitName: u.unitName,
+              factorToBase: Number(u.factorToBase) || 1,
+              isPurchaseDefault: u.isPurchaseDefault,
+            })),
+          });
+        }
+      }
+      return Array.from(map.values());
+    });
+  };
 
   const grandTotal = lines.reduce((sum, line) => sum + lineTotal(line), 0);
 
@@ -159,13 +191,20 @@ export function GrnForm({
                 const product = productById.get(line.productId);
                 return (
                   <tr className="border-t border-neutral-border" key={index}>
-                    <td className={`${cell} min-w-[210px]`}>
+                    <td className={`${cell} min-w-[230px]`}>
                       <SearchableSelect
                         name={`productId_${index}`}
                         defaultValue={line.productId}
                         onChange={(val) => onProductChange(index, val)}
-                        placeholder="Search product..."
-                        options={products.map((p) => ({ value: p.id, label: p.name }))}
+                        asyncSearchUrl="/api/catalog/search"
+                        onAsyncLoaded={onAsyncProductsLoaded}
+                        placeholder="Search name, generic, barcode..."
+                        options={allProducts.map((p) => ({
+                          value: p.id,
+                          label: p.name,
+                          subLabel: [p.genericName, p.strength, p.barcodes?.length ? `Barcode: ${p.barcodes.join(", ")}` : null].filter(Boolean).join(" • "),
+                          keywords: [p.name, p.genericName || "", p.strength || "", ...(p.barcodes || [])].filter(Boolean),
+                        }))}
                       />
                     </td>
                     <td className={`${cell} min-w-[110px]`}>

@@ -54,9 +54,9 @@ export async function searchProducts(
   
   if (trimmed) {
     where.OR = [
-      { name: { contains: trimmed, mode: "insensitive" } },
-      { genericName: { contains: trimmed, mode: "insensitive" } },
-      { barcodes: { some: { barcode: { contains: trimmed } } } },
+      { name: { startsWith: trimmed, mode: "insensitive" } },
+      { genericName: { startsWith: trimmed, mode: "insensitive" } },
+      { barcodes: { some: { barcode: { startsWith: trimmed } } } },
     ];
   }
   
@@ -89,6 +89,7 @@ export function listActiveProductsForGrn() {
     where: { isActive: true },
     include: {
       units: { orderBy: { factorToBase: "asc" } },
+      barcodes: true,
     },
     orderBy: { name: "asc" },
   });
